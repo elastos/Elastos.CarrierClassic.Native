@@ -82,7 +82,7 @@ static void ready_cb(ElaCarrier *w, void *context)
 
     ela_get_userid(w, robotid, sizeof(robotid));
     ela_get_address(w, address, sizeof(address));
-    
+
     robot_log_info("Robot is ready\n");
     robot_ack("ready %s %s\n", robotid, address);
 }

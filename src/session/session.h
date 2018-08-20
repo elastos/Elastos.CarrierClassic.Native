@@ -69,11 +69,19 @@ typedef struct IceTransportOptions {
 } IceTransportOptions;
 
 typedef void (*friend_invite_callback)(ElaCarrier *, const char *from,
-                      const char *data, size_t len, void *context);
+              const char *data, size_t len, void *context);
 
 struct ElaCarrier       {
+    pthread_mutex_t         ext_mutex;
     void                    *extension;
     uint8_t                 padding[1]; // the rest fields belong to Carrier self.
+};
+
+struct BundledRequestCallback {
+    ListEntry               le;
+    ElaSessionRequestCallback *callback;
+    void                    *context;
+    char                    prefix[1];
 };
 
 struct SessionExtension {
@@ -82,8 +90,11 @@ struct SessionExtension {
     friend_invite_callback  friend_invite_cb;
     void                    *friend_invite_context;
 
-    ElaSessionRequestCallback *request_callback;
-    void                    *context;
+    ElaSessionRequestCallback *default_callback;
+    void                    *default_context;
+
+    pthread_rwlock_t        callbacks_lock;
+    List                    *callbacks;
 
     ElaTransport            *transport;
 
@@ -135,7 +146,7 @@ typedef struct ElaSession {
 
     uint8_t                 nonce[NONCE_BYTES];
     uint8_t                 credential[NONCE_BYTES];
-    
+
     struct {
         int enabled;
         uint8_t key[SYMMETRIC_KEY_BYTES];
@@ -158,7 +169,7 @@ typedef struct Multiplexer  Multiplexer;
 struct ElaStream {
     StreamHandler           pipeline;
     Multiplexer             *mux;
-    
+
     ListEntry               le;
     int                     id;
     ElaSession              *session;

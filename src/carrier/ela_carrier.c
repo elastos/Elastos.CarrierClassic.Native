@@ -978,6 +978,8 @@ static void ela_destroy(void *argv)
     if (w->friend_events)
         deref(w->friend_events);
 
+    pthread_mutex_destroy(&w->ext_mutex);
+
     dht_kill(&w->dht);
 }
 
@@ -1123,6 +1125,14 @@ ElaCarrier *ela_new(const ElaOptions *opts,
         free_persistence_data(&data);
         deref(w);
         ela_set_error(rc);
+        return NULL;
+    }
+
+    rc = pthread_mutex_init(&w->ext_mutex, NULL);
+    if (rc) {
+        free_persistence_data(&data);
+        deref(w);
+        ela_set_error(ELA_SYS_ERROR(rc));
         return NULL;
     }
 
@@ -2497,7 +2507,7 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to,
     size_t _data_len;
 
     if (!w || !to || !*to || (status != 0 && !reason)
-            || (status == 0 && (!data || !len))) {
+            || (data && !len)) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
         return -1;
     }
@@ -2548,8 +2558,7 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to,
     elacp_set_status(cp, status);
     if (status)
         elacp_set_reason(cp, reason);
-    else
-        elacp_set_raw_data(cp, data, len);
+    elacp_set_raw_data(cp, data, len);
 
     _data = elacp_encode(cp, &_data_len);
     elacp_free(cp);

@@ -538,7 +538,7 @@ static void self_info(ElaCarrier *w, int argc, char *argv[])
 static void self_nospam(ElaCarrier *w, int argc, char *argv[])
 {
     uint32_t nospam;
-    
+
     if (argc == 1) {
         ela_get_self_nospam(w, &nospam);
         output("Self nospam: %lu.\n", nospam);
@@ -864,13 +864,14 @@ static void kill_carrier(ElaCarrier *w, int argc, char *argv[])
 }
 
 static void session_request_callback(ElaCarrier *w, const char *from,
-            const char *sdp, size_t len, void *context)
+            const char *bundle, const char *sdp, size_t len, void *context)
 {
     strncpy(session_ctx.remote_sdp, sdp, len);
     session_ctx.remote_sdp[len] = 0;
     session_ctx.sdp_len = len;
 
-    output("Session request from[%s] with SDP:\n%s.\n", from, session_ctx.remote_sdp);
+    output("Session request from[%s] with bundle: %s\nSDP:\n%s.\n", from,
+           bundle ? bundle : "", session_ctx.remote_sdp);
     output("Reply use following commands:\n");
     output("  sreply refuse [reason]\n");
     output("OR:\n");
@@ -879,12 +880,12 @@ static void session_request_callback(ElaCarrier *w, const char *from,
     output("  3. sreply ok\n");
 }
 
-static void session_request_complete_callback(ElaSession *ws, int status,
+static void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     int rc;
 
-    output("Session complete, status: %d, reason: %s\n", status,
+    output("Session complete, bundle: %s, status: %d, reason: %s\n", bundle, status,
            reason ? reason : "null");
 
     if (status != 0)
@@ -1149,12 +1150,12 @@ static void session_request(ElaCarrier *w, int argc, char *argv[])
 {
     int rc;
 
-    if (argc != 1) {
+    if (argc != 2) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    rc = ela_session_request(session_ctx.ws,
+    rc = ela_session_request(session_ctx.ws, argv[1],
                              session_request_complete_callback, NULL);
     if (rc < 0) {
         output("session request failed.\n");
@@ -1174,7 +1175,7 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
     }
 
     if ((strcmp(argv[1], "ok") == 0) && (argc == 2)) {
-        rc = ela_session_reply_request(session_ctx.ws, 0, NULL);
+        rc = ela_session_reply_request(session_ctx.ws, NULL, 0, NULL);
         if (rc < 0) {
             output("response invite failed.\n");
         }
@@ -1191,7 +1192,7 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
         }
     }
     else if ((strcmp(argv[1], "refuse") == 0) && (argc == 3)) {
-        rc = ela_session_reply_request(session_ctx.ws, 1, argv[2]);
+        rc = ela_session_reply_request(session_ctx.ws, NULL, 1, argv[2]);
         if (rc < 0) {
             output("response invite failed.\n");
         }
@@ -1558,7 +1559,7 @@ struct command {
     { "snew",       session_new,            "snew userid" },
     { "sadd",       stream_add,             "sadd [plain] [reliable] [multiplexing] [portforwarding]"},
     { "sremove",    stream_remove,          "sremove id" },
-    { "srequest",   session_request,        "srequest" },
+    { "srequest",   session_request,        "srequest bundle" },
     { "sreply",     session_reply_request,  "sreply ok/sreply refuse [reason]"},
     { "swrite",     stream_write,           "swrite streamid string" },
     { "sbulkwrite", stream_bulk_write,      "sbulkwrite streamid packet-size packet-count" },
@@ -1829,7 +1830,8 @@ static void message_callback(ElaCarrier *w, const char *from,
 static void invite_request_callback(ElaCarrier *w, const char *from,
                                     const void *data, size_t len, void *context)
 {
-    output("Invite request from[%s] with data: %.*s\n", from, (int)len, (const char *)data);
+    output("Invite request from[%s] with data: %.*s\n", from,
+           (int)len, (const char *)data);
     output("Reply use following commands:\n");
     output("  ireply %s confirm [message]\n", from);
     output("  ireply %s refuse [reason]\n", from);

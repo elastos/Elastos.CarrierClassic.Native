@@ -138,7 +138,7 @@ static int setup_pipe(PROCESS_MODE mode)
 
         setbuf(stdout, NULL);
     }
-    
+
     return 0;
 }
 
@@ -172,7 +172,7 @@ static int generate_checksum(char **argv, char *buf, int size)
             return -1;
 
         status = setup_pipe(PARENT_MODE);
-        if (status < 0) 
+        if (status < 0)
             return -1;
 
         fp = fdopen(g_fd[0], "r");
@@ -404,7 +404,7 @@ static void invite(ElaCarrier *w, int argc, char *argv[])
 {
     int rc;
 
-    if (argc != 2) {
+    if (argc != 3) {
         output("Invalid invocation.\n");
         return;
     }
@@ -449,7 +449,7 @@ static void reply_invite(ElaCarrier *w, int argc, char *argv[])
 }
 
 static void session_request_callback(ElaCarrier *w, const char *from,
-            const char *sdp, size_t len, void *context)
+            const char *bundle, const char *sdp, size_t len, void *context)
 {
     strncpy(session_ctx.remote_sdp, sdp, len);
     session_ctx.remote_sdp[len] = 0;
@@ -466,7 +466,7 @@ static void session_request_callback(ElaCarrier *w, const char *from,
     session_reply_request(w, 1, reply_arg);
 }
 
-static void session_request_complete_callback(ElaSession *ws, int status,
+static void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     int rc;
@@ -598,7 +598,7 @@ static void stream_on_state_changed(ElaSession *ws, int stream,
         session_request((ElaCarrier*)context);
     } else if (g_mode == PASSIVE_MODE) {
         char *reply_arg[3] = {NULL, NULL, NULL};
-        
+
         reply_arg[0] = g_peer_id;
         reply_arg[1] = (char*)"confirm";
         reply_arg[2] = (char*)"ok";
@@ -647,7 +647,7 @@ static void stream_on_state_changed(ElaSession *ws, int stream,
 
         }
     } else {
-        
+
     }
 }
 
@@ -725,7 +725,7 @@ static void session_request(ElaCarrier *w)
 {
     int rc;
 
-    rc = ela_session_request(session_ctx.ws,
+    rc = ela_session_request(session_ctx.ws, NULL,
                              session_request_complete_callback, w);
     if (rc < 0) {
         output("session request unsuccessfully.\n");
@@ -745,7 +745,7 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
     }
 
     if ((strcmp(argv[0], "ok") == 0) && (argc == 1)) {
-        rc = ela_session_reply_request(session_ctx.ws, 0, NULL);
+        rc = ela_session_reply_request(session_ctx.ws, NULL, 0, NULL);
         if (rc < 0) {
             output("response invite unsuccessfully.\n");
         }
@@ -762,7 +762,7 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
         }
     }
     else if ((strcmp(argv[0], "refuse") == 0) && (argc == 2)) {
-        rc = ela_session_reply_request(session_ctx.ws, 1, argv[2]);
+        rc = ela_session_reply_request(session_ctx.ws, NULL, 1, argv[2]);
         if (rc < 0) {
             output("response invite unsuccessfully.\n");
         }
@@ -998,7 +998,7 @@ static void friend_request_callback(ElaCarrier *w, const char *userid,
 
     output("Friend request from user[%s] with HELLO: %s.\n",
            *info->name ? info->name : userid, hello);
-    
+
     arg[0] = (char*)userid;
     friend_accept(w, 1, arg);
 }
@@ -1017,7 +1017,7 @@ static void message_callback(ElaCarrier *w, const char *from,
         int ret = 0;
 
         output("Got md5 checksum from peer:%s\n", msg);
-        
+
         ret = generate_checksum(arg, buf, sizeof(buf));
         if (ret < 0)
             output("active end generated checksum unsuccessfully.");
@@ -1131,7 +1131,7 @@ int main(int argc, char *argv[])
         case 'c':
             strcpy(buffer, optarg);
             break;
-        
+
         case 'f':
             strcpy(g_transferred_file, optarg);
             break;
