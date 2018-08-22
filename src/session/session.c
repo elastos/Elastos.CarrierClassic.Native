@@ -88,6 +88,7 @@ static void friend_invite(ElaCarrier *w, const char *from,
         // No bundle, use global callback handle
         callback = ext->default_callback;
         callback_context = ext->default_context;
+        --len;
     } else {
         list_iterate(ext->callbacks, &it);
         while(list_iterator_has_next(&it)) {
@@ -113,6 +114,7 @@ static void friend_invite(ElaCarrier *w, const char *from,
             callback = ext->default_callback;
             callback_context = ext->default_context;
         }
+        len -= strlen(bundle) + 2;
     }
 
     pthread_rwlock_unlock(&ext->callbacks_lock);
@@ -186,7 +188,7 @@ int ela_session_init(ElaCarrier *w, ElaSessionRequestCallback *callback, void *c
     if (w->extension) {
         ref(w->extension);
         pthread_mutex_unlock(&w->ext_mutex);
-        vlogD("Session: Session intialized already, ref counter(%d).",
+        vlogD("Session: Session initialized already, ref counter(%d).",
               nrefs(w->extension));
         return 0;
     }
@@ -216,7 +218,7 @@ int ela_session_init(ElaCarrier *w, ElaSessionRequestCallback *callback, void *c
     }
 
     ext->callbacks = list_create(0, NULL);
-    if (ext->callbacks) {
+    if (!ext->callbacks) {
         deref(ext);
         pthread_mutex_unlock(&w->ext_mutex);
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
@@ -584,7 +586,7 @@ static void friend_invite_response(ElaCarrier *w, const char *from,
     assert(strlen(bundle) + strlen(sdp) + 3 == len);
 
     vlogD("Session: Session response from %s with bundle: %s, SDP: %s", from, bundle, sdp);
-
+    len -= strlen(bundle) + 2;
     if (ws->complete_callback) {
         ws->complete_callback(ws, bundle, status, reason, (const char *)sdp, len, ws->context);
     }
