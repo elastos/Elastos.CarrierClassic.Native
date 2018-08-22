@@ -1,5 +1,6 @@
 project(elastos-carrier C)
 cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0068 NEW)
 
 include(CarrierDefaults)
 include(CheckIncludeFile)
@@ -143,11 +144,24 @@ if(ENABLE_SHARED)
     add_library(elacarrier-shared SHARED ${SRC})
 
     target_compile_definitions(elacarrier-shared PRIVATE CARRIER_DYNAMIC CRYSTAL_DYNAMIC)
-    set_target_properties(elacarrier-shared PROPERTIES OUTPUT_NAME elacarrier)
+    set_target_properties(elacarrier-shared
+        PROPERTIES
+        OUTPUT_NAME elacarrier
+        BUILD_WITH_INSTALL_RPATH ON
+        INSTALL_NAME_DIR "@rpath")
+
     target_link_libraries(elacarrier-shared ${LIBS} ${SYSTEM_LIBS})
     add_dependencies(elacarrier-shared elacp_generated_h)
 
     add_dependencies(ela-carrier elacarrier-shared)
+
+    if(APPLE)
+        add_custom_command(TARGET elacarrier-shared
+            POST_BUILD
+            COMMAND ${CMAKE_INSTALL_NAME_TOOL}
+                -add_rpath "@executable_path/../lib"
+                "${CMAKE_SHARED_LIBRARY_PREFIX}elacarrier${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    endif()
 
     install(TARGETS elacarrier-shared
         RUNTIME DESTINATION "bin"

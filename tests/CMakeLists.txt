@@ -125,6 +125,14 @@ add_executable(elatests
 add_dependencies(elatests ${DEPS})
 target_link_libraries(elatests ${LIBS})
 
+if(APPLE)
+    add_custom_command(TARGET elatests
+        POST_BUILD
+        COMMAND ${CMAKE_INSTALL_NAME_TOOL}
+            -add_rpath "@executable_path/../lib"
+            elatests)
+endif()
+
 install(TARGETS elatests
     RUNTIME DESTINATION "bin"
     ARCHIVE DESTINATION "lib"
@@ -135,15 +143,5 @@ install(FILES tests.conf
 
 if(NOT WIN32)
     install(PROGRAMS elatests.sh
-        DESTINATION "bin")
-endif()
-
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
-    configure_file(
-        fix.sh.in
-        fix.sh
-        "@ONLY")
-
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fix.sh
         DESTINATION "bin")
 endif()

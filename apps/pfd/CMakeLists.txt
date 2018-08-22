@@ -76,6 +76,14 @@ endif()
 add_executable(elapfd ${SRC})
 target_link_libraries(elapfd ${LIBS})
 
+if(APPLE)
+    add_custom_command(TARGET elapfd
+        POST_BUILD
+        COMMAND ${CMAKE_INSTALL_NAME_TOOL}
+            -add_rpath "@executable_path/../lib"
+            elapfd)
+endif()
+
 install(TARGETS elapfd
     RUNTIME DESTINATION "bin"
     ARCHIVE DESTINATION "lib"

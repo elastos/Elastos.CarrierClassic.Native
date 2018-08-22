@@ -104,6 +104,14 @@ add_executable(elashell ${SRC})
 
 target_link_libraries(elashell ${LIBS} ${SYSTEM_LIBS})
 
+if(APPLE)
+    add_custom_command(TARGET elashell
+        POST_BUILD
+        COMMAND ${CMAKE_INSTALL_NAME_TOOL}
+            -add_rpath "@executable_path/../lib"
+            elashell)
+endif()
+
 install(TARGETS elashell
     RUNTIME DESTINATION "bin"
     ARCHIVE DESTINATION "lib"

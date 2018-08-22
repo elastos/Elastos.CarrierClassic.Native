@@ -90,6 +90,14 @@ set(LIBS
 add_executable(elaspeedtest ${SRC})
 target_link_libraries(elaspeedtest ${LIBS} ${SYSTEM_LIBS})
 
+if(APPLE)
+    add_custom_command(TARGET elaspeedtest
+        POST_BUILD
+        COMMAND ${CMAKE_INSTALL_NAME_TOOL}
+            -add_rpath "@executable_path/../lib"
+            elaspeedtest)
+endif()
+
 install(TARGETS elaspeedtest
         RUNTIME DESTINATION "bin"
         ARCHIVE DESTINATION "lib"

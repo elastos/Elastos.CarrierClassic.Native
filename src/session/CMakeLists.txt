@@ -1,5 +1,6 @@
 project(ela-session C)
 cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0068 NEW)
 
 include(CarrierDefaults)
 include(CheckIncludeFile)
@@ -116,7 +117,8 @@ add_custom_target(ela-session)
 if(ENABLE_STATIC)
     add_library(elasession-static STATIC ${SRC})
     target_compile_definitions(elasession-static PRIVATE CARRIER_STATIC CRYSTAL_STATIC)
-    set_target_properties(elasession-static PROPERTIES OUTPUT_NAME elasession)
+    set_target_properties(elasession-static PROPERTIES
+        OUTPUT_NAME elasession)
 
     add_dependencies(ela-session elasession-static)
 
@@ -129,8 +131,14 @@ endif()
 if(ENABLE_SHARED)
     add_library(elasession-shared SHARED ${SRC})
     target_compile_definitions(elasession-shared PRIVATE CARRIER_DYNAMIC CRYSTAL_DYNAMIC)
-    set_target_properties(elasession-shared PROPERTIES OUTPUT_NAME elasession)
-    target_link_libraries(elasession-shared elacarrier-shared ${LIBS} ${SYSTEM_LIBS})
+    set_target_properties(elasession-shared PROPERTIES
+        OUTPUT_NAME elasession
+        BUILD_WITH_INSTALL_RPATH ON
+        INSTALL_NAME_DIR "@rpath")
+    target_link_libraries(elasession-shared
+        elacarrier-shared
+        ${LIBS}
+        ${SYSTEM_LIBS})
 
     if(IOS)
         string(CONCAT LINK_FLAGS
@@ -139,10 +147,19 @@ if(ENABLE_SHARED)
             "-framework CFNetwork "
             "-framework Foundation")
 
-        set_target_properties(elasession-shared PROPERTIES LINK_FLAGS ${LINK_FLAGS})
+        set_target_properties(elasession-shared PROPERTIES
+            LINK_FLAGS ${LINK_FLAGS})
     endif()
 
     add_dependencies(ela-session elasession-shared)
+
+    if(APPLE)
+        add_custom_command(TARGET elasession-shared
+            POST_BUILD
+            COMMAND ${CMAKE_INSTALL_NAME_TOOL}
+                -add_rpath "@executable_path/../lib"
+                "${CMAKE_SHARED_LIBRARY_PREFIX}elasession${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    endif()
 
     install(TARGETS elasession-shared
         RUNTIME DESTINATION "bin"
