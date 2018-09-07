@@ -65,6 +65,10 @@ else()
     add_definitions(-DCRYSTAL_STATIC)
 endif()
 
+if(AUTO_CI_TEST)
+    add_definitions(-DAUTO_CI_TEST)
+endif()
+
 set(LIBS
     elacarrier
     elasession

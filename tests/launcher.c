@@ -226,12 +226,21 @@ static void *dump_routine(void *ptr)
     int ch;
     struct dump_args *args = (struct dump_args *)ptr;
 
+#ifdef AUTO_CI_TEST
+    char szContent[260] = {0};
+    while (fgets(szContent, 260, args->fp)) {
+        pthread_mutex_lock(&screen_lock);
+        printf("%s", szContent);
+        pthread_mutex_unlock(&screen_lock);
+    }
+#else
     while ((ch = fgetc(args->fp)) != EOP) {
         pthread_mutex_lock(&screen_lock);
         waddch(args->win, (chtype)ch);
         wrefresh(args->win);
         pthread_mutex_unlock(&screen_lock);
     }
+#endif
 
     free(args);
     return NULL;
@@ -260,12 +269,14 @@ static int dump(pthread_t *th, FILE *fp, WINDOW *win)
 
 int launcher_main(int argc, char *argv[])
 {
-    int rc = 0;
+    int rc = 0, status = 0;
     char cmdbase[1024] = { 0 };
     char cmdline[1024];
     pthread_t dumper[4] = { 0 };
 
+#ifndef AUTO_CI_TEST
     init_screen();
+#endif
 
     int i;
     for (i = 0; i < argc; i++) {
@@ -298,16 +309,30 @@ int launcher_main(int argc, char *argv[])
     for (i = 0; i < 4; i++)
         pthread_join(dumper[i], NULL);
 
-    spclose(tests);
+    status = spclose(tests);
     spclose(robot);
 
+    if (WIFEXITED(status)) {
+        printf("exit with code [%d]\n", WEXITSTATUS(status));
+        rc = WEXITSTATUS(status);
+    } else if (WIFSIGNALED(status)) {
+        printf("receive signal [%d] to exit\n", WTERMSIG(status));
+        rc = WIFSIGNALED(status);
+    } else if (WIFSTOPPED(status)) {
+        printf("stop with signal [%d]", WSTOPSIG(status));
+        rc = WIFSTOPPED(status);
+    }
+
 cleanup:
+
+#ifndef AUTO_CI_TEST
     wprintw(tests_out_win, "\n\nPress q to quit...");
     wrefresh(tests_out_win);
     while (getchar() != 'q');
     cleanup_screen();
+#endif
 
-    return 0;
+    return rc;
 }
 
 void launcher_cleanup(void)
