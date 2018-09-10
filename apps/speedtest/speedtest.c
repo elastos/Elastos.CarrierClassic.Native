@@ -410,7 +410,7 @@ static void invite(ElaCarrier *w, int argc, char *argv[])
 {
     int rc;
 
-    if (argc != 2) {
+    if (argc != 3) {
         output("Invalid invocation.\n");
         return;
     }
@@ -455,7 +455,7 @@ static void reply_invite(ElaCarrier *w, int argc, char *argv[])
 }
 
 static void session_request_callback(ElaCarrier *w, const char *from,
-            const char *sdp, size_t len, void *context)
+            const char *bundle, const char *sdp, size_t len, void *context)
 {
     strncpy(session_ctx.remote_sdp, sdp, len);
     session_ctx.remote_sdp[len] = 0;
@@ -472,7 +472,7 @@ static void session_request_callback(ElaCarrier *w, const char *from,
     session_reply_request(w, 1, reply_arg);
 }
 
-static void session_request_complete_callback(ElaSession *ws, int status,
+static void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     int rc;
@@ -661,11 +661,12 @@ static void session_init(ElaCarrier *w)
 {
     int rc;
 
-    rc = ela_session_init(w, session_request_callback, w);
+    rc = ela_session_init(w);
     if (rc < 0) {
         output("Session initialized unsuccessfully.\n");
     }
     else {
+        ela_session_set_callback(w, NULL, session_request_callback, w);
         output("Session initialized successfully.\n");
     }
 }
@@ -731,7 +732,7 @@ static void session_request(ElaCarrier *w)
 {
     int rc;
 
-    rc = ela_session_request(session_ctx.ws,
+    rc = ela_session_request(session_ctx.ws, NULL,
                              session_request_complete_callback, w);
     if (rc < 0) {
         output("session request unsuccessfully.\n");
@@ -751,7 +752,7 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
     }
 
     if ((strcmp(argv[0], "ok") == 0) && (argc == 1)) {
-        rc = ela_session_reply_request(session_ctx.ws, 0, NULL);
+        rc = ela_session_reply_request(session_ctx.ws, NULL, 0, NULL);
         if (rc < 0) {
             output("response invite unsuccessfully.\n");
         }
@@ -768,7 +769,7 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
         }
     }
     else if ((strcmp(argv[0], "refuse") == 0) && (argc == 2)) {
-        rc = ela_session_reply_request(session_ctx.ws, 1, argv[2]);
+        rc = ela_session_reply_request(session_ctx.ws, NULL, 1, argv[2]);
         if (rc < 0) {
             output("response invite unsuccessfully.\n");
         }

@@ -91,7 +91,7 @@ static CarrierContext carrier_context = {
     .extra = NULL
 };
 
-static void session_request_complete_callback(ElaSession *ws, int status,
+static void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = (SessionContext *)context;
@@ -211,7 +211,7 @@ void check_unimplemented_stream_type(ElaStreamType stream_type,
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_session_init(wctxt->carrier, NULL, NULL);
+    rc = ela_session_init(wctxt->carrier);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     sctxt->session = ela_session_new(wctxt->carrier, robotid);
