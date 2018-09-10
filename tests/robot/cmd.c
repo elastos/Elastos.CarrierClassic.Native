@@ -107,17 +107,9 @@ static void session_request_complete_callback(ElaSession *ws, const char *bundle
         goto cleanup;
     }
 
-    if (session_extra.check_null) {
-        assert(strcmp(bundle, "") == 0);
-        session_extra.check_null = 0;
-    }
-
-    if (strcmp(bundle, "") != 0) {
+    if (bundle) {
+        vlogD("Request complete callback invoked with bundle %s", bundle);
         write_ack("bundle %s\n", bundle);
-    }
-
-    if (session_extra.test_bundle) {
-        return;
     }
 
     rc = ela_session_start(ws, sdp, len);
@@ -152,38 +144,6 @@ cleanup:
         sctxt->session = NULL;
     }
     write_ack("sconnect failed\n");
-}
-
-static void session_request_complete_callback2(ElaSession *ws, const char *bundle, int status,
-                const char *reason, const char *sdp, size_t len, void *context)
-{
-    SessionContext *sctxt = ((TestContext *)context)->session;
-    StreamContext *stream_ctxt = ((TestContext *)context)->stream;
-    int rc;
-
-    vlogD("Session complete, status: %d, reason: %s", status,
-          reason ? reason : "null");
-
-    if (status != 0) {
-        assert(0 && "test client should confirm session request.\n");
-        goto cleanup;
-    }
-
-    if (bundle) {
-        write_ack("bundle %s\n", bundle);
-    }
-
-    return ;
-
-cleanup:
-    if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
-        stream_ctxt->stream_id = -1;
-    }
-    if (sctxt->session) {
-        ela_session_close(sctxt->session);
-        sctxt->session = NULL;
-    }
 }
 
 static SessionContext session_context = {
@@ -528,12 +488,13 @@ static void sinit(TestContext *context, int argc, char *argv[])
 
     robot_context_reset(context);
 
-    rc = ela_session_init(w, sctxt->request_cb, sctxt);
+    rc = ela_session_init(w);
     if (rc < 0) {
         vlogE("session init failed: 0x%x", ela_get_error());
         write_ack("sinit failed\n");
         return;
     } else {
+        ela_session_set_callback(w, NULL, sctxt->request_cb, sctxt);
         vlogD("session init success.");
         sctxt->extra->init_flag = 1;
         write_ack("sinit success\n");
@@ -547,52 +508,44 @@ static void srequest(TestContext *context, int argc, char *argv[])
 {
     SessionContext *sctxt = context->session;
     StreamContext *stream_ctxt = context->stream;
+    const char *bundle;
     int rc;
 
-    CHK_ARGS(argc == 3 || argc == 4 || argc == 5);
+    CHK_ARGS(argc == 3 || argc == 4);
 
+    sctxt->session = ela_session_new(context->carrier->carrier, argv[1]);
     if (!sctxt->session) {
-        sctxt->session = ela_session_new(context->carrier->carrier, argv[1]);
-        if (!sctxt->session) {
-            vlogE("New session to %s failed: 0x%x", argv[1], ela_get_error());
-            goto cleanup;
-        }
-
-        stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
-                                                        ElaStreamType_text, atoi(argv[2]),
-                                                        stream_ctxt->cbs, stream_ctxt);
-        if (stream_ctxt->stream_id < 0) {
-            vlogE("Add text stream failed: 0x%x", ela_get_error());
-            goto cleanup;
-        }
-
-        cond_wait(stream_ctxt->cond);
-        if (!(stream_ctxt->state_bits & (1 << ElaStreamState_initialized))) {
-            vlogE("Stream state not 'initialized' state");
-            goto cleanup;
-        }
+        vlogE("New session to %s failed: 0x%x", argv[1], ela_get_error());
+        goto cleanup;
     }
 
-    if (sctxt->session) {
-        const char *bundle = (argc >= 4) ? argv[3] : NULL;
-        if (argc == 3)
-            session_extra.check_null = 1;
-
-        if (argc >=4)
-            session_extra.test_bundle = 1;
-
-        if (argc == 5)
-            rc = ela_session_request(sctxt->session, bundle, session_request_complete_callback2, context);
-        else
-            rc = ela_session_request(sctxt->session, bundle, sctxt->request_complete_cb, context);
-        if (rc < 0) {
-            vlogE("Session request failed: 0x%x", ela_get_error());
-            goto cleanup;
-        }
-
-        vlogD("sesion request succeed");
-        write_ack("srequest success\n");
+    stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
+                                        ElaStreamType_text, atoi(argv[2]),
+                                        stream_ctxt->cbs, stream_ctxt);
+    if (stream_ctxt->stream_id < 0) {
+        vlogE("Add text stream failed: 0x%x", ela_get_error());
+        goto cleanup;
     }
+
+    cond_wait(stream_ctxt->cond);
+    if (!(stream_ctxt->state_bits & (1 << ElaStreamState_initialized))) {
+        vlogE("Stream state not 'initialized' state");
+        goto cleanup;
+    }
+
+    if (argc == 4)
+        bundle = argv[3];
+    else
+        bundle = NULL;
+
+    rc = ela_session_request(sctxt->session, bundle, sctxt->request_complete_cb, context);
+    if (rc < 0) {
+        vlogE("Session request failed: 0x%x", ela_get_error());
+        goto cleanup;
+    }
+
+    vlogD("sesion request succeed");
+    write_ack("srequest success\n");
 
     // the request complete callback should be invoked soon later, and do
     // the rest work.

@@ -173,7 +173,7 @@ static int add_transport(SessionExtension *ext)
     return 0;
 }
 
-int ela_session_init(ElaCarrier *w, ElaSessionRequestCallback *callback, void *context)
+int ela_session_init(ElaCarrier *w)
 {
     SessionExtension *ext;
     int rc;
@@ -203,9 +203,6 @@ int ela_session_init(ElaCarrier *w, ElaSessionRequestCallback *callback, void *c
     ext->carrier = w;
     ext->friend_invite_cb = friend_invite;
     ext->friend_invite_context = ext;
-
-    ext->default_callback = callback;
-    ext->default_context = context;
     ext->create_transport = ice_transport_create;
 
     rc = pthread_rwlock_init(&ext->callbacks_lock, NULL);

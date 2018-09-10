@@ -94,87 +94,37 @@ static CarrierContext carrier_context = {
 };
 
 struct SessionContextExtra {
-    char bundle[ELA_MAX_BUNDLE_LEN + 1];
+    char remote_sdp[2048];
+    size_t sdp_len;
     char robot_peer_id[(ELA_MAX_ID_LEN + 1) * 2];
-    int callback_num;
+    char *request_bundle;
 };
 
 static SessionContextExtra session_extra = {
-    .bundle = {0},
+    .remote_sdp = {0},
+    .sdp_len = 0,
     .robot_peer_id = {0},
-    .callback_num = -1
+    .request_bundle = NULL
 };
 
-static void session_request_callback(ElaCarrier *w, const char *from, const char *bundle,
-                                    const char *sdp, size_t len, void *context)
-{
-    SessionContext *sctxt = (SessionContext *)context;
-    SessionContextExtra *extra = sctxt->extra;
-
-    strcpy(extra->bundle, bundle);
-
-    strncpy(extra->robot_peer_id, from, strlen(from) + 1);
-    extra->callback_num = 1;
-
-    cond_signal(sctxt->request_cond);
-}
-
-static void session_request_callback_for_a(ElaCarrier *w, const char *from, const char *bundle,
-                                     const char *sdp, size_t len, void *context)
+static void session_request_callback(ElaCarrier *w, const char *from,
+                const char *bundle, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = (SessionContext *)context;
     SessionContextExtra *extra = sctxt->extra;
 
     if (bundle)
-        strcpy(extra->bundle, bundle);
+        extra->request_bundle = strdup(bundle);
 
-    strncpy(extra->robot_peer_id, from, strlen(from) + 1);
-    extra->callback_num = 2;
+    strncpy(extra->remote_sdp, sdp, len);
+    extra->remote_sdp[len] = 0;
+    extra->sdp_len = len;
 
-    cond_signal(sctxt->request_cond);
-}
+    strncpy(extra->robot_peer_id, from, strlen(from)+1);
 
-static void session_request_callback_for_b(ElaCarrier *w, const char *from, const char *bundle,
-                                     const char *sdp, size_t len, void *context)
-{
-    SessionContext *sctxt = (SessionContext *)context;
-    SessionContextExtra *extra = sctxt->extra;
-
-    if (bundle)
-        strcpy(extra->bundle, bundle);
-
-    strncpy(extra->robot_peer_id, from, strlen(from) + 1);
-    extra->callback_num = 3;
+    sctxt->request_received = 1;
 
     cond_signal(sctxt->request_cond);
-}
-
-static void global_session_request_callback(ElaCarrier *w, const char *from, const char *bundle,
-                                     const char *sdp, size_t len, void *context)
-{
-    SessionContext *sctxt = (SessionContext *)context;
-    SessionContextExtra *extra = sctxt->extra;
-
-    if (bundle)
-        strcpy(extra->bundle, bundle);
-
-    strncpy(extra->robot_peer_id, from, strlen(from) + 1);
-    extra->callback_num = 4;
-
-    cond_signal(sctxt->request_cond);
-}
-
-static void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
-                const char *reason, const char *sdp, size_t len, void *context)
-{
-    SessionContext *sctxt = (SessionContext *)context;
-
-    vlogD("Session complete, status: %d, reason: %s", status,
-          reason ? reason : "null");
-
-    sctxt->request_complete_status = status;
-
-    cond_signal(sctxt->request_complete_cond);
 }
 
 static Condition DEFINE_COND(session_request_cond);
@@ -185,9 +135,9 @@ static SessionContext session_context = {
     .request_received = 0,
     .request_cond = &session_request_cond,
 
-    .request_complete_cb = session_request_complete_callback,
+    .request_complete_cb = NULL,
     .request_complete_status = -1,
-    .request_complete_cond = &session_request_complete_cond,
+    .request_complete_cond = NULL,
 
     .session = NULL,
     .extra   = &session_extra
@@ -234,7 +184,6 @@ static void test_context_reset(TestContext *context)
     StreamContext *stream = context->stream;
 
     cond_reset(session->request_cond);
-    cond_reset(session->request_complete_cond);
 
     session->request_received = 0;
     session->request_complete_status = -1;
@@ -255,9 +204,9 @@ static TestContext test_context = {
     .context_reset = test_context_reset,
 };
 
-static void test_session_bundle(ElaStreamType stream_type,
-                    int stream_options, TestContext *context,
-                    int (*do_work_cb)(TestContext *))
+static void test_session_with_bundle_internal(ElaStreamType stream_type,
+                    int stream_options, const char *bundle,
+                    TestContext *context)
 {
     CarrierContext *wctxt = context->carrier;
     SessionContext *sctxt = context->session;
@@ -268,10 +217,6 @@ static void test_session_bundle(ElaStreamType stream_type,
     char cmd[32] = {0};
     char result[32] = {0};
     char userid[ELA_MAX_ID_LEN + 1] = {0};
-    const char *bundle = NULL;
-    const char *bundle_a = "BundleA";
-    const char *bundle_b = "BundleB";
-    const char *bundle_c = "BundleC";
 
     context->context_reset(context);
 
@@ -279,7 +224,13 @@ static void test_session_bundle(ElaStreamType stream_type,
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_session_init(wctxt->carrier, sctxt->request_cb, sctxt);
+    rc = ela_session_init(wctxt->carrier);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+
+    rc = ela_session_set_callback(wctxt->carrier, NULL, sctxt->request_cb, sctxt);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+
+    rc = ela_session_set_callback(wctxt->carrier, bundle, sctxt->request_cb, sctxt);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     rc = robot_sinit();
@@ -291,40 +242,20 @@ static void test_session_bundle(ElaStreamType stream_type,
     TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
     ela_get_userid(wctxt->carrier, userid, sizeof(userid));
-
-    if (!extra->bundle[0]) {
-        rc = write_cmd("srequest %s %d\n", userid, stream_options);
-        bundle = "";
-    } else if (strcmp(extra->bundle, "empty") == 0) {
-        rc = write_cmd("srequest %s %d %s\n", userid, stream_options, "");
-        bundle = "";
-    } else {
-        rc = ela_session_set_callback(wctxt->carrier, bundle_a, session_request_callback_for_a, sctxt);
-        CU_ASSERT_EQUAL_FATAL(rc, 0);
-
-        rc = ela_session_set_callback(wctxt->carrier, bundle_b, session_request_callback_for_b, sctxt);
-        CU_ASSERT_EQUAL_FATAL(rc, 0);
-
-        rc = write_cmd("srequest %s %d %s\n", userid, stream_options, bundle_a);
-        bundle = bundle_a;
-    }
+    rc = write_cmd("srequest %s %d %s\n", userid, stream_options, bundle);
     TEST_ASSERT_TRUE(rc > 0);
 
-    memset(cmd, 0, sizeof(cmd));
-    memset(result, 0, sizeof(result));
     rc = read_ack("%32s %32s", cmd, result);
     TEST_ASSERT_TRUE(rc == 2);
     TEST_ASSERT_TRUE(strcmp(cmd, "srequest") == 0);
     TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
     cond_wait(sctxt->request_cond);       //for session request callback
-    if (!extra->bundle[0]) {
-        TEST_ASSERT_TRUE(extra->bundle[0] == 0);
-        TEST_ASSERT_TRUE(extra->callback_num == 1);
-    } else {
-        TEST_ASSERT_TRUE(strcmp(extra->bundle, bundle) == 0);
-        TEST_ASSERT_TRUE(extra->callback_num == 2);
-    }
+    TEST_ASSERT_TRUE(strcmp(extra->request_bundle, bundle) == 0);
+
+    TEST_ASSERT_TRUE(sctxt->request_complete_status == -1);
+    TEST_ASSERT_TRUE(sctxt->request_received == 1);
+    TEST_ASSERT_TRUE(sctxt->extra->sdp_len > 0);
 
     sctxt->session = ela_session_new(wctxt->carrier, extra->robot_peer_id);
     TEST_ASSERT_TRUE(sctxt->session != NULL);
@@ -338,72 +269,42 @@ static void test_session_bundle(ElaStreamType stream_type,
     TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_initialized);
     TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_initialized));
 
-    if (!extra->bundle[0])
-        rc = ela_session_reply_request(sctxt->session, NULL, 0, NULL);
-    else
-        rc = ela_session_reply_request(sctxt->session, extra->bundle, 0, NULL);
+    rc = ela_session_reply_request(sctxt->session, bundle, 0, NULL);
     TEST_ASSERT_TRUE(rc == 0);
 
-    memset(cmd, 0, sizeof(cmd));
-    memset(result, 0, sizeof(result));
+    cond_wait(stream_ctxt->cond);
+    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_transport_ready);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_transport_ready));
+
     rc = read_ack("%32s %32s", cmd, result);
+    TEST_ASSERT_TRUE(rc == 2);
+    TEST_ASSERT_TRUE(strcmp(cmd, "bundle") == 0);
+    TEST_ASSERT_TRUE(strcmp(result, bundle) == 0);
 
-    if (extra->bundle[0] != 0) {
-        TEST_ASSERT_TRUE(rc == 2);
-        TEST_ASSERT_TRUE(strcmp(cmd, "bundle") == 0);
-        TEST_ASSERT_TRUE(strcmp(result, extra->bundle) == 0);
+    rc = ela_session_start(sctxt->session, sctxt->extra->remote_sdp,
+                               sctxt->extra->sdp_len);
+    TEST_ASSERT_TRUE(rc == 0);
+
+    cond_wait(stream_ctxt->cond);
+
+    if (stream_ctxt->state != ElaStreamState_connecting &&
+        stream_ctxt->state != ElaStreamState_connected) {
+        // if error, consume ctrl acknowlege from robot.
+        read_ack("%32s %32s", cmd, result);
     }
 
-    if (strcmp(extra->bundle, "filled") == 0) {
-        rc = write_cmd("srequest %s %d %s %s\n", userid, stream_options, bundle_b, "new_callback");
-        TEST_ASSERT_TRUE(rc > 0);
+    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_connecting ||
+                     stream_ctxt->state == ElaStreamState_connected);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_connecting));
 
-        memset(cmd, 0, sizeof(cmd));
-        memset(result, 0, sizeof(result));
-        rc = read_ack("%32s %32s", cmd, result);
-        TEST_ASSERT_TRUE(rc == 2);
-        TEST_ASSERT_TRUE(strcmp(cmd, "srequest") == 0);
-        TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
+    rc = read_ack("%32s %32s", cmd, result);
+    TEST_ASSERT_TRUE(rc == 2);
+    TEST_ASSERT_TRUE(strcmp(cmd, "sconnect") == 0);
+    TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
-        cond_wait(sctxt->request_cond); //for session request callback
-        TEST_ASSERT_TRUE(strcmp(extra->bundle, bundle_b) == 0);
-        TEST_ASSERT_TRUE(extra->callback_num == 3);
-
-        rc = ela_session_reply_request(sctxt->session, extra->bundle, 0, NULL);
-        TEST_ASSERT_TRUE(rc == 0);
-        memset(cmd, 0, sizeof(cmd));
-        memset(result, 0, sizeof(result));
-        rc = read_ack("%32s %32s", cmd, result);
-        TEST_ASSERT_TRUE(rc == 2);
-        TEST_ASSERT_TRUE(strcmp(cmd, "bundle") == 0);
-        TEST_ASSERT_TRUE(strcmp(result, extra->bundle) == 0);
-
-        rc = ela_session_set_callback(wctxt->carrier, NULL, global_session_request_callback, sctxt);
-        CU_ASSERT_EQUAL_FATAL(rc, 0);
-        rc = write_cmd("srequest %s %d %s %s\n", userid, stream_options, bundle_c, "new_callback");
-        TEST_ASSERT_TRUE(rc > 0);
-
-        memset(cmd, 0, sizeof(cmd));
-        memset(result, 0, sizeof(result));
-        rc = read_ack("%32s %32s", cmd, result);
-        TEST_ASSERT_TRUE(rc == 2);
-        TEST_ASSERT_TRUE(strcmp(cmd, "srequest") == 0);
-        TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
-
-        cond_wait(sctxt->request_cond); //for session request callback
-        TEST_ASSERT_TRUE(strcmp(extra->bundle, bundle_c) == 0);
-        TEST_ASSERT_TRUE(extra->callback_num == 4);
-
-        rc = ela_session_reply_request(sctxt->session, extra->bundle, 0, NULL);
-        TEST_ASSERT_TRUE(rc == 0);
-
-        memset(cmd, 0, sizeof(cmd));
-        memset(result, 0, sizeof(result));
-        rc = read_ack("%32s %32s", cmd, result);
-        TEST_ASSERT_TRUE(rc == 2);
-        TEST_ASSERT_TRUE(strcmp(cmd, "bundle") == 0);
-        TEST_ASSERT_TRUE(strcmp(result, extra->bundle) == 0);
-    }
+    cond_wait(stream_ctxt->cond);
+    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_connected);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_connected));
 
 cleanup:
     if (stream_ctxt->stream_id > 0) {
@@ -416,40 +317,29 @@ cleanup:
         sctxt->session = NULL;
     }
 
+    ela_session_set_callback(wctxt->carrier, bundle, NULL, sctxt);
+
     ela_session_cleanup(wctxt->carrier);
     robot_sfree();
 }
 
-static void test_session_with_nullable_bundle(void)
+static void test_session_with_bundle(void)
 {
-    test_session_bundle(ElaStreamType_text, 0, &test_context, NULL);
-}
-
-static void test_session_with_empty_bundle(void)
-{
-    strcpy(session_extra.bundle, "empty");
-    test_session_bundle(ElaStreamType_text, 0, &test_context, NULL);
-}
-
-static void test_session_with_filled_bundle(void)
-{
-    strcpy(session_extra.bundle, "filled");
-    test_session_bundle(ElaStreamType_text, 0, &test_context, NULL);
+    test_session_with_bundle_internal(ElaStreamType_text, 0,
+                            "session_bundle_test", &test_context);
 }
 
 static CU_TestInfo cases[] = {
-    { "test_session_with_nullable_bundle",  test_session_with_nullable_bundle },
-    { "test_session_with_empty_bundle",     test_session_with_empty_bundle },
-    { "test_session_with_filled_bundle",    test_session_with_filled_bundle },
+    { "test_session_with_bundle",  test_session_with_bundle },
     { NULL, NULL }
 };
 
-CU_TestInfo *session_request_reply_bundle_test_get_cases(void)
+CU_TestInfo *session_bundle_test_get_cases(void)
 {
     return cases;
 }
 
-int session_request_reply_bundle_test_suite_init(void)
+int session_bundle_test_suite_init(void)
 {
     int rc;
 
@@ -460,7 +350,7 @@ int session_request_reply_bundle_test_suite_init(void)
     return rc;
 }
 
-int session_request_reply_bundle_test_suite_cleanup(void)
+int session_bundle_test_suite_cleanup(void)
 {
     test_suite_cleanup(&test_context);
 
