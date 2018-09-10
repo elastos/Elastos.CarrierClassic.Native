@@ -50,6 +50,9 @@ const char *stream_state_name(ElaStreamState state);
 struct SessionContextExtra {
     int init_flag;
 
+    int test_bundle;
+    int check_null;
+    char bundle[ELA_MAX_BUNDLE_LEN + 1];
     char remote_sdp[2048];
     size_t sdp_len;
     char test_peer_id[(ELA_MAX_ID_LEN + 1) * 2];
@@ -58,6 +61,9 @@ struct SessionContextExtra {
 static SessionContextExtra session_extra = {
     .init_flag = 0,
 
+    .test_bundle = 0,
+    .check_null = 0,
+    .bundle = {0},
     .remote_sdp = {0},
     .sdp_len = 0,
     .test_peer_id = {0}
@@ -67,6 +73,9 @@ static void session_request_callback(ElaCarrier *w, const char *from, const char
                                      const char *sdp, size_t len, void *context)
 {
     SessionContextExtra *extra = ((SessionContext *)context)->extra;
+
+    if (bundle)
+        strcpy(extra->bundle, bundle);
 
     extra->sdp_len = len;
     strncpy(extra->remote_sdp, sdp, len);
@@ -96,6 +105,19 @@ static void session_request_complete_callback(ElaSession *ws, const char *bundle
     if (!(stream_ctxt->state_bits & (1 << ElaStreamState_transport_ready))) {
         vlogE("Stream state not 'transport ready' state");
         goto cleanup;
+    }
+
+    if (session_extra.check_null) {
+        assert(strcmp(bundle, "") == 0);
+        session_extra.check_null = 0;
+    }
+
+    if (strcmp(bundle, "") != 0) {
+        write_ack("bundle %s\n", bundle);
+    }
+
+    if (session_extra.test_bundle) {
+        return;
     }
 
     rc = ela_session_start(ws, sdp, len);
@@ -130,6 +152,38 @@ cleanup:
         sctxt->session = NULL;
     }
     write_ack("sconnect failed\n");
+}
+
+static void session_request_complete_callback2(ElaSession *ws, const char *bundle, int status,
+                const char *reason, const char *sdp, size_t len, void *context)
+{
+    SessionContext *sctxt = ((TestContext *)context)->session;
+    StreamContext *stream_ctxt = ((TestContext *)context)->stream;
+    int rc;
+
+    vlogD("Session complete, status: %d, reason: %s", status,
+          reason ? reason : "null");
+
+    if (status != 0) {
+        assert(0 && "test client should confirm session request.\n");
+        goto cleanup;
+    }
+
+    if (bundle) {
+        write_ack("bundle %s\n", bundle);
+    }
+
+    return ;
+
+cleanup:
+    if (stream_ctxt->stream_id > 0) {
+        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        stream_ctxt->stream_id = -1;
+    }
+    if (sctxt->session) {
+        ela_session_close(sctxt->session);
+        sctxt->session = NULL;
+    }
 }
 
 static SessionContext session_context = {
@@ -495,36 +549,50 @@ static void srequest(TestContext *context, int argc, char *argv[])
     StreamContext *stream_ctxt = context->stream;
     int rc;
 
-    CHK_ARGS(argc == 3);
+    CHK_ARGS(argc == 3 || argc == 4 || argc == 5);
 
-    sctxt->session = ela_session_new(context->carrier->carrier, argv[1]);
     if (!sctxt->session) {
-        vlogE("New session to %s failed: 0x%x", argv[1], ela_get_error());
-        goto cleanup;
+        sctxt->session = ela_session_new(context->carrier->carrier, argv[1]);
+        if (!sctxt->session) {
+            vlogE("New session to %s failed: 0x%x", argv[1], ela_get_error());
+            goto cleanup;
+        }
+
+        stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
+                                                        ElaStreamType_text, atoi(argv[2]),
+                                                        stream_ctxt->cbs, stream_ctxt);
+        if (stream_ctxt->stream_id < 0) {
+            vlogE("Add text stream failed: 0x%x", ela_get_error());
+            goto cleanup;
+        }
+
+        cond_wait(stream_ctxt->cond);
+        if (!(stream_ctxt->state_bits & (1 << ElaStreamState_initialized))) {
+            vlogE("Stream state not 'initialized' state");
+            goto cleanup;
+        }
     }
 
-    stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
-                                        ElaStreamType_text, atoi(argv[2]),
-                                        stream_ctxt->cbs, stream_ctxt);
-    if (stream_ctxt->stream_id < 0) {
-        vlogE("Add text stream failed: 0x%x", ela_get_error());
-        goto cleanup;
-    }
+    if (sctxt->session) {
+        const char *bundle = (argc >= 4) ? argv[3] : NULL;
+        if (argc == 3)
+            session_extra.check_null = 1;
 
-    cond_wait(stream_ctxt->cond);
-    if (!(stream_ctxt->state_bits & (1 << ElaStreamState_initialized))) {
-        vlogE("Stream state not 'initialized' state");
-        goto cleanup;
-    }
+        if (argc >=4)
+            session_extra.test_bundle = 1;
 
-    rc = ela_session_request(sctxt->session, NULL, sctxt->request_complete_cb, context);
-    if (rc < 0) {
-        vlogE("Session request failed: 0x%x", ela_get_error());
-        goto cleanup;
-    }
+        if (argc == 5)
+            rc = ela_session_request(sctxt->session, bundle, session_request_complete_callback2, context);
+        else
+            rc = ela_session_request(sctxt->session, bundle, sctxt->request_complete_cb, context);
+        if (rc < 0) {
+            vlogE("Session request failed: 0x%x", ela_get_error());
+            goto cleanup;
+        }
 
-    vlogD("sesion request succeed");
-    write_ack("srequest success\n");
+        vlogD("sesion request succeed");
+        write_ack("srequest success\n");
+    }
 
     // the request complete callback should be invoked soon later, and do
     // the rest work.
@@ -582,7 +650,7 @@ static void sreply(TestContext *context, int argc, char *argv[])
             goto cleanup;
         }
 
-        rc = ela_session_reply_request(sctxt->session, NULL, 0, NULL);
+        rc = ela_session_reply_request(sctxt->session, sctxt->extra->bundle, 0, NULL);
         if (rc < 0) {
             vlogE("Confirm session reqeust failed: 0x%x", ela_get_error());
             goto cleanup;
