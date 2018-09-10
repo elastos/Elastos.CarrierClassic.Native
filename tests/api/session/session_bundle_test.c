@@ -230,6 +230,9 @@ static void test_session_with_bundle_internal(ElaStreamType stream_type,
     rc = ela_session_set_callback(wctxt->carrier, NULL, sctxt->request_cb, sctxt);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
+    rc = ela_session_init(wctxt->carrier);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+
     rc = ela_session_set_callback(wctxt->carrier, bundle, sctxt->request_cb, sctxt);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
@@ -318,7 +321,9 @@ cleanup:
     }
 
     ela_session_set_callback(wctxt->carrier, bundle, NULL, sctxt);
+    ela_session_cleanup(wctxt->carrier);
 
+    ela_session_set_callback(wctxt->carrier, NULL, NULL, sctxt);
     ela_session_cleanup(wctxt->carrier);
     robot_sfree();
 }

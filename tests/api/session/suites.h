@@ -41,6 +41,5 @@ DECL_TESTSUITE(session_portforwarding_test)
     DEFINE_TESTSUITE(session_stream_test), \
     DEFINE_TESTSUITE(session_channel_test), \
     DEFINE_TESTSUITE(session_portforwarding_test)
-#endif
 
 #endif /* __API_SESSION_TEST_SUITES_H__ */

@@ -87,7 +87,8 @@ static void friend_invite(ElaCarrier *w, const char *from,
         // No bundle, use global callback handle
         callback = ext->default_callback;
         callback_context = ext->default_context;
-        --len;
+        bundle = NULL;
+        len -= 2;
     } else {
         list_iterate(ext->callbacks, &it);
         while(list_iterator_has_next(&it)) {
@@ -112,6 +113,7 @@ static void friend_invite(ElaCarrier *w, const char *from,
             // Failback to global callback handle
             callback = ext->default_callback;
             callback_context = ext->default_context;
+            bundle = NULL;
         }
         len -= strlen(bundle) + 2;
     }
@@ -594,7 +596,7 @@ int ela_session_request(ElaSession *ws, const char *bundle,
     ElaCarrier *w;
     int rc = 0;
     list_iterator_t iterator;
-    char data[ELA_MAX_BUNDLE_LEN + SDP_MAX_LEN + 3];
+    char data[ELA_MAX_BUNDLE_LEN + SDP_MAX_LEN + 2];
     size_t data_len;
     char *sdp;
     char *ext_to;
@@ -643,7 +645,7 @@ reprepare:
         }
     }
 
-    if (bundle) {
+    if (bundle && bundle[0]) {
         data_len = strlen(bundle) + 1;
         strcpy(data, bundle);
     } else {
@@ -687,7 +689,7 @@ int ela_session_reply_request(ElaSession *ws, const char *bundle,
 {
     ElaCarrier *w;
     int rc = 0;
-    char data[ELA_MAX_BUNDLE_LEN + SDP_MAX_LEN + 3];
+    char data[ELA_MAX_BUNDLE_LEN + SDP_MAX_LEN + 2];
     size_t data_len;
     char *sdp;
     char *ext_to;
@@ -711,7 +713,7 @@ int ela_session_reply_request(ElaSession *ws, const char *bundle,
     crypto_random_nonce(ws->nonce);
     crypto_random_nonce(ws->credential);
 
-    if (bundle) {
+    if (bundle && bundle[0]) {
         data_len = strlen(bundle) + 1;
         strcpy(data, bundle);
     } else {
@@ -823,7 +825,7 @@ recheck:
 
     rc = ws->apply_remote_sdp(ws, (char *)sdp, len-1);
     if (rc < 0) {
-        vlogE("Session: Session to %s can not apply remote SDP.)", ws->to);
+        vlogE("Session: Session to %s can not apply remote SDP.", ws->to);
         vlogT("Session: Wrong SDP is: [%.*s].", (int)(len - 1), sdp);
         deref(ws);
         ela_set_error(rc);

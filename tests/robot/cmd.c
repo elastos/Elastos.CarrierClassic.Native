@@ -50,9 +50,6 @@ const char *stream_state_name(ElaStreamState state);
 struct SessionContextExtra {
     int init_flag;
 
-    int test_bundle;
-    int check_null;
-    char bundle[ELA_MAX_BUNDLE_LEN + 1];
     char remote_sdp[2048];
     size_t sdp_len;
     char test_peer_id[(ELA_MAX_ID_LEN + 1) * 2];
@@ -61,9 +58,6 @@ struct SessionContextExtra {
 static SessionContextExtra session_extra = {
     .init_flag = 0,
 
-    .test_bundle = 0,
-    .check_null = 0,
-    .bundle = {0},
     .remote_sdp = {0},
     .sdp_len = 0,
     .test_peer_id = {0}
@@ -73,9 +67,6 @@ static void session_request_callback(ElaCarrier *w, const char *from, const char
                                      const char *sdp, size_t len, void *context)
 {
     SessionContextExtra *extra = ((SessionContext *)context)->extra;
-
-    if (bundle)
-        strcpy(extra->bundle, bundle);
 
     extra->sdp_len = len;
     strncpy(extra->remote_sdp, sdp, len);
@@ -107,7 +98,7 @@ static void session_request_complete_callback(ElaSession *ws, const char *bundle
         goto cleanup;
     }
 
-    if (bundle) {
+    if (bundle && bundle[0]) {
         vlogD("Request complete callback invoked with bundle %s", bundle);
         write_ack("bundle %s\n", bundle);
     }
@@ -603,7 +594,7 @@ static void sreply(TestContext *context, int argc, char *argv[])
             goto cleanup;
         }
 
-        rc = ela_session_reply_request(sctxt->session, sctxt->extra->bundle, 0, NULL);
+        rc = ela_session_reply_request(sctxt->session, NULL, 0, NULL);
         if (rc < 0) {
             vlogE("Confirm session reqeust failed: 0x%x", ela_get_error());
             goto cleanup;
