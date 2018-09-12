@@ -2744,3 +2744,105 @@ void ela_set_error(int err)
 #endif
 }
 
+static void get_facility_and_code(int err, int *facility, int *code)
+{
+    assert(facility);
+    assert(code);
+
+    *facility = (err >> 24) & 0x0F;
+    *code = err & 0x00FFFFFF;
+}
+
+typedef struct
+{
+    int code;
+    const char *name;
+    const char *description;
+} err_t;
+
+#define ERR(name, desc) { name, #name, desc }
+
+static const err_t error_types[] = {
+    ERR(ELAF_GENERAL,   "General errors"),
+    ERR(ELAF_SYS,       "System errors"),
+    ERR(ELAF_HTTP,      "HTTP errors"),
+    ERR(ELAF_RESERVED2, "Reserved errors"),
+    ERR(ELAF_ICE,       "ICE errors"),
+    ERR(ELAF_DHT,       "DHT errors"),
+    ERR(ELAF_UNKNOWN,   "Unknown errors")
+};
+
+static const err_t errors[] = {
+    ERR(ELAERR_INVALID_ARGS,                "Invalid argument(s)"),
+    ERR(ELAERR_OUT_OF_MEMORY,               "Run out of memory"),
+    ERR(ELAERR_BUFFER_TOO_SMALL,            "The buffer size is too small"),
+    ERR(ELAERR_BAD_PERSISTENT_DATA,         "The persistent data is bad"),
+    ERR(ELAERR_INVALID_PERSISTENCE_FILE,    "The persistent file is invalid"),
+
+    ERR(ELAERR_INVALID_CONTROL_PACKET,      "The control packet is invalid"),
+    ERR(ELAERR_INVALID_CREDENTIAL,          "The credentials are invalid"),
+    ERR(ELAERR_SERVER_FAILED,               "The server has failed"),
+    ERR(ELAERR_ALREADY_RUN,                 "The carrier has already run"),
+    ERR(ELAERR_NOT_READY,                   "The carrier has not been ready yet"),
+
+    ERR(ELAERR_NOT_EXIST,                   "The requested entity does not exist"),
+    ERR(ELAERR_ALREADY_EXIST,               "The entity exists already"),
+    ERR(ELAERR_NO_MATCHED_REQUEST,          "There are no matched requests."),
+    ERR(ELAERR_INVALID_USERID,              "The user's ID is invalid"),
+    ERR(ELAERR_INVALID_NODEID,              "The node's ID is invalid"),
+
+    ERR(ELAERR_INVALID_APPID,               "The app's ID is invalid"),
+    ERR(ELAERR_INVALID_DESCRIPTOR,          "The descriptor is invalid"),
+    ERR(ELAERR_WRONG_STATE,                 "Something has been in a wrong state"),
+    ERR(ELAERR_BUSY,                        "The stream is busy"),
+    ERR(ELAERR_LANGUAGE_BINDING,            "Language binding error ocurred"),
+
+    ERR(ELAERR_ENCRYPT,                     "Failed to encrypt"),
+    ERR(ELAERR_SDP_TOO_LONG,                "The content size of SDP is too long"),
+    ERR(ELAERR_INVALID_SDP,                 "The SDP information is in a bad format"),
+    ERR(ELAERR_NOT_IMPLEMENTED,             "The function has not been implemented yet"),
+    ERR(ELAERR_LIMIT_EXCEEDED,              "The limit has been exceeded"),
+
+    ERR(ELAERR_PORT_ALLOC,                  "Failed to allocate port(s)"),
+    ERR(ELAERR_BAD_PROXY_TYPE,              "The type of the proxy is invalid"),
+    ERR(ELAERR_BAD_PROXY_HOST,              "The proxy host is invalid"),
+    ERR(ELAERR_BAD_PROXY_PORT,              "The proxy port is invalid"),
+    ERR(ELAERR_PROXY_NOT_AVAILABLE,         "The proxy is not available"),
+
+    ERR(ELAERR_ENCRYPTED_PERSISTENT_DATA,   "Failed to load encrypted persistent data"),
+    ERR(ELAERR_BAD_BOOTSTRAP_HOST,          "The bootstrap host is invalid"),
+    ERR(ELAERR_BAD_BOOTSTRAP_PORT,          "The bootstrap port is invalid"),
+    ERR(ELAERR_TOO_LONG,                    "The data length is too long"),
+    ERR(ELAERR_ADD_SELF,                    "Could not friend yourself"),
+
+    ERR(ELAERR_BAD_ADDRESS,                 "The address is invalid"),
+    ERR(ELAERR_FRIEND_OFFLINE,              "Your friend is offline"),
+    ERR(ELAERR_UNKNOWN,                     "Unknown error")
+};
+
+const char *ela_get_errstring(int error, char *buf, size_t len)
+{
+    int err_types_total = sizeof(error_types) / sizeof(err_t);
+    int err_total = sizeof(errors) / sizeof(err_t);
+    int facility = 0;
+    int code = 0;
+
+    if (buf == NULL || len < ELA_MAX_ERROR_DESCRIPTION_LEN) {
+        return NULL;
+    }
+
+    get_facility_and_code(error, &facility, &code);
+    if (facility <= 0 || facility > err_types_total) {
+        facility = err_types_total;
+    }
+    if (code < 0 || code > err_total) {
+        code = err_total;
+    }
+
+    strcpy(buf, error_types[facility - 1].description);
+    strcat(buf, ":");
+    strcat(buf, errors[code -1].description);
+    strcat(buf, ".");
+
+    return buf;
+}

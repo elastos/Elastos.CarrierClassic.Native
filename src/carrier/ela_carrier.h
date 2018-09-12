@@ -122,6 +122,12 @@ extern "C" {
  */
 #define ELA_MAX_APP_MESSAGE_LEN         1024
 
+/**
+ * \~English
+ * Carrier error description max length.
+ */
+#define ELA_MAX_ERROR_DESCRIPTION_LEN   256
+
 typedef struct ElaCarrier ElaCarrier;
 
 /******************************************************************************
@@ -1223,6 +1229,7 @@ int ela_reply_friend_invite(ElaCarrier *carrier, const char *to,
 #define ELAF_RESERVED2                              0x04
 #define ELAF_ICE                                    0x05
 #define ELAF_DHT                                    0x06
+#define ELAF_UNKNOWN                                0x07
 
 /**
  * \~English
@@ -1479,6 +1486,13 @@ int ela_get_error(void);
  */
 CARRIER_API
 void ela_clear_error(void);
+
+/**
+ * \~English
+ * Get a string associated with the error code.
+ */
+CARRIER_API
+const char *ela_get_errstring(int error, char *buf, size_t len);
 
 #ifdef __cplusplus
 }
