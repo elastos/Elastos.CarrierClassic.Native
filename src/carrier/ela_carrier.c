@@ -61,6 +61,7 @@
 #include <vlog.h>
 #include <crypto.h>
 #include <linkedlist.h>
+#include <pj/errno.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <posix_helper.h>
@@ -2835,13 +2836,25 @@ const char *ela_get_errstring(int error, char *buf, size_t len)
     if (facility <= 0 || facility > err_types_total) {
         facility = err_types_total;
     }
-    if (code < 0 || code > err_total) {
-        code = err_total;
-    }
 
     strcpy(buf, error_types[facility - 1].description);
     strcat(buf, ":");
-    strcat(buf, errors[code -1].description);
+    if (facility == ELAF_SYS) {
+        strcat(buf, strerror(code));
+    } else if (facility == ELAF_ICE) {
+        if (code < PJ_EUNKNOWN || code > PJ_ESOCKETSTOP) {
+            return NULL;
+        } else {
+            char err_str[128] = {0};
+            pj_strerror(code, err_str, sizeof(err_str));
+            strcat(buf, err_str);
+        }
+    }else {
+        if (code < 0 || code > err_total) {
+            code = err_total;
+        }
+        strcat(buf, errors[code -1].description);
+    }
     strcat(buf, ".");
 
     return buf;

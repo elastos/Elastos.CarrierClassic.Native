@@ -107,6 +107,10 @@ set(LIBS
     toxmessenger
     toxnetwork
     toxnetcrypto
+    pjmedia
+    pjnath
+    pjlib-util
+    pjlib
     flatccrt)
 
 if(WIN32)
@@ -115,6 +119,7 @@ if(WIN32)
         pthread
         libsodium.lib)
 else()
+    add_definitions(-DPJ_AUTOCONF)
     set(LIBS
         ${LIBS}
         sodium)
