@@ -57,7 +57,8 @@ configure_file(
 set(SRC
     dht/dht.c
     elacp.c
-    ela_carrier.c)
+    ela_carrier.c
+    ela_error.c)
 
 set(HEADERS
     ela_carrier.h)
@@ -115,6 +116,7 @@ if(WIN32)
         pthread
         libsodium.lib)
 else()
+    add_definitions(-DPJ_AUTOCONF)
     set(LIBS
         ${LIBS}
         sodium)
