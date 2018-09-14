@@ -67,6 +67,7 @@ typedef struct FriendEvent {
 } FriendEvent;
 
 struct ElaCarrier {
+    int (*ice_strerror)(int, char*, size_t);
     void *session;  // reserved for session.
 
     DHT dht;
