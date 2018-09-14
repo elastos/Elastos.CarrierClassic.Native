@@ -67,7 +67,6 @@ typedef struct FriendEvent {
 } FriendEvent;
 
 struct ElaCarrier {
-    int (*ice_strerror)(int, char*, size_t);
     void *session;  // reserved for session.
 
     DHT dht;
@@ -125,5 +124,10 @@ typedef struct TransactedCallback {
 
 CARRIER_API
 void ela_set_error(int error);
+
+typedef int (*strerror_t)(int errnum, char *, size_t);
+
+CARRIER_API
+int ela_register_strerror(int facility, strerror_t strerr);
 
 #endif /* __ELA_CARRIER_IMPL_H__ */

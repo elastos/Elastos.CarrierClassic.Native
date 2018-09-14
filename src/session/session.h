@@ -72,7 +72,6 @@ typedef void (*friend_invite_callback)(ElaCarrier *, const char *from,
                       const char *data, size_t len, void *context);
 
 struct ElaCarrier       {
-    int                     (*ice_strerror)(int, char*, size_t);
     void                    *extension;
     uint8_t                 padding[1]; // the rest fields belong to Carrier self.
 };

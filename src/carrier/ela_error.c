@@ -30,6 +30,7 @@
 #endif
 
 #include "ela_carrier.h"
+#include "ela_carrier_impl.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #define __thread        __declspec(thread)
@@ -171,23 +172,22 @@ static int ice_error(int errcode, char *buf, size_t len)
 
 typedef struct FacilityDesc {
     const char *desc;
-    int (*errstring)(int, char *, size_t);
+    strerror_t errstring;
 } FacilityDesc;
 
-static
-const FacilityDesc facility_codes[] = {
+static FacilityDesc facility_codes[] = {
     { "Success",            NULL },             //SUCCESS
     { "[General]",          general_error },    //ELAF_GENERAL
     { "[System]",           system_error },     //ELAF_SYS
     { "Reserved facility",  NULL },             //ELAF_RESERVED1
     { "Reserved facility",  NULL },             //ELAF_RESERVED2
-    { "[ICE]",              ice_error },        //ELAF_ICE
+    { "[ICE]",              NULL },        //ELAF_ICE
     { "[DHT]",              dht_error }         //ELAF_DHT
 };
 
 char *ela_get_strerror(int error, char *buf, size_t len)
 {
-    const FacilityDesc *faci_desc;
+    FacilityDesc *faci_desc;
     bool negative;
     int facility;
     int errcode;
@@ -219,4 +219,20 @@ char *ela_get_strerror(int error, char *buf, size_t len)
         rc = faci_desc->errstring(errcode, buf, len);
 
     return (rc == 0) ? buf : NULL;
+}
+
+int ela_register_strerror(int facility, strerror_t user_strerr)
+{
+    FacilityDesc *faci_desc;
+
+    if (facility < 0 && facility > ELAF_DHT) {
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        return -1;
+    }
+
+    faci_desc = &facility_codes[facility - 1];
+    if (!faci_desc->errstring)
+        faci_desc->errstring = user_strerr;
+
+    return 0;
 }

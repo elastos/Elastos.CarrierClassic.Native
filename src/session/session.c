@@ -115,16 +115,11 @@ static int add_transport(SessionExtension *ext)
 
 static int ice_strerror(int errcode, char *buf, size_t len)
 {
-    pj_str_t err_str;
-
-    assert(errcode >= PJ_EUNKNOWN);
-    assert(errcode <= PJ_ESOCKETSTOP);
     assert(buf);
     assert(len > 0);
 
-    err_str = pj_strerror(errcode, buf, len);
-
-    return (err_str.ptr != NULL) ? 0 : -1;
+    pj_strerror(errcode, buf, len);
+    return 0;
 }
 
 int ela_session_init(ElaCarrier *w, ElaSessionRequestCallback *callback, void *context)
@@ -172,7 +167,8 @@ int ela_session_init(ElaCarrier *w, ElaSessionRequestCallback *callback, void *c
     }
 
     w->extension = ext;
-    w->ice_strerror = ice_strerror;
+
+    ela_register_strerror(ELAF_ICE, ice_strerror);
 
     vlogD("Session: Initialize session extension %s.",
           rc == 0 ? "success" : "failed");
