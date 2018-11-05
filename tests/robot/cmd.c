@@ -336,6 +336,8 @@ void faccept(TestContext *context, int argc, char *argv[])
         return;
     } else {
         vlogD("Accept friend request from user %s success", argv[1]);
+        // wait for friend_added callback invoked.
+        cond_wait(wctx->cond);
     }
 
     while (wctx->friend_status != ONLINE) {
