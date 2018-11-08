@@ -788,6 +788,242 @@ static void spfsvcadd(TestContext *context, int argc, char *argv[])
     write_ack("spfsvcadd success\n");
 }
 
+//For portforwarding
+typedef struct PortforwardingContext {
+    const char *ip;
+    const char *port;
+    int sent_count;
+    int recv_count;
+    int return_val;
+} PortForwardingContxt;
+
+static Condition DEFINE_COND(portforwarding_cond);
+static int tcp_socket_close(SOCKET sockfd)
+{
+#if !defined(_WIN32) && !defined(_WIN64)
+    return close(sockfd);
+#else
+    return closesocket(sockfd);
+#endif
+}
+
+static SOCKET tcp_socket_create(const char *host, const char *port)
+{
+    SOCKET sockfd = -1;
+    struct addrinfo hints;
+    struct addrinfo *ai;
+    struct addrinfo *p;
+    int rc;
+
+    assert(host);
+    assert(port);
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_flags = AI_PASSIVE;
+
+    rc = getaddrinfo(host, port, &hints, &ai);
+    if (rc != 0)
+        return -1;
+
+    for (p = ai; p; p = p->ai_next) {
+        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (sockfd < 0)
+            continue;
+
+        int set = 1;
+        setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void*)&set, sizeof(set));
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) != 0) {
+            socket_close(sockfd);
+            sockfd = -1;
+            continue;
+        }
+
+        break;
+    }
+
+    freeaddrinfo(ai);
+    return sockfd;
+}
+
+static SOCKET tcp_socket_connect(const char *host, const char *port)
+{
+    SOCKET sockfd = -1;
+    struct addrinfo hints;
+    struct addrinfo *ai;
+    struct addrinfo *p;
+    int rc;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    rc = getaddrinfo(host, port, &hints, &ai);
+    if (rc != 0)
+        return -1;
+
+    for (p = ai; p; p = p->ai_next) {
+        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (sockfd == -1) {
+            continue;
+        }
+
+        if (p->ai_socktype == SOCK_STREAM) {
+            if (connect(sockfd, p->ai_addr  , p->ai_addrlen) != 0) {
+                socket_close(sockfd);
+                sockfd = -1;
+                continue;
+            }
+        }
+
+        break;
+    }
+
+    freeaddrinfo(ai);
+    return sockfd;
+}
+
+static void *client_thread_entry(void *argv)
+{
+    PortForwardingContxt *ctxt = (PortForwardingContxt *)argv;
+    SOCKET sockfd;
+    ssize_t rc;
+    int i;
+    char data[1024];
+
+    memset(data, 'D', sizeof(data));
+
+    ctxt->return_val = -1;
+
+    sockfd = tcp_socket_connect(ctxt->ip, ctxt->port);
+    if (sockfd < 0) {
+        vlogE("client connect to %s:%s failed", ctxt->ip, ctxt->port);
+        return NULL;
+    }
+
+    usleep(500);
+
+    vlogI("client begin to send data:");
+
+    for (i = 0; i < ctxt->sent_count; i++) {
+        int left = sizeof(data);
+        char *pos = data;
+
+        while(left > 0) {
+            rc = send(sockfd, pos, left, 0);
+            if (rc < 0) {
+                vlogE("client send data error (%d)", errno);
+                tcp_socket_close(sockfd);
+                return NULL;
+            }
+
+            left -= (int)rc;
+            pos += rc;
+        }
+
+        vlogD(".");
+    }
+
+    vlogI("finished sending %d Kbytes data", ctxt->sent_count);
+    vlogI("client send data in success");
+
+    tcp_socket_close(sockfd);
+    ctxt->return_val = 0;
+
+    return NULL;
+}
+
+static void *server_thread_entry(void *argv)
+{
+    PortForwardingContxt *ctxt = (PortForwardingContxt *)argv;
+    SOCKET sockfd;
+    SOCKET data_sockfd;
+    int rc;
+    char data[1025];
+
+    ctxt->return_val = -1;
+
+    sockfd = tcp_socket_create(ctxt->ip, ctxt->port);
+    if (sockfd < 0) {
+        vlogE("server create on %s:%s failed (sockfd:%d) (%d)",
+              ctxt->ip, ctxt->port, sockfd, errno);
+        return NULL;
+    }
+
+    rc = listen(sockfd, 1);
+    if (rc < 0) {
+        vlogE("server listen failed (%d)", errno);
+        tcp_socket_close(sockfd);
+        return NULL;
+    }
+
+    cond_signal(&portforwarding_cond);
+
+    data_sockfd = accept(sockfd, NULL, NULL);
+    tcp_socket_close((sockfd));
+
+    if (data_sockfd < 0) {
+        vlogE("server accept new socket failed.");
+        return NULL;
+    }
+
+    vlogI("server begin to receive data:");
+
+    do {
+        memset(data, 0, sizeof(data));
+
+        rc = (int)recv(data_sockfd, data, sizeof(data) - 1, 0);
+        if (rc > 0) {
+            ctxt->recv_count += rc;
+            vlogD("%s", data);
+        }
+
+    } while (rc > 0);
+
+    if (rc == 0) {
+        ctxt->recv_count /= 1024;
+        vlogI("finished receiving %d Kbytes data, closed by remote peer.",
+              ctxt->recv_count);
+    } else if (rc < 0)
+        vlogE("receiving error(%d)", errno);
+    else
+        assert(0);
+
+    tcp_socket_close(data_sockfd);
+    ctxt->return_val = 0;
+    return NULL;
+}
+
+static void spfsvcrun(TestContext *context, int argc, char *argv[])
+{
+    CHK_ARGS(argc == 3);
+
+    pthread_t server_thread;
+    PortForwardingContxt server_ctxt;
+    int rc;
+
+    server_ctxt.ip = argv[1];
+    server_ctxt.port = argv[2];
+    server_ctxt.recv_count = 0;
+    server_ctxt.sent_count = 0;
+    server_ctxt.return_val = -1;
+
+    rc = pthread_create(&server_thread, NULL, &server_thread_entry, &server_ctxt);
+    if (rc != 0) {
+        vlogE("create server thread failed (%d)", rc);
+        write_ack("spfsvcrun -1 0\n");
+    }
+    cond_wait(&portforwarding_cond);
+
+    write_ack("spfsvcrun success\n");
+
+    pthread_join(server_thread, NULL);
+    write_ack("spfsvcrun %d %d\n", server_ctxt.return_val, server_ctxt.recv_count);
+}
+
 static void spfsvcremove(TestContext *context, int argc, char *argv[])
 {
     ElaSession *session = context->session->session;
@@ -837,6 +1073,43 @@ static void spf_open(TestContext *context, int argc, char *argv[])
     vlogD("Open portforwarding for service %s on %s:%s success",
           argv[1], argv[3], argv[4]);
     write_ack("spfopen success\n");
+}
+
+static void spfsenddata(TestContext *context, int argc, char *argv[])
+{
+    ElaSession *session = context->session->session;
+    StreamContext *stream_ctxt = context->stream;
+    PortForwardingProtocol protocol;
+    int pfid;
+
+    CHK_ARGS(argc == 3);
+
+    pthread_t client_thread;
+    PortForwardingContxt client_ctxt;
+
+    client_ctxt.ip = argv[1];
+    client_ctxt.port = argv[2];
+    client_ctxt.recv_count = 0;
+    client_ctxt.sent_count = 1024;
+    client_ctxt.return_val = -1;
+
+    int rc = pthread_create(&client_thread, NULL, &client_thread_entry, &client_ctxt);
+    if (rc != 0) {
+        vlogE("create client thread failed (%d)", rc);
+        write_ack("spfsenddata -1 0\n");
+        return;
+    }
+
+    pthread_join(client_thread, NULL);
+
+    if (client_ctxt.return_val == -1) {
+        vlogE("client thread running failed");
+        write_ack("spfsenddata -1 0\n");
+        return;
+    }
+
+    vlogD("Sending data to %s:%s success", argv[1], argv[2]);
+    write_ack("spfsenddata 0 %d\n", client_ctxt.sent_count);
 }
 
 static void spf_close(TestContext *context, int argc, char *argv[])
@@ -947,8 +1220,10 @@ static struct command {
     { "sreply",       sreply       },
     { "sfree",        sfree        },
     { "spfsvcadd",    spfsvcadd    },
+    { "spfsvcrun",    spfsvcrun    },
     { "spfsvcremove", spfsvcremove },
     { "spfopen",      spf_open     },
+    { "spfsenddata",  spfsenddata  },
     { "spfclose",     spf_close    },
     { "cready2open",  cready2open  },
     { "cpend",        cpend        },

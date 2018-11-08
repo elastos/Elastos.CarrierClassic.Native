@@ -324,6 +324,7 @@ static int tcp_socket_close(SOCKET sockfd)
 }
 
 typedef struct PortforwardingContext {
+    const char *ip;
     const char *port;
     int sent_count;
     int recv_count;
@@ -342,9 +343,9 @@ static void *client_thread_entry(void *argv)
 
     ctxt->return_val = -1;
 
-    sockfd = tcp_socket_connect("127.0.0.1", ctxt->port);
+    sockfd = tcp_socket_connect(ctxt->ip, ctxt->port);
     if (sockfd < 0) {
-        vlogE("client connect to 127.0.0.1:%s failed", ctxt->port);
+        vlogE("client connect to %s:%s failed", ctxt->ip, ctxt->port);
         return NULL;
     }
 
@@ -390,10 +391,10 @@ static void *server_thread_entry(void *argv)
 
     ctxt->return_val = -1;
 
-    sockfd = tcp_socket_create("127.0.0.1", ctxt->port);
+    sockfd = tcp_socket_create(ctxt->ip, ctxt->port);
     if (sockfd < 0) {
-        vlogE("server create on 127.0.0.1:%s failed (sockfd:%d) (%d)",
-              ctxt->port, sockfd, errno);
+        vlogE("server create on %s:%s failed (sockfd:%d) (%d)",
+              ctxt->ip, ctxt->port, sockfd, errno);
         return NULL;
     }
 
@@ -441,60 +442,6 @@ static void *server_thread_entry(void *argv)
     return NULL;
 }
 
-static
-int forwarding_data(const char *service_port, const char *shadow_service_port)
-{
-    pthread_t client_thread;
-    pthread_t server_thread;
-    PortForwardingContxt client_ctxt;
-    PortForwardingContxt server_ctxt;
-    int rc;
-
-    server_ctxt.port = service_port;
-    server_ctxt.recv_count = 0;
-    server_ctxt.sent_count = 0;
-    server_ctxt.return_val = -1;
-
-    rc = pthread_create(&server_thread, NULL, &server_thread_entry, &server_ctxt);
-    if (rc != 0) {
-        vlogE("create server thread failed (%d)", rc);
-        return -1;
-    }
-
-    cond_wait(&portforwarding_cond);
-
-    client_ctxt.port = shadow_service_port;
-    client_ctxt.recv_count = 0;
-    client_ctxt.sent_count = 1024;
-    client_ctxt.return_val = -1;
-
-    rc = pthread_create(&client_thread, NULL, &client_thread_entry, &client_ctxt);
-    if (rc != 0) {
-        vlogE("create client thread failed (%d)", rc);
-        return -1;
-    }
-
-    pthread_join(client_thread, NULL);
-    pthread_join(server_thread, NULL);
-
-    if (client_ctxt.return_val == -1) {
-        vlogE("client thread running failed");
-        return -1;
-    }
-
-    if (server_ctxt.return_val == -1) {
-        vlogE("server thread running failed");
-        return -1;
-    }
-
-    if (client_ctxt.sent_count != server_ctxt.recv_count) {
-        vlogE("the number of sent bytes not match with recv bytes.");
-        return -1;
-    }
-
-    return 0;
-}
-
 static int do_portforwarding_internal(TestContext *context)
 {
     StreamContextExtra *extra = context->stream->extra;
@@ -524,8 +471,41 @@ static int do_portforwarding_internal(TestContext *context)
 
     TEST_ASSERT_TRUE(pfid > 0);
 
-    rc = forwarding_data(extra->port, extra->shadow_port);
-    TEST_ASSERT_TRUE(rc == 0);
+    rc = write_cmd("spfsvcrun 127.0.0.1 %s\n", extra->port);
+    TEST_ASSERT_TRUE(rc > 0);
+    rc = read_ack("%32s %32s", cmd, result);
+    TEST_ASSERT_TRUE(rc == 2);
+    TEST_ASSERT_TRUE(strcmp(cmd, "spfsvcrun") == 0);
+    TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
+
+    pthread_t client_thread;
+    PortForwardingContxt client_ctxt;
+
+    client_ctxt.ip = "127.0.0.1";
+    client_ctxt.port = extra->shadow_port;
+    client_ctxt.recv_count = 0;
+    client_ctxt.sent_count = 1024;
+    client_ctxt.return_val = -1;
+
+    rc = pthread_create(&client_thread, NULL, &client_thread_entry, &client_ctxt);
+    if (rc != 0) {
+        vlogE("create client thread failed (%d)", rc);
+        TEST_ASSERT_TRUE(rc == 0);
+    }
+
+    pthread_join(client_thread, NULL);
+    if (client_ctxt.return_val == -1) {
+        vlogE("client thread running failed");
+        TEST_ASSERT_TRUE(client_ctxt.return_val != -1);
+    }
+
+    //TODO: wait result of the server.
+    char recv_count[32];
+    rc = read_ack("%32s %32s %32s", cmd, result, recv_count);
+    TEST_ASSERT_TRUE(rc == 3);
+    TEST_ASSERT_TRUE(strcmp(cmd, "spfsvcrun") == 0);
+    TEST_ASSERT_TRUE(strcmp(result, "0") == 0);
+    TEST_ASSERT_TRUE(strcmp(recv_count, "1024") == 0);
 
     rc = ela_stream_close_port_forwarding(context->session->session,
                                               context->stream->stream_id, pfid);
@@ -556,6 +536,23 @@ static int do_reversed_portforwarding_internal(TestContext *context)
                                      extra->port);
     TEST_ASSERT_TRUE(rc == 0);
 
+    pthread_t server_thread;
+    PortForwardingContxt server_ctxt;
+
+    server_ctxt.ip = "127.0.0.1";
+    server_ctxt.port = extra->port;
+    server_ctxt.recv_count = 0;
+    server_ctxt.sent_count = 0;
+    server_ctxt.return_val = -1;
+
+    rc = pthread_create(&server_thread, NULL, &server_thread_entry, &server_ctxt);
+    if (rc != 0) {
+        vlogE("create server thread failed (%d)", rc);
+        TEST_ASSERT_TRUE(rc == 0);
+    }
+
+    cond_wait(&portforwarding_cond);
+
     rc = write_cmd("spfopen %s tcp 127.0.0.1 %s\n", extra->service, extra->shadow_port);
     TEST_ASSERT_TRUE(rc > 0);
 
@@ -564,8 +561,19 @@ static int do_reversed_portforwarding_internal(TestContext *context)
     TEST_ASSERT_TRUE(strcmp(cmd, "spfopen") == 0);
     TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
-    rc = forwarding_data(extra->port, extra->shadow_port);
-    TEST_ASSERT_TRUE(rc == 0);
+    rc = write_cmd("spfsenddata 127.0.0.1 %s\n", extra->shadow_port);
+    TEST_ASSERT_TRUE(rc > 0);
+
+    char sent_count[32];
+    rc = read_ack("%32s %32s %32s", cmd, result, sent_count);
+    TEST_ASSERT_TRUE(rc == 3);
+    TEST_ASSERT_TRUE(strcmp(cmd, "spfsenddata") == 0);
+    TEST_ASSERT_TRUE(strcmp(result, "0") == 0);
+    TEST_ASSERT_TRUE(strcmp(sent_count, "1024") == 0);
+
+    pthread_join(server_thread, NULL);
+    TEST_ASSERT_TRUE(server_ctxt.return_val != -1);
+    TEST_ASSERT_TRUE(server_ctxt.recv_count == 1024);
 
     rc = write_cmd("spfclose\n");
     TEST_ASSERT_TRUE(rc > 2);
