@@ -6,57 +6,100 @@ Elastos Carrier Native SDK
 
 ## Summary
 
-Elastos Carrier is a decentralized peer to peer communication framework.
+Elastos Carrier is a decentralized and encrypted peer-to-peer (P2P) communication framework that routes network traffic between virtual machines and Decentralized Applications (DApps).
+
+The authentication process of peer nodes utilizes the Elastos Decentralized ID (DID) sidechain.
 
 ## Build from source
 
-Elastos Carrier has been totally switched to use **CMake** to conduct the build, tests and packages of itself, and even of its internal dependencies, which make the whole compilation process become simple and easy to conduct. It would be better with certain knowledge of CMake if possible.
+**CMake** is used to build, test and package the Elastos Carrier project in an operating system as well as compiler-independent manner.
 
-At the time of this writing, The compilation of sources could work on **macOS**, **Linux** (Ubuntu, Debian etc) and **Windows**, and particularly provide cross-compilation for target systems of **iOS**, **Android** and **RaspberryPi** etc.
+Certain knowledge of CMake is required.
+
+At the time of this writing, The compilation of sources works on **macOS**, **Linux** (Ubuntu, Debian etc.) and **Windows**, and provides the option to cross-compile for target systems of **iOS**, **Android** and **RaspberryPi**.
 
 ### Ubuntu
 
-#### 1. Brief intrudcution
+#### 1. Brief introduction
 
-On ubuntu/Debian Linux, besides from to make compilation for host itself, we also support to make cross-compilation for following targets:
+On Ubuntu / Debian / Linux, beside the compilation for the host itself, cross-compilation is possible for the following targets:
 
-* Android with architectures of **armv7a**, **arm64** and simulators of **x86/x86_64** supported.
-* RespberryPi with architecture **armv7l** only.
+* Android with architectures of **armv7a**, **arm64** and simulators of **x86/x86_64** are supported.
+* RaspberryPi with architecture **armv7l** only.
 
 #### 2. Install Pre-Requirements
 
-In case that all dependency projects of Carrier, either use **configure** or **cmake** to generate Makefiles, so certain auxilary utilitiy packages must be required on host before any compilation.
+To generate Makefiles by using **configure** or **cmake** and manage dependencies of the Carrier project, certain packages must be installed on the host before compilation.
 
-Run the following commands directly to install the prerequisite utilities:
+Run the following commands to install the prerequisite utilities:
 
 ```shell
 $ sudo apt-get update
 $ sudo apt-get install -f build-essential autoconf automake autopoint libtool flex bison libncurses5-dev cmake
 ```
 
-#### 3. Build to Run on Host
+Download this repository using Git:
+```shell
+$ git clone https://github.com/elastos/Elastos.NET.Carrier.Native.SDK
+```
 
-Once you have souce tree, to make compilation for the target to run on host Linux, need to execute following commands under directory of `${YOUR-SOURCE-ROOT}/build`:
+#### 3. Build to run on Host
+
+To compile the project from source code for the target to run on Ubuntu / Debian / Linux, carry out the following steps:
+
+
+Open a new terminal window.
+
+Navigate to the previously downloaded folder that contains the source code of the Carrier project.
 
 ```shell
-$ cd YOUR-SOURCE-ROOT/build
+$ cd YOUR-PATH/Elastos.NET.Carrier.Native.SDK
+```
+
+Enter the 'build' folder.
+```shell
+$ cd build
+```
+
+Create a new folder with the target host name, then change directory.
+```shell
 $ mkdir linux
 $ cd linux
-$ cmake ../..
-$ make
 ```
-Also to build distribution with specific build type **Debug/Release**, as well as with customized install location of distributions, run the following commands:
 
+Generate the Makefile in the current directory:<br/>
+Note: Please see custom options below.
+```shell
+$ cmake ../..
+```
+***
+Optional (Generate the Makefile): To be able to build a distribution with a specific build type **Debug/Release**, as well as with customized install location of distributions, run the following commands:
 ```shell
 $ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=YOUR-INSTALL-PATH ../..
+```
+***
+
+Build the program: <br/>
+Note: If "make" fails due to missing permissions, use "sudo make" instead.
+```shell
 $ make
+```
+
+
+
+Install the program: <br/>
+Note: If "make install" fails due to missing permissions, use "sudo make install" instead.
+```shell
 $ make install
 ```
-Eventually, to run the following command to release distribution package for your pre-release tests or even to customers.
 
+
+Create distribution package: <br/>
+Note: If "make dist" fails due to missing permissions, use "sudo make dist" instead.
 ```
 $ make dist
 ```
+
 
 #### 4. Cross-compilation for Android Platform
 
