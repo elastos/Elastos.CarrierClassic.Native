@@ -22,7 +22,7 @@ At the time of this writing, The compilation of sources works on **macOS**, **Li
 
 #### 1. Brief introduction
 
-On Ubuntu / Debian / Linux, beside the compilation for the host itself, cross-compilation is possible for the following targets:
+On Ubuntu / Debian / Linux, besides the compilation for the host itself, cross-compilation is possible for the following targets:
 
 * Android with architectures of **armv7a**, **arm64** and simulators of **x86/x86_64** are supported.
 * RaspberryPi with architecture **armv7l** only.
@@ -259,29 +259,114 @@ $ make dist
 
 #### 1. Brief intrudcution
 
-On macOS, besides from to make compilation for maocOS itself, we also support to make cross-compilation for the following targets:
+On macOS, besides the compilation for the host itself, cross-compilation is possible for the following targets:
 
-* Android with architectures for **armv7a**, **arm64** and simulators of **x86/x86_64**, as same to capabilities on Linux.
+* Android with architectures of **armv7a**, **arm64** and simulators of **x86/x86_64** are supported.
 * iOS platforms to run on **iPhone-arm64** and **iPhoneSimulator-x86_64**.
 
 
 #### 2. Install Pre-Requirements
 
-As same to the reqirement on Linux, the following auxilary packages related to **configure** and **cmake** must be installed on host before any compilation, either by installation through utility **homebrew** or by building from source:
+packages must be installed on the host before compilation.
 
+The following packages related to **configure** and **cmake** must be installed on the host before compilation either by installation through the package manager **homebrew** or by building from source:
+
+Note: Homebrew can be downloaded from https://brew.sh/ .
+
+
+Install packages with Homebrew:
 ```
-autoconf automake libtool shtool pkg-config gettext cmake
+$ brew install autoconf automake libtool shtool pkg-config gettext cmake
 ```
 
-Beware, **homebrew** has an issue with linking **gettext**. So if you have an issue with execution of **autopoint**, fix it by run:
+Please note that **homebrew** has an issue with linking **gettext**. If you have an issue with the execution of **autopoint**, fix it by running:
 
 ```shell
 $ brew link --force gettext
 ```
 
-#### 3. Build to Run on macOS
+#### 3. Build to Run on MacOS
 
-Once having source tree on macOS, run the same commands as addressed on Linux for the chapter of **build to run on host**. No extra special commands are needed for compiplation on Mac other than on Linux.
+To compile the project from source code for the target to run on MacOS, carry out the following steps:
+
+Open a new terminal window.
+
+Navigate to the previously downloaded folder that contains the source code of the Carrier project.
+
+```shell
+$ cd YOUR-PATH/Elastos.NET.Carrier.Native.SDK
+```
+
+Enter the 'build' folder.
+```shell
+$ cd build
+```
+
+Create a new folder with the target platform name, then change directory.
+```shell
+$ mkdir macos
+$ cd macos
+```
+
+Generate the Makefile in the current directory:<br/>
+Note: Please see custom options below.
+```shell
+$ cmake ../..
+```
+***
+Optional (Generate the Makefile): To be able to build a distribution with a specific build type **Debug/Release**, as well as with customized install location of distributions, run the following commands:
+```shell
+$ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=YOUR-INSTALL-PATH ../..
+```
+***
+
+Build the program: <br/>
+Note: If "make" fails due to missing permissions, use "sudo make" instead.
+```shell
+$ make
+```
+
+
+
+Install the program: <br/>
+Note: If "make install" fails due to missing permissions, use "sudo make install" instead.
+```shell
+$ make install
+```
+
+
+Create distribution package: <br/>
+Note: If "make dist" fails due to missing permissions, use "sudo make dist" instead.
+```
+$ make dist
+```
+
+***
+**Run Elashell or Elatests**
+
+Elashell is a fully functional, lightweight shell program that processes commands and returns the output to the terminal.
+Through Elashell, users may connect to other carrier nodes and exchange messages.
+
+Elatests is also a shell program, but with predefined commands, therefore no user interaction is necessary. The output for every command
+is displayed in the terminal for a simple evaluation of test results.
+
+To run elashell or elatests, first extract the distribution package created previously and enter the extracted folder.
+Then, change directory to the 'bin' folder.
+```shell
+$ cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
+```
+
+Run Elashell:
+```shell
+$ ./elashell.sh
+```
+
+Or run Elatests:
+```shell
+$ ./elatests.sh
+```
+
+***
 
 #### 4. Cross-compilation for Android Platform.
 
