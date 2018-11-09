@@ -100,6 +100,29 @@ Note: If "make dist" fails due to missing permissions, use "sudo make dist" inst
 $ make dist
 ```
 
+***
+**Run Elashell or Elatests**
+Elashell is a fully functional, lightweight shell program that processes commands and returns the output to the terminal.
+Through Elashell, users may connect to other carrier nodes and exchange messages.
+
+Elatests is also a shell program, but with predefined commands, therefore no user interaction is necessary. The output for every command
+is displayed in the terminal for a simple evaluation of test results.
+
+To run elashell or elatests, first extract the distribution package created previously and enter the extracted folder.
+Then, change directory to the 'bin' folder.
+```shell
+$ cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
+```
+
+Start Elashell:
+```shell
+$ ./elashell.sh
+```
+
+Or start Elatests:
+```shell
+$ ./elatests.sh
+```
 
 #### 4. Cross-compilation for Android Platform
 
