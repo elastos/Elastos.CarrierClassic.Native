@@ -257,7 +257,7 @@ $ make dist
 
 ### macOS
 
-#### 1. Brief intrudcution
+#### 1. Brief introduction
 
 On macOS, besides the compilation for the host itself, cross-compilation is possible for the following targets:
 
@@ -283,6 +283,11 @@ Please note that **homebrew** has an issue with linking **gettext**. If you have
 
 ```shell
 $ brew link --force gettext
+```
+
+Download this repository using Git:
+```shell
+$ git clone https://github.com/elastos/Elastos.NET.Carrier.Native.SDK
 ```
 
 #### 3. Build to Run on MacOS
@@ -368,72 +373,230 @@ $ ./elatests.sh
 
 ***
 
-#### 4. Cross-compilation for Android Platform.
+#### 4. Cross-compilation for Android Platform
 
 Elastos Carrier cmake system also supports to build cross-compilation for android platform on macOS with android NDK toolchains of same requirement of minimum API level **21**.
 
-As to cross-comiplation in practice, refer to the commands as described on Linux for the chapter of **cross-compilation for android platform**. Be aware again, no extra special commands is required on macOS other than on Linux.
+With CMake, Elastos Carrier can be cross-compiled to run on Android as a target platform, while compilation is carried out on MacOS host.
+
+**Prerequisite**: Android NDK 'android-ndk-r16b' or higher must be downloaded onto the host Linux based host.
+Android NDKs (such as 'http://android-ndk-r18b-darwin-x86_64' for MacOS Host) can be downloaded from https://developer.android.com/ndk/downloads/ .
+Please make sure to extract the downloaded NDK.
+
+Open a new terminal window.
+
+Navigate to the previously downloaded folder that contains the source code of the Carrier project.
+
+```shell
+$ cd YOUR-PATH/Elastos.NET.Carrier.Native.SDK
+```
+
+Enter the 'build' folder.
+```shell
+$ cd build
+```
+
+Create a new folder with the target platform name, then change directory.
+```shell
+$ mkdir android
+$ cd android
+```
+
+To generate the required Makefile in the current directory, please make sure to first replace 'YOUR-TARGET-ARCHITECTURE'
+and 'YOUR-ANDROID-NDK-HOME' with the correct option and path.
+
+-DANDROID_ABI accepts the following target architecture options:
+* armeabi-v7a
+* arm64-v8a
+* x86
+* x86_64
+
+Replace 'YOUR-ANDROID-NDK-HOME' with the path to the extracted NDK folder.
+
+Run the command with the correct options described above:
+```shell
+$ cmake -DANDROID_ABI=YOUR-TARGET-ARCHITECTURE -DANDROID_NDK_HOME=YOUR-ANDROID-NDK-HOME -DCMAKE_TOOLCHAIN_FILE=../../cmake/AndroidToolchain.cmake ../..
+
+```
+
+Build the program: <br/>
+Note: If "make" fails due to missing permissions, use "sudo make" instead.
+```shell
+$ make
+```
+
+
+
+Install the program: <br/>
+Note: If "make install" fails due to missing permissions, use "sudo make install" instead.
+```shell
+$ make install
+```
+
+
+Create distribution package: <br/>
+Note: If "make dist" fails due to missing permissions, use "sudo make dist" instead.
+```
+$ make dist
+```
+
 
 #### 5. Cross-compilation for iOS Platform
 
-Elastos Carrier cmake system supports to build cross-compilation for iOS platform on macOS shipping with Apple Xcode of the minum iOS verison **9.0** supported, on top of which, run the following commands to build distributions to run on iPhone as an example:
+With CMake, Elastos Carrier can be cross-compiled to run on iOS as a target platform, while compilation is carried out on a MacOS host with XCode.
 
+**Prerequisite**: MacOS version must be **9.0** or higher.
+
+
+Open a new terminal window.
+
+Navigate to the previously downloaded folder that contains the source code of the Carrier project.
+
+```shell
+$ cd YOUR-PATH/Elastos.NET.Carrier.Native.SDK
 ```
-$ cd YOUR-SOURCE-ROOT/build
+
+Enter the 'build' folder.
+```shell
+$ cd build
+```
+
+Create a new folder with the target platform name, then change directory.
+```shell
 $ mkdir ios
 $ cd ios
-$ cmake -DIOS_PLATFORM=iphoneos -DCMAKE_TOOLCHAIN_FILE=../../cmake/iOSToolchain.cmake ../..
-$ make
-$ make install
-$ make dist
 ```
-where option **IOS_PLATFORM** should be one of the target platforms listed below:
 
+To generate the required Makefile in the current directory, please make sure to first replace
+'YOUR-IOS-PLATFORM' with the correct option.
+
+-DIOS_PLATFORM accepts the following target architecture options:
 * iphoneos
 * iphonesimulator
 
-As same to run on Linux, the default installtion of distributions would be located to **outputs** under working directory unless with customized path by feeding option **CMAKE_INSTALL_PREFIX**.
+Replace 'YOUR-IOS-PLATFORM' with the path to the extracted NDK folder.
+
+Run the command with the correct options described above:
+```shell
+$ cmake -DIOS_PLATFORM=YOUR-IOS-PLATFORM -DCMAKE_TOOLCHAIN_FILE=../../cmake/iOSToolchain.cmake ../..
+
+```
+
+Build the program: <br/>
+Note: If "make" fails due to missing permissions, use "sudo make" instead.
+```shell
+$ make
+```
+
+
+
+Install the program: <br/>
+Note: If "make install" fails due to missing permissions, use "sudo make install" instead.
+```shell
+$ make install
+```
+
+
+Create distribution package: <br/>
+Note: If "make dist" fails due to missing permissions, use "sudo make dist" instead.
+```
+$ make dist
+```
+
 
 ### Windows
 
-#### 1. Brief intrudcution
+#### 1. Brief introduction
 
-On Windows, Elastos Carrier cmake system only supports to compile for targets to run on Windows itself, but with 32-bits and 64-bits both supported, and visual studio IDE is mandatorily required. We recommend to use Visaul Studio IDE community 2017.
+With CMake, Elastos Carrier can be cross-compiled to run only on Windows as target platform, while compilation is carried out on a Windows host. Both 32-bit and 64-bit target versions are supported.
 
-To build target for 32-bits, you need to choose `x86 Native Tools Command Console` for sure to run building commands, otherwise, run commands in `x64 Native Tools Command Console`.
+**Prerequisite**: Visual Studio IDE is required. The Community version can be downloaded at https://visualstudio.microsoft.com/downloads/ for free.
+
+To build for a 32-bit target , select `x86 Native Tools Command Console` to run building commands, otherwise, select `x64 Native Tools Command Console` for a 64-bit target.
 
 #### 2. Build
 
-Once having source tree and settling with command console, run the following commands under directory of `YOUR-SOURCE-ROOT/build`:
+To compile the project from source code for the target to run on Windows, carry out the following steps:
 
-```
-$ cd YOUR-SOURCE-ROOT/build
-$ mkdir win
-$ cd win
-$ cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=outputs ..\..
-$ nmake
-$ nmake install
-$ nmake dist
-```
-## Test
 
-After successfully finished building from the source code, change directory to `${YOUR-INSTALL-PATH}/bin`,  and run shell demo application, which is an interactive shell for Elastos Carrier tester or beginner.
+Open a new terminal window.
+
+Navigate to the previously downloaded folder that contains the source code of the Carrier project.
 
 ```shell
-$ cd YOUR-INSTALL-PATH/bin
+$ cd YOUR-PATH/Elastos.NET.Carrier.Native.SDK
+```
+
+Enter the 'build' folder.
+```shell
+$ cd build
+```
+
+Create a new folder with the target platform name, then change directory.
+```shell
+$ mkdir win
+$ cd win
+```
+
+Generate the Makefile in the current directory:
+```shell
+$ cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=outputs ..\..
+```
+
+
+Build the program: <br/>
+Note: If "make" fails due to missing permissions, use "sudo make" instead.
+```shell
+$ nmake
+```
+
+
+
+Install the program: <br/>
+Note: If "make install" fails due to missing permissions, use "sudo make install" instead.
+```shell
+$ nmake install
+```
+
+
+Create distribution package: <br/>
+Note: If "make dist" fails due to missing permissions, use "sudo make dist" instead.
+```
+$ nmake dist
+```
+
+***
+**Run Elashell or Elatests**
+
+Elashell is a fully functional, lightweight shell program that processes commands and returns the output to the terminal.
+Through Elashell, users may connect to other carrier nodes and exchange messages.
+
+Elatests is also a shell program, but with predefined commands, therefore no user interaction is necessary. The output for every command
+is displayed in the terminal for a simple evaluation of test results.
+
+To run elashell or elatests, first extract the distribution package created previously and enter the extracted folder.
+Then, change directory to the 'bin' folder.
+```shell
+$ cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
+```
+
+Run Elashell:
+```shell
 $ ./elashell.sh
 ```
 
-You are also recommended to run api-level test suites to check whether Carrier APIs function working or not.
-
-```
-$ cd YOUR-INSTALL-PATH/bin
+Or run Elatests:
+```shell
 $ ./elatests.sh
 ```
 
+***
+
+
+
 ## Build API Docs
 
-Currently, the API documentation can only be built on the **Linux** host. MacOS has a bug issue with python, which would cause build process failure.
+Currently, the API documentation can only be built on **Linux** hosts. MacOS has a bug issue with python, which would cause build process failure.
 
 ### Ubuntu
 
