@@ -625,13 +625,20 @@ $ cmake -DENABLE_DOCS=ON ../..
 $ make
 ```
 
-The generated API documentation will be created in the new **/docs** directory.
-
+The generated API documentation will be created in the new **/docs** directory on the same directory level.
+Change to the docs folder:
+```shell
+cd docs/html
+```
+Open the index.html file in a browser:
+```shell
+xdg-open index.html
+```
 ## Thanks
 
 A sincere thank you to all teams and projects that we rely on directly or indirectly.
 
-## Contributing
+## Contribution
 
 We welcome contributions to the Elastos Carrier Project.
 
