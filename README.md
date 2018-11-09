@@ -43,7 +43,7 @@ Download this repository using Git:
 $ git clone https://github.com/elastos/Elastos.NET.Carrier.Native.SDK
 ```
 
-#### 3. Build to run on Host
+#### 3. Build to run on host (Ubuntu / Debian / Linux)
 
 To compile the project from source code for the target to run on Ubuntu / Debian / Linux, carry out the following steps:
 
@@ -61,7 +61,7 @@ Enter the 'build' folder.
 $ cd build
 ```
 
-Create a new folder with the target host name, then change directory.
+Create a new folder with the target platform name, then change directory.
 ```shell
 $ mkdir linux
 $ cd linux
@@ -125,29 +125,73 @@ Or run Elatests:
 $ ./elatests.sh
 ```
 
+***
+
 #### 4. Cross-compilation for Android Platform
 
-Elastos Carrier cmake system supports to build cross-compilation for android platform on Linux, which must be armed with android NDK toolchains，required with minimum API level **21**. We recommend to use **android-ndk-r16b** or higher version.
+With CMake, Elastos Carrier can be cross-compiled to run on Android as a target platform, while compilation is carried out on Ubuntu / Debian / Linux host.
 
-Once having android NDK installed, run the following commands to build android distributions with target **arm64** as an example:
+**Prerequisite**: Android NDK 'android-ndk-r16b' or higher must be downloaded onto the host Linux based host.
+Android NDKs (such as 'Linux 64-bit (x86)') can be downloaded from https://developer.android.com/ndk/downloads/ .
+Please make sure to extract the downloaded NDK.
 
+****************************************************
+Navigate to the previously downloaded folder that contains the source code of the Carrier project.
+
+```shell
+$ cd YOUR-PATH/Elastos.NET.Carrier.Native.SDK
 ```
-$ cd YOUR-SOURCE-ROOT/build
+
+Enter the 'build' folder.
+```shell
+$ cd build
+```
+
+Create a new folder with the target platform name, then change directory.
+```shell
 $ mkdir android
 $ cd android
-$ cmake -DANDROID_ABI=arm64-v8a -DANDROID_NDK_HOME=YOUR-ANDROID-NDK-HOME -DCMAKE_TOOLCHAIN_FILE=../../cmake/AndroidToolchain.cmake ../..
-$ make
-$ make install
-$ make dist
 ```
-where option **ANDROID_ABI** should be one of the target architectures listed below:
 
+To generate the required Makefile in the current directory, please make sure to first replace 'YOUR-TARGET-ARCHITECTURE'
+and 'YOUR-ANDROID-NDK-HOME' with the correct option and path.
+
+-DANDROID_ABI accepts the following target architecture options:
 * armeabi-v7a
 * arm64-v8a
 * x86
 * x86_64
 
-Beware, the default installation of distributions are internally designed to be **outputs** of current working directory.
+Replace 'YOUR-ANDROID-NDK-HOME' with the path to the extracted NDK folder.
+
+Run the command with the correct options described above:
+```shell
+$ cmake -DANDROID_ABI=YOUR-TARGET-ARCHITECTURE -DANDROID_NDK_HOME=YOUR-ANDROID-NDK-HOME -DCMAKE_TOOLCHAIN_FILE=../../cmake/AndroidToolchain.cmake ../..
+
+```
+***
+
+Build the program: <br/>
+Note: If "make" fails due to missing permissions, use "sudo make" instead.
+```shell
+$ make
+```
+
+
+
+Install the program: <br/>
+Note: If "make install" fails due to missing permissions, use "sudo make install" instead.
+```shell
+$ make install
+```
+
+
+Create distribution package: <br/>
+Note: If "make dist" fails due to missing permissions, use "sudo make dist" instead.
+```
+$ make dist
+```
+
 
 #### 5. Cross-compilation for RaspberryPi
 
