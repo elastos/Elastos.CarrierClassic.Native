@@ -630,7 +630,7 @@ Change to the docs folder:
 ```shell
 cd docs/html
 ```
-Open the index.html file in a browser:
+Open the index.html file in a browser from the terminal:
 ```shell
 xdg-open index.html
 ```
