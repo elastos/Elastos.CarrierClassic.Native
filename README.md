@@ -634,13 +634,14 @@ Open the index.html file in a browser:
 ```shell
 xdg-open index.html
 ```
-## Thanks
-
-A sincere thank you to all teams and projects that we rely on directly or indirectly.
 
 ## Contribution
 
 We welcome contributions to the Elastos Carrier Project.
 
+## Acknowledgments
+
+A sincere thank you to all teams and projects that we rely on directly or indirectly.
+
 ## License
-MIT
+This project is licensed under the terms of the [MIT license](https://github.com/elastos/Elastos.NET.Carrier.Native.SDK/blob/master/LICENSE).
