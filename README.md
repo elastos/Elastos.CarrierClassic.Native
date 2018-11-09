@@ -102,6 +102,7 @@ $ make dist
 
 ***
 **Run Elashell or Elatests**
+
 Elashell is a fully functional, lightweight shell program that processes commands and returns the output to the terminal.
 Through Elashell, users may connect to other carrier nodes and exchange messages.
 
@@ -114,12 +115,12 @@ Then, change directory to the 'bin' folder.
 $ cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
 ```
 
-Start Elashell:
+Run Elashell:
 ```shell
 $ ./elashell.sh
 ```
 
-Or start Elatests:
+Or run Elatests:
 ```shell
 $ ./elatests.sh
 ```
