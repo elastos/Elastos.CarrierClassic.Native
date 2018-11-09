@@ -135,6 +135,8 @@ With CMake, Elastos Carrier can be cross-compiled to run on Android as a target 
 Android NDKs (such as 'Linux 64-bit (x86)') can be downloaded from https://developer.android.com/ndk/downloads/ .
 Please make sure to extract the downloaded NDK.
 
+Open a new terminal window.
+
 Navigate to the previously downloaded folder that contains the source code of the Carrier project.
 
 ```shell
@@ -191,27 +193,67 @@ $ make dist
 ```
 
 
-#### 5. Cross-compilation for RaspberryPi
+#### 5. Cross-compilation for Raspberry Pi
 
-Elastos Carrier cmake system supports to build cross-compilation for RaspberryPi on Linux, which must be armed with RaspberryPi toolchains. To be noticed, currently, cross-compilation for RaspberryPi only be allowed on Linux.
+With CMake, Elastos Carrier can be cross-compiled to run on Raspberry Pi (Raspbian OS) as a target platform, while compilation is carried out on Ubuntu / Debian / Linux host.
 
-As to toolchains, you are recommended to download it from the github address:
-
+**Prerequisite**: The Raspberry Pi Toolchain must be downloaded onto the host Linux based host.
+```shell
+$ git clone https://github.com/raspberrypi/tools
 ```
-https://github.com/raspberrypi/tools
-```
-Once having RaspberryPi toolchains installed, run the following commands to build target distributions:
 
+
+Open a new terminal window.
+
+Navigate to the previously downloaded folder that contains the source code of the Carrier project.
+
+```shell
+$ cd YOUR-PATH/Elastos.NET.Carrier.Native.SDK
 ```
-$ cd YOUR-SOURCE-ROOT/build
+
+Enter the 'build' folder.
+```shell
+$ cd build
+```
+
+Create a new folder with the target platform name, then change directory.
+```shell
 $ mkdir rpi
 $ cd rpi
+```
+
+
+To generate the required Makefile in the current directory, please make sure to first replace 'YOUR-RASPBERRYPI-TOOLCHAIN-HOME' with the correct path to the previously downloaded Raspberry Pi Toolchain folder.
+
+Run the command with the correct option described above:
+```shell
 $ cmake -DRPI_TOOLCHAIN_HOME=YOUR-RASPBERRYPI-TOOLCHAIN-HOME -DCMAKE_TOOLCHAIN_FILE=../../cmake/RPiToolchain.cmake ../..
+
+```
+
+
+Build the program: <br/>
+Note: If "make" fails due to missing permissions, use "sudo make" instead.
+```shell
 $ make
+```
+
+
+
+Install the program: <br/>
+Note: If "make install" fails due to missing permissions, use "sudo make install" instead.
+```shell
 $ make install
+```
+
+
+Create distribution package: <br/>
+Note: If "make dist" fails due to missing permissions, use "sudo make dist" instead.
+```
 $ make dist
 ```
-As same to cross-compilation for android, the default installation of distributions are internally located under **outputs** of your working directory.
+
+
 
 ### macOS
 
