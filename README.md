@@ -135,7 +135,6 @@ With CMake, Elastos Carrier can be cross-compiled to run on Android as a target 
 Android NDKs (such as 'Linux 64-bit (x86)') can be downloaded from https://developer.android.com/ndk/downloads/ .
 Please make sure to extract the downloaded NDK.
 
-****************************************************
 Navigate to the previously downloaded folder that contains the source code of the Carrier project.
 
 ```shell
@@ -169,7 +168,6 @@ Run the command with the correct options described above:
 $ cmake -DANDROID_ABI=YOUR-TARGET-ARCHITECTURE -DANDROID_NDK_HOME=YOUR-ANDROID-NDK-HOME -DCMAKE_TOOLCHAIN_FILE=../../cmake/AndroidToolchain.cmake ../..
 
 ```
-***
 
 Build the program: <br/>
 Note: If "make" fails due to missing permissions, use "sudo make" instead.
