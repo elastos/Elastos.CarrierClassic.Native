@@ -612,18 +612,24 @@ $ sudo pip install breathe
 
 #### 2. Build
 
-Run the command under the directory where runs your building commands:
+Change to the directory where the build for any target has been previously executed. For example,
+if the target was Linux, the folder structure would be similar to:
+```shell
+cd /YOUR-PATH/Elastos.NET.Carrier.Native.SDK/build/linux
+```
 
+Run the following command:<br/>
+Note: If "make" fails due to missing permissions, use "sudo make" instead.
 ```shell
 $ cmake -DENABLE_DOCS=ON ../..
 $ make
 ```
 
-Then, you will find new directory **docs** generated, which contains all APIs documentations with **html** format.
+The generated API documentation will be created in the new **/docs** directory.
 
 ## Thanks
 
-Sincerely thanks to all teams and projects that we relies on directly or indirectly.
+A sincere thank you to all teams and projects that we rely on directly or indirectly.
 
 ## Contributing
 
