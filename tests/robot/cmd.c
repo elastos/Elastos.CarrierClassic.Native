@@ -789,6 +789,7 @@ static void spfsvcadd(TestContext *context, int argc, char *argv[])
     write_ack("spfsvcadd success\n");
 }
 
+static Condition DEFINE_COND(portforwarding_cond);
 //For portforwarding
 typedef struct {
     const char *ip;
@@ -796,6 +797,7 @@ typedef struct {
     int sent_count;
     int recv_count;
     int return_val;
+    Condition *pfd_cond;
 } PortForwardingContxt;
 
 static void *client_thread_entry(void *argv)
@@ -872,6 +874,8 @@ static void *server_thread_entry(void *argv)
         return NULL;
     }
 
+    cond_signal(ctxt->pfd_cond);
+
     data_sockfd = accept(sockfd, NULL, NULL);
     socket_close((sockfd));
 
@@ -906,7 +910,7 @@ static void *server_thread_entry(void *argv)
     return NULL;
 }
 
-static void spfrecvdata(TestContext *context, int argc, char *argv[])
+static void spfsvcrun(TestContext *context, int argc, char *argv[])
 {
     CHK_ARGS(argc == 3);
 
@@ -919,14 +923,19 @@ static void spfrecvdata(TestContext *context, int argc, char *argv[])
     server_ctxt.recv_count = 0;
     server_ctxt.sent_count = 0;
     server_ctxt.return_val = -1;
+    server_ctxt.pfd_cond = &portforwarding_cond;
 
     rc = pthread_create(&server_thread, NULL, &server_thread_entry, &server_ctxt);
     if (rc != 0) {
         vlogE("create server thread failed (%d)", rc);
-        write_ack("spfrecvdata -1 0\n");
+        write_ack("spfsvcrun -1 0\n");
     }
+
+    cond_wait(&server_ctxt.pfd_cond);
+    write_ack("spfsvcrun success\n");
+
     pthread_join(server_thread, NULL);
-    write_ack("spfrecvdata %d %d\n", server_ctxt.return_val, server_ctxt.sent_count);
+    write_ack("spfsvcrun %d %d\n", server_ctxt.return_val, server_ctxt.recv_count);
 }
 
 static void spfsvcremove(TestContext *context, int argc, char *argv[])
@@ -1003,7 +1012,7 @@ static void spfsenddata(TestContext *context, int argc, char *argv[])
     }
 
     pthread_join(client_thread, NULL);
-    write_ack("spfrecvdata %d %d\n", client_ctxt.return_val,
+    write_ack("spfsenddata %d %d\n", client_ctxt.return_val,
               client_ctxt.return_val >= 0 ? client_ctxt.sent_count : -1);
 }
 
@@ -1118,7 +1127,7 @@ static struct command {
     { "spfsvcremove", spfsvcremove },
     { "spfopen",      spf_open     },
     { "spfclose",     spf_close    },
-    { "spfrecvdata",  spfrecvdata  },
+    { "spfsvcrun",    spfsvcrun    },
     { "spfsenddata",  spfsenddata  },
     { "cready2open",  cready2open  },
     { "cpend",        cpend        },

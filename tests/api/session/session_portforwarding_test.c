@@ -380,8 +380,13 @@ static int do_portforwarding_internal(TestContext *context)
 
     TEST_ASSERT_TRUE(pfid > 0);
 
-    rc = write_cmd("spfrecvdata 127.0.0.1 %s\n", extra->port);
+    rc = write_cmd("spfsvcrun 127.0.0.1 %s\n", extra->port);
     TEST_ASSERT_TRUE(rc > 0);
+
+    rc = read_ack("%32s %32s", cmd, result);
+    TEST_ASSERT_TRUE(rc == 2);
+    TEST_ASSERT_TRUE(strcmp(cmd, "spfsvcrun") == 0);
+    TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
     client_ctxt.ip = "127.0.0.1";
     client_ctxt.port = extra->shadow_port;
@@ -400,7 +405,7 @@ static int do_portforwarding_internal(TestContext *context)
     char recv_count[32];
     rc = read_ack("%32s %32s %32s", cmd, result, recv_count);
     TEST_ASSERT_TRUE(rc == 3);
-    TEST_ASSERT_TRUE(strcmp(cmd, "spfrecvdata") == 0);
+    TEST_ASSERT_TRUE(strcmp(cmd, "spfsvcrun") == 0);
     TEST_ASSERT_TRUE(strcmp(result, "0") == 0);
     TEST_ASSERT_TRUE(strcmp(recv_count, "1024") == 0);
 
