@@ -25,8 +25,8 @@
 **ireply [User ID] [confirm message | refuse reason]** - Confirm or refuse invitation with a message.
 
 **gnew** - Create new group.<br>
-**gleave** [Group ID] - Leave group.<br>
-**ginvite** [Group ID] [User ID] - Invite user to group.<br>
+**gleave [Group ID]** - Leave group.<br>
+**ginvite [Group ID] [User ID]** - Invite user to group.<br>
 **gjoin [User ID] cookie** - Group invitation from user with cookies.<br>
 **gmsg [Group ID] [Message]** - Send message to group.<br>
 **gtitle [Group ID]** - Display title of group.<br>
@@ -39,7 +39,7 @@
 **sadd [plain | reliable | multiplexing | portforwarding]** - Add session properties.<br>
 **sremove [Session ID]** - Leave session.<br>
 **srequest bundle** - Bundle and start session.<br>
-**sreply [ok]** - Accept session request.<br>
+**sreply ok** - Accept session request.<br>
 **sreply refuse [Reason]** - Refuse session request with reason as a message.<br>
 **swrite [Stream ID] [String]** - Send data to stream.<br>
 **sbulkwrite [Stream ID] [Packet size] [Packet count]** -  Send bulk data to stream.<br>
