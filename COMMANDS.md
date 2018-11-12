@@ -1,4 +1,4 @@
-## List of commands for the Elastos Carrier.
+## List of commands for the Elastos Carrier
 
 **help** - Display available command list.<br>
 **clear** - Clear log and output view in shell.<br>
