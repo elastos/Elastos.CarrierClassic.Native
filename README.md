@@ -8,7 +8,11 @@ Elastos Carrier Native SDK
 
 Elastos Carrier is a decentralized and encrypted peer-to-peer (P2P) communication framework that routes network traffic between virtual machines and Decentralized Applications (DApps).
 
+<<<<<<< HEAD
 The authentication process of peer nodes utilizes the Elastos Decentralized ID (DID) sidechain.
+=======
+The authentication process of peer nodes utilizes the Elastos Decentralized ID (DID) sidechain. （TODO）
+>>>>>>> 5354a8ba99d4b15db6d30f96e87d6c87d885bce7
 
 ## Build from source
 

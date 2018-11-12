@@ -52,6 +52,10 @@ struct CarrierContextExtra {
     char userid[ELA_MAX_ID_LEN + 1];
     char *data;
     int len;
+    char gcookie[128];
+    int gcookie_len;
+    char gfrom[ELA_MAX_ID_LEN + 1];
+    char groupid[ELA_MAX_ID_LEN + 1];
 };
 
 struct SessionContextExtra {
@@ -336,6 +340,8 @@ void faccept(TestContext *context, int argc, char *argv[])
         return;
     } else {
         vlogD("Accept friend request from user %s success", argv[1]);
+        // wait for friend_added callback invoked.
+        cond_wait(wctx->cond);
     }
 
     while (wctx->friend_status != ONLINE) {
@@ -929,6 +935,50 @@ static void cresume(TestContext *context, int argc, char *argv[])
     }
 }
 
+static void gjoin(TestContext *context, int argc, char *argv[])
+{
+    TestContext *ctx = (TestContext *)context;
+    CarrierContext *wctx = ctx->carrier;
+    CarrierContextExtra *wextra = wctx->extra;
+    int rc;
+
+    CHK_ARGS(argc == 1);
+
+    rc = ela_group_join(wctx->carrier, wextra->gfrom, wextra->gcookie,
+                        wextra->gcookie_len, wextra->groupid,
+                        sizeof(wextra->groupid));
+    if (rc < 0) {
+        write_ack("gjoin failed\n");
+        return;
+    }
+
+    // wait for group connected callback
+    cond_wait(wctx->cond);
+
+    // wait for peer_list_changed callback twice
+    cond_wait(wctx->cond);
+    cond_wait(wctx->cond);
+
+    write_ack("gjoin succeeded\n");
+}
+
+static void gleave(TestContext *context, int argc, char *argv[])
+{
+    TestContext *ctx = (TestContext *)context;
+    CarrierContext *wctx = ctx->carrier;
+    CarrierContextExtra *wextra = wctx->extra;
+    int rc;
+
+    CHK_ARGS(argc == 1);
+
+    rc = ela_leave_group(wctx->carrier, wextra->groupid);
+    if (rc < 0) {
+        write_ack("gleave failed\n");
+        return;
+    }
+    write_ack("gleave succeeded\n");
+}
+
 static struct command {
     const char* name;
     void (*cmd_cb) (TestContext *context, int argc, char *argv[]);
@@ -953,6 +1003,8 @@ static struct command {
     { "cready2open",  cready2open  },
     { "cpend",        cpend        },
     { "cresume",      cresume      },
+    { "gjoin",        gjoin        },
+    { "gleave",       gleave       },
     { NULL, NULL},
 };
 
@@ -971,6 +1023,14 @@ int start_cmd_listener(const char *host, const char *port)
         vlogE("Create server socket(%s:%s) error.", host, port);
         return -1;
     }
+
+#ifdef _WIN32
+    struct timeval timeout = {120000,0};//120s
+#else
+    struct timeval timeout = {120,0};//120s
+#endif
+    setsockopt(cmd_sock, SOL_SOCKET, SO_SNDTIMEO, (const char *)&timeout, sizeof(timeout));
+    setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout));
 
     rc = listen(svr_sock, 1);
     if (rc < 0) {
@@ -1063,10 +1123,12 @@ read_cmd:
     } else if (nfds == 0) {
         goto read_cmd;
     } else {
-        ssize_t
-
-        rc = recv(cmd_sock, cmd_buffer + cmd_len, sizeof(cmd_buffer) - cmd_len, 0);
+        ssize_t rc = recv(cmd_sock, cmd_buffer + cmd_len, sizeof(cmd_buffer) - cmd_len, 0);
         if (rc < 0) {
+            if (errno == EAGAIN) {
+                vlogE("Read command error. TIMEOUT.");
+                goto read_cmd;
+            }
             vlogE("Read command error. Emit a kill command to shutdown robot.");
             return "kill";
         } else if (rc == 0) {
