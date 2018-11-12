@@ -26,6 +26,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <assert.h>
+#include <unistd.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -789,102 +790,13 @@ static void spfsvcadd(TestContext *context, int argc, char *argv[])
 }
 
 //For portforwarding
-typedef struct PortforwardingContext {
+typedef struct {
     const char *ip;
     const char *port;
     int sent_count;
     int recv_count;
     int return_val;
 } PortForwardingContxt;
-
-static Condition DEFINE_COND(portforwarding_cond);
-static int tcp_socket_close(SOCKET sockfd)
-{
-#if !defined(_WIN32) && !defined(_WIN64)
-    return close(sockfd);
-#else
-    return closesocket(sockfd);
-#endif
-}
-
-static SOCKET tcp_socket_create(const char *host, const char *port)
-{
-    SOCKET sockfd = -1;
-    struct addrinfo hints;
-    struct addrinfo *ai;
-    struct addrinfo *p;
-    int rc;
-
-    assert(host);
-    assert(port);
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_PASSIVE;
-
-    rc = getaddrinfo(host, port, &hints, &ai);
-    if (rc != 0)
-        return -1;
-
-    for (p = ai; p; p = p->ai_next) {
-        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (sockfd < 0)
-            continue;
-
-        int set = 1;
-        setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void*)&set, sizeof(set));
-        if (bind(sockfd, p->ai_addr, p->ai_addrlen) != 0) {
-            socket_close(sockfd);
-            sockfd = -1;
-            continue;
-        }
-
-        break;
-    }
-
-    freeaddrinfo(ai);
-    return sockfd;
-}
-
-static SOCKET tcp_socket_connect(const char *host, const char *port)
-{
-    SOCKET sockfd = -1;
-    struct addrinfo hints;
-    struct addrinfo *ai;
-    struct addrinfo *p;
-    int rc;
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-
-    rc = getaddrinfo(host, port, &hints, &ai);
-    if (rc != 0)
-        return -1;
-
-    for (p = ai; p; p = p->ai_next) {
-        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (sockfd == -1) {
-            continue;
-        }
-
-        if (p->ai_socktype == SOCK_STREAM) {
-            if (connect(sockfd, p->ai_addr  , p->ai_addrlen) != 0) {
-                socket_close(sockfd);
-                sockfd = -1;
-                continue;
-            }
-        }
-
-        break;
-    }
-
-    freeaddrinfo(ai);
-    return sockfd;
-}
 
 static void *client_thread_entry(void *argv)
 {
@@ -898,7 +810,7 @@ static void *client_thread_entry(void *argv)
 
     ctxt->return_val = -1;
 
-    sockfd = tcp_socket_connect(ctxt->ip, ctxt->port);
+    sockfd = socket_connect(ctxt->ip, ctxt->port);
     if (sockfd < 0) {
         vlogE("client connect to %s:%s failed", ctxt->ip, ctxt->port);
         return NULL;
@@ -916,7 +828,7 @@ static void *client_thread_entry(void *argv)
             rc = send(sockfd, pos, left, 0);
             if (rc < 0) {
                 vlogE("client send data error (%d)", errno);
-                tcp_socket_close(sockfd);
+                socket_close(sockfd);
                 return NULL;
             }
 
@@ -930,7 +842,7 @@ static void *client_thread_entry(void *argv)
     vlogI("finished sending %d Kbytes data", ctxt->sent_count);
     vlogI("client send data in success");
 
-    tcp_socket_close(sockfd);
+    socket_close(sockfd);
     ctxt->return_val = 0;
 
     return NULL;
@@ -946,7 +858,7 @@ static void *server_thread_entry(void *argv)
 
     ctxt->return_val = -1;
 
-    sockfd = tcp_socket_create(ctxt->ip, ctxt->port);
+    sockfd = socket_create(SOCK_STREAM, ctxt->ip, ctxt->port);
     if (sockfd < 0) {
         vlogE("server create on %s:%s failed (sockfd:%d) (%d)",
               ctxt->ip, ctxt->port, sockfd, errno);
@@ -956,14 +868,12 @@ static void *server_thread_entry(void *argv)
     rc = listen(sockfd, 1);
     if (rc < 0) {
         vlogE("server listen failed (%d)", errno);
-        tcp_socket_close(sockfd);
+        socket_close(sockfd);
         return NULL;
     }
 
-    cond_signal(&portforwarding_cond);
-
     data_sockfd = accept(sockfd, NULL, NULL);
-    tcp_socket_close((sockfd));
+    socket_close((sockfd));
 
     if (data_sockfd < 0) {
         vlogE("server accept new socket failed.");
@@ -980,7 +890,6 @@ static void *server_thread_entry(void *argv)
             ctxt->recv_count += rc;
             vlogD("%s", data);
         }
-
     } while (rc > 0);
 
     if (rc == 0) {
@@ -992,12 +901,12 @@ static void *server_thread_entry(void *argv)
     else
         assert(0);
 
-    tcp_socket_close(data_sockfd);
+    socket_close(data_sockfd);
     ctxt->return_val = 0;
     return NULL;
 }
 
-static void spfsvcrun(TestContext *context, int argc, char *argv[])
+static void spfrecvdata(TestContext *context, int argc, char *argv[])
 {
     CHK_ARGS(argc == 3);
 
@@ -1014,14 +923,10 @@ static void spfsvcrun(TestContext *context, int argc, char *argv[])
     rc = pthread_create(&server_thread, NULL, &server_thread_entry, &server_ctxt);
     if (rc != 0) {
         vlogE("create server thread failed (%d)", rc);
-        write_ack("spfsvcrun -1 0\n");
+        write_ack("spfrecvdata -1 0\n");
     }
-    cond_wait(&portforwarding_cond);
-
-    write_ack("spfsvcrun success\n");
-
     pthread_join(server_thread, NULL);
-    write_ack("spfsvcrun %d %d\n", server_ctxt.return_val, server_ctxt.recv_count);
+    write_ack("spfrecvdata %d %d\n", server_ctxt.return_val, server_ctxt.sent_count);
 }
 
 static void spfsvcremove(TestContext *context, int argc, char *argv[])
@@ -1031,7 +936,6 @@ static void spfsvcremove(TestContext *context, int argc, char *argv[])
     CHK_ARGS(argc == 2);
 
     ela_session_remove_service(session, argv[1]);
-
     vlogD("Service %s removed", argv[1]);
 }
 
@@ -1081,11 +985,10 @@ static void spfsenddata(TestContext *context, int argc, char *argv[])
     StreamContext *stream_ctxt = context->stream;
     PortForwardingProtocol protocol;
     int pfid;
-
-    CHK_ARGS(argc == 3);
-
     pthread_t client_thread;
     PortForwardingContxt client_ctxt;
+
+    CHK_ARGS(argc == 3);
 
     client_ctxt.ip = argv[1];
     client_ctxt.port = argv[2];
@@ -1095,21 +998,13 @@ static void spfsenddata(TestContext *context, int argc, char *argv[])
 
     int rc = pthread_create(&client_thread, NULL, &client_thread_entry, &client_ctxt);
     if (rc != 0) {
-        vlogE("create client thread failed (%d)", rc);
         write_ack("spfsenddata -1 0\n");
         return;
     }
 
     pthread_join(client_thread, NULL);
-
-    if (client_ctxt.return_val == -1) {
-        vlogE("client thread running failed");
-        write_ack("spfsenddata -1 0\n");
-        return;
-    }
-
-    vlogD("Sending data to %s:%s success", argv[1], argv[2]);
-    write_ack("spfsenddata 0 %d\n", client_ctxt.sent_count);
+    write_ack("spfrecvdata %d %d\n", client_ctxt.return_val,
+              client_ctxt.return_val >= 0 ? client_ctxt.sent_count : -1);
 }
 
 static void spf_close(TestContext *context, int argc, char *argv[])
@@ -1220,11 +1115,11 @@ static struct command {
     { "sreply",       sreply       },
     { "sfree",        sfree        },
     { "spfsvcadd",    spfsvcadd    },
-    { "spfsvcrun",    spfsvcrun    },
     { "spfsvcremove", spfsvcremove },
     { "spfopen",      spf_open     },
-    { "spfsenddata",  spfsenddata  },
     { "spfclose",     spf_close    },
+    { "spfrecvdata",  spfrecvdata  },
+    { "spfsenddata",  spfsenddata  },
     { "cready2open",  cready2open  },
     { "cpend",        cpend        },
     { "cresume",      cresume      },
