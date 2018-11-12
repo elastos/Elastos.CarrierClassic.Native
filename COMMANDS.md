@@ -1,5 +1,5 @@
-help - Display available commands list.
-clear - Clear log and output view in shell.
+help - Display available commands list.<br>
+clear - Clear log and output view in shell.<br>
 clear [ log | out ] - Clear log or output view in shell.
 
 address - Display own address.
