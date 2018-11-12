@@ -45,7 +45,7 @@
 **scadd [Stream]** - Add stream channel.<br>
 **sinfo [ID]** - Display stream information.<br>
 **scclose [Stream] channel** - Close stream channel.<br>
-**scwrite [Stream] channel** [String] - Write to stream channel.<br>
+**scwrite [Stream] channel [String]** - Write to stream channel.<br>
 **scpend [Stream] channel** - Display pending stream channels.<br>
 **scresume [Stream] channel** - Resume stream.<br>
 **sclose** - Close session.<br>
