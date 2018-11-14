@@ -1,6 +1,7 @@
 ## List of commands for the Elastos Carrier shell application.
 
 **help** - Display available command list.<br>
+**help [Command]** - Display usage documentation for command.<br>
 **clear** - Clear log and output view in shell.<br>
 **clear [ log | out ]** - Clear log or output view in shell.<br>
 
