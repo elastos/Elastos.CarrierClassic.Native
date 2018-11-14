@@ -1804,7 +1804,7 @@ static void help(ElaCarrier *w, int argc, char *argv[])
     struct command *p;
 
     if (argc == 1) {
-        output("Available commands list:\n");
+        output("Use *help [Command]* to see usage description for a specific command.\n Available commands list:\n");
 
         for (p = commands; p->cmd; p++) {
             cmd_len = strlen(p->cmd);
