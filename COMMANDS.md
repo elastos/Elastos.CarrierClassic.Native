@@ -21,8 +21,8 @@
 **friend [User ID]** - Display friend details.<br>
 **label [User ID] [Name]** - Add label to friend.<br>
 **msg  [User ID] [Message]** -  Send message to a friend.<br>
-**invite [User ID]** - Invite friend.<br>
-**ireply [User ID] [confirm message | refuse reason]** - Confirm or refuse invitation with a message.
+**invite [User ID] [Message]** - Invite friend.<br>
+**ireply [User ID] confirm [Message] *OR* ireply [User ID] refuse [Message]** - Confirm or refuse invitation with a message.
 
 **gnew** - Create new group.<br>
 **gleave [Group ID]** - Leave group.<br>
@@ -40,7 +40,7 @@
 **sremove [Session ID]** - Leave session.<br>
 **srequest bundle** - Bundle and start session.<br>
 **sreply ok** - Accept session request.<br>
-**sreply refuse [Reason]** - Refuse session request with reason as a message.<br>
+**sreply refuse [Message]** - Refuse session request with reason as a message.<br>
 **swrite [Stream ID] [String]** - Send data to stream.<br>
 **sbulkwrite [Stream ID] [Packet size] [Packet count]** -  Send bulk data to stream.<br>
 **sbulkrecv [ start | end ]** - Start or end receiving in bulk.<br>
