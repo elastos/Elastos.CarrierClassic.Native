@@ -1742,15 +1742,15 @@ struct command {
     void (*function)(ElaCarrier *w, int argc, char *argv[]);
     const char *help;
 } commands[] = {
-    { "help",       help,                   "help [Command] - Display available command list." },
-    { "clear",      clear_screen,           "clear [log | out] - Clear log or output view in shell." },
+    { "help",       help,                   "help - Display available command list. *OR* help [Command] - Display usage description for specific command." },
+    { "clear",      clear_screen,           "clear - Clear log and output view in shell. *OR* clear [log | out] - Clear log or output view in shell." },
 
     { "address",    get_address,            "address - Display own address." },
     { "nodeid",     get_nodeid,             "nodeid - Display own node ID." },
     { "userid",     get_userid,             "userid - Display own user ID." },
-    { "me",         self_info,              "me [set] [name | description | gender | phone | email | region] [Value] - Set own user details individually." },
-    { "nospam",     self_nospam,            "nospam [ value ] - Change nospam value to enforce address change." },
-    { "presence",   self_presence,          "presence [ none | away | busy ] - Display self presence." },
+    { "me",         self_info,              "me - Display own details. *OR* me set [name | description | gender | phone | email | region] [Value] - Set own user details individually." },
+    { "nospam",     self_nospam,            "nospam - Display current nospam value. *OR* nospam [ value ] - Change nospam value to enforce address change." },
+    { "presence",   self_presence,          "presence - Display current presence. *OR* presence [ none | away | busy ] - Display self presence." },
 
     { "fadd",       friend_add,             "fadd [Address] [Message] - Add new friend." },
     { "faccept",    friend_accept,          "faccept [User ID] - Accept friend request." },
@@ -1758,7 +1758,7 @@ struct command {
     { "friends",    list_friends,           "friends - List all friends." },
     { "friend",     show_friend,            "friend [User ID] - Display friend details." },
     { "label",      label_friend,           "label [User ID] [Name] - Add label to friend." },
-    { "msg",        send_message,           "msg  [User ID] [Message] - Send message to a friend." },
+    { "msg",        send_message,           "msg [User ID] [Message] - Send message to a friend." },
     { "invite",     invite,                 "invite [User ID] [Message] - Invite friend." },
     { "ireply",     reply_invite,           "ireply [User ID] confirm [Message] *OR* ireply [User ID] refuse [Message] - Confirm or refuse invitation with a message." },
 
