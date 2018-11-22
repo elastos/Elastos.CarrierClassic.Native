@@ -609,14 +609,14 @@ Then, change directory to the 'bin' folder.
 $ cd YOUR-DISTRIBUTION-PACKAGE-PATH\bin
 ```
 
-Run Elashell:
+Run Elashell:<br/>
 Make sure to replace 'YOUR-DISTRIBUTION-PACKAGE-PATH'.
 ```shell
 $ elashell --config=YOUR-DISTRIBUTION-PACKAGE-PATH\etc\carrier\elashell.conf
 ```
 Available commands in the shell can be listed by using the command **help**. Specific command usage descriptions can be displayed by using **help [Command]** where [Command] must be replaced with the specific command name. For the entire command list please see the [COMMANDS.md](https://github.com/elastos/Elastos.NET.Carrier.Native.SDK/blob/master/COMMANDS.md) file.
 
-Or run Elatests:
+Or run Elatests:<br/>
 Make sure to replace 'YOUR-DISTRIBUTION-PACKAGE-PATH'.
 ```shell
 $ elatests --config=YOUR-DISTRIBUTION-PACKAGE-PATH\etc\carrier\tests.conf
