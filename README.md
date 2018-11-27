@@ -48,7 +48,7 @@ Certain knowledge of CMake is required.
 
 At the time of this writing, The compilation of sources works on **macOS**, **Linux** (Ubuntu, Debian etc.) and **Windows**, and provides the option to cross-compile for target systems of **iOS**, **Android** and **RaspberryPi**.
 
-## Ubuntu
+## Build on Ubuntu / Debian / Linux Host
 
 #### 1. Brief introduction
 
@@ -286,7 +286,7 @@ $ make dist
 
 
 
-## macOS
+## Build on MacOS Host
 
 #### 1. Brief introduction
 
@@ -536,7 +536,7 @@ $ make dist
 ```
 
 
-## Windows
+## Build on Windows Host
 
 #### 1. Brief introduction
 
