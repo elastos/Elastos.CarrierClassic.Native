@@ -660,7 +660,7 @@ $ elatests --config=YOUR-DISTRIBUTION-PACKAGE-PATH\etc\carrier\tests.conf
 
 Currently, the API documentation can only be built on **Linux** hosts. MacOS has a bug issue with python, which would cause build process failure.
 
-## Ubuntu
+## Build on Ubuntu
 
 #### 1. Install Pre-Requirements
 
@@ -672,7 +672,7 @@ $ sudo python /tmp/get-pip.py
 $ sudo pip install breathe
 ```
 
-#### 2. Build
+#### 2. Build on Ubuntu / Debian / Linux Host
 
 Change to the directory where the build for any target has been previously executed. For example,
 if the target was Linux, the folder structure would be similar to:
