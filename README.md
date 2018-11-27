@@ -4,13 +4,43 @@ Elastos Carrier Native SDK
 |:-:|:-:|:-:|
 |[![Build Status](https://travis-ci.org/elastos/Elastos.NET.Carrier.Native.SDK.svg)](https://travis-ci.org/elastos/Elastos.NET.Carrier.Native.SDK)|[![CircleCI](https://circleci.com/gh/elastos/Elastos.NET.Carrier.Native.SDK.svg?style=svg)](https://circleci.com/gh/elastos/Elastos.NET.Carrier.Native.SDK)|[![Build status](https://ci.appveyor.com/api/projects/status/uqjjonmks6ujvi52?svg=true)](https://ci.appveyor.com/project/elastos/elastos-net-carrier-native-sdk)
 
-## Summary
+## Introduction
 
 Elastos Carrier is a decentralized and encrypted peer-to-peer (P2P) communication framework that routes network traffic between virtual machines and Decentralized Applications (DApps).
 
 The authentication process of peer nodes utilizes the Elastos Decentralized ID (DID) sidechain. （TODO）
 
-## Build from source
+## Table of Contents
+
+- [Elastos Carrier Native SDK](#elastos-carrier-native-sdk)
+	- [Introduction](#introduction)
+	- [Table of Contents](#table-of-contents)
+	- [Usage](#usage)
+	- [Ubuntu](#ubuntu)
+		- [1. Brief introduction](#1-brief-introduction)
+		- [2. Install Pre-Requirements](#2-install-pre-requirements)
+		- [3. Build to run on host (Ubuntu / Debian / Linux)](#3-build-to-run-on-host-ubuntu--debian--linux)
+		- [4. Cross-compilation for Android Platform](#4-cross-compilation-for-android-platform)
+		- [5. Cross-compilation for Raspberry Pi](#5-cross-compilation-for-raspberry-pi)
+- [macOS](#macos)
+  	- [1. Brief introduction](#1-brief-introduction-1)
+  	- [2. Install Pre-Requirements](#2-install-pre-requirements-1)
+  	- [3. Build to Run on MacOS](#3-build-to-run-on-macos)
+  	- [4. Cross-compilation for Android Platform](#4-cross-compilation-for-android-platform-1)
+  	- [5. Cross-compilation for iOS Platform](#5-cross-compilation-for-ios-platform)
+- [Windows](#windows)
+  	- [1. Brief introduction](#1-brief-introduction-2)
+  	- [2. Set up Environment](#2-set-up-environment)
+  	- [2. Build](#2-build)
+- [Build API Docs](#build-api-docs)
+- [Ubuntu](#ubuntu-1)
+  	- [1. Install Pre-Requirements](#1-install-pre-requirements)
+  	- [2. Build](#2-build-1)
+- [Contribution](#contribution)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
+
+## Usage
 
 **CMake** is used to build, test and package the Elastos Carrier project in an operating system as well as compiler-independent manner.
 
@@ -18,7 +48,7 @@ Certain knowledge of CMake is required.
 
 At the time of this writing, The compilation of sources works on **macOS**, **Linux** (Ubuntu, Debian etc.) and **Windows**, and provides the option to cross-compile for target systems of **iOS**, **Android** and **RaspberryPi**.
 
-### Ubuntu
+## Ubuntu
 
 #### 1. Brief introduction
 
@@ -256,7 +286,7 @@ $ make dist
 
 
 
-### macOS
+## macOS
 
 #### 1. Brief introduction
 
@@ -506,7 +536,7 @@ $ make dist
 ```
 
 
-### Windows
+## Windows
 
 #### 1. Brief introduction
 
@@ -630,7 +660,7 @@ $ elatests --config=YOUR-DISTRIBUTION-PACKAGE-PATH\etc\carrier\tests.conf
 
 Currently, the API documentation can only be built on **Linux** hosts. MacOS has a bug issue with python, which would cause build process failure.
 
-### Ubuntu
+## Ubuntu
 
 #### 1. Install Pre-Requirements
 
