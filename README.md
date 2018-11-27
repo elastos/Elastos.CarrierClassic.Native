@@ -36,9 +36,10 @@ The authentication process of peer nodes utilizes the Elastos Decentralized ID (
 	- [2. Build to run on host](#2-build-to-run-on-host)
 	- [3. Run Elashell or Elatests](#3-run-elashell-or-elatests)
 - [Build API Docs](#build-api-docs)
-  - [Build on Ubuntu](#build-on-ubuntu)
-  - [1. Install Pre-Requirements](#1-install-pre-requirements)
-  - [2. Build](#2-build)
+  - [Build on Ubuntu / Debian / Linux Host](#build-on-ubuntu--debian--linux-host-1)
+	- [1. Install Pre-Requirements](#1-install-pre-requirements)
+	- [2. Build](#2-build)
+	- [3. View](#3-view)
 - [Contribution](#contribution)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
@@ -658,11 +659,11 @@ $ elatests --config=YOUR-DISTRIBUTION-PACKAGE-PATH\etc\carrier\tests.conf
 
 
 
-## Build API Docs
+## Build API Documentation
 
 Currently, the API documentation can only be built on **Linux** hosts. MacOS has a bug issue with python, which would cause build process failure.
 
-## Build on Ubuntu
+## Build on Ubuntu / Debian / Linux Host
 
 #### 1. Install Pre-Requirements
 
@@ -688,8 +689,9 @@ Note: If "make" fails due to missing permissions, use "sudo make" instead.
 $ cmake -DENABLE_DOCS=ON ../..
 $ make
 ```
-
+#### 3. View
 The generated API documentation will be created in the new **/docs** directory on the same directory level.
+
 Change to the docs folder:
 ```shell
 cd docs/html
