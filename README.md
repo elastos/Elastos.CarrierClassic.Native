@@ -20,25 +20,29 @@ The authentication process of peer nodes utilizes the Elastos Decentralized ID (
 	- [1. Brief introduction](#1-brief-introduction)
 	- [2. Install Pre-Requirements](#2-install-pre-requirements)
 	- [3. Build to run on host (Ubuntu / Debian / Linux)](#3-build-to-run-on-host-ubuntu--debian--linux)
+	- [4. Run Elashell or Elatests](#4-run-elashell-or-elatests)
 	- [4. Cross-compilation for Android Platform](#4-cross-compilation-for-android-platform)
 	- [5. Cross-compilation for Raspberry Pi](#5-cross-compilation-for-raspberry-pi)
 - [Build on MacOS Host](#build-on-macos-host)
-  - [1. Brief introduction](#1-brief-introduction-1)
-  - [2. Install Pre-Requirements](#2-install-pre-requirements-1)
-  - [3. Build to Run on MacOS](#3-build-to-run-on-macos)
-  - [4. Cross-compilation for Android Platform](#4-cross-compilation-for-android-platform-1)
-  - [5. Cross-compilation for iOS Platform](#5-cross-compilation-for-ios-platform)
+	- [1. Brief introduction](#1-brief-introduction-1)
+	- [2. Install Pre-Requirements](#2-install-pre-requirements-1)
+	- [3. Build to run on host](#3-build-to-run-on-host)
+	- [4. Run Elashell or Elatests](#4-run-elashell-or-elatests-1)
+	- [4. Cross-compilation for Android Platform](#4-cross-compilation-for-android-platform-1)
+	- [5. Cross-compilation for iOS Platform](#5-cross-compilation-for-ios-platform)
 - [Build on Windows Host](#build-on-windows-host)
-  - [1. Brief introduction](#1-brief-introduction-2)
-  - [2. Set up Environment](#2-set-up-environment)
-  - [2. Build](#2-build)
+	- [1. Brief introduction](#1-brief-introduction-2)
+	- [2. Set up Environment](#2-set-up-environment)
+	- [2. Build to run on host](#2-build-to-run-on-host)
+	- [3. Run Elashell or Elatests](#3-run-elashell-or-elatests)
 - [Build API Docs](#build-api-docs)
-  - [Ubuntu](#ubuntu-1)
-    - [1. Install Pre-Requirements](#1-install-pre-requirements)
-    - [2. Build](#2-build-1)
+ - [Build on Ubuntu](#build-on-ubuntu)
+ - [1. Install Pre-Requirements](#1-install-pre-requirements)
+ - [2. Build](#2-build)
 - [Contribution](#contribution)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
+
 
 ## Usage
 
@@ -131,7 +135,7 @@ $ make dist
 ```
 
 ***
-**Run Elashell or Elatests**
+#### 4. Run Elashell or Elatests
 
 Elashell is a fully functional, lightweight shell program that processes commands and returns the output to the terminal.
 Through Elashell, users may connect to other carrier nodes and exchange messages.
@@ -377,8 +381,7 @@ Note: If "make dist" fails due to missing permissions, use "sudo make dist" inst
 $ make dist
 ```
 
-***
-**Run Elashell or Elatests**
+#### 4. Run Elashell or Elatests
 
 Elashell is a fully functional, lightweight shell program that processes commands and returns the output to the terminal.
 Through Elashell, users may connect to other carrier nodes and exchange messages.
@@ -572,7 +575,7 @@ Additional tools are optional, some additional ones are installed by default wit
 After modifications, restarting of Visual Studio might be required.
 
 
-#### 2. Build
+#### 2. Build to run on host
 
 To compile the project from source code for the target to run on Windows, carry out the following steps:
 
@@ -624,8 +627,7 @@ Create distribution package:
 $ nmake dist
 ```
 
-***
-**Run Elashell or Elatests**
+#### 3. Run Elashell or Elatests
 
 Elashell is a fully functional, lightweight shell program that processes commands and returns the output to the terminal.
 Through Elashell, users may connect to other carrier nodes and exchange messages.
@@ -672,7 +674,7 @@ $ sudo python /tmp/get-pip.py
 $ sudo pip install breathe
 ```
 
-#### 2. Build to run on host
+#### 2. Build
 
 Change to the directory where the build for any target has been previously executed. For example,
 if the target was Linux, the folder structure would be similar to:
