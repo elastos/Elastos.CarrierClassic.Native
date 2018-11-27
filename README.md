@@ -16,7 +16,7 @@ The authentication process of peer nodes utilizes the Elastos Decentralized ID (
 	- [Introduction](#introduction)
 	- [Table of Contents](#table-of-contents)
 	- [Usage](#usage)
-	- [Ubuntu](#ubuntu)
+- [Ubuntu](#ubuntu)
 		- [1. Brief introduction](#1-brief-introduction)
 		- [2. Install Pre-Requirements](#2-install-pre-requirements)
 		- [3. Build to run on host (Ubuntu / Debian / Linux)](#3-build-to-run-on-host-ubuntu--debian--linux)
