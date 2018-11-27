@@ -531,16 +531,17 @@ In the menu, go to "Tools >> Get Tools and Features", it will open the Visual St
 Make sure 'Desktop development with C++' Workload is installed.
 
 On the right side, make sure in the 'Installation details' all of the following are installed:
-"Windows 8.1 SDK and UCRT SDK" <- might have to be selected additionally <br/>
-"Windows 10 SDK (10.0.17134.0)" <- might have to be selected additionally <br/>
-"VC++ 2017 version 15.9 ... tools" <br/>
-"C++ Profiling tools" <br/>
-"Visual C++ tools for CMake" <br/>
-"Visual C++ ATL for x86 and x64" <br/>
+"Windows 8.1 SDK and UCRT SDK" <- might have to be selected additionally
+"Windows 10 SDK (10.0.17134.0)" <- might have to be selected additionally
+"VC++ 2017 version 15.9 ... tools"
+"C++ Profiling tools"
+"Visual C++ tools for CMake"
+"Visual C++ ATL for x86 and x64"
 Additional tools are optional, some additional ones are installed by default with the Workload.
 
 After modifications, restarting of Visual Studio might be required.
 
+To build for a 32-bit target , select `x86 Native Tools Command Console` to run building commands, otherwise, select `x64 Native Tools Command Console` for a 64-bit target.
 
 #### 2. Build
 
@@ -548,10 +549,6 @@ To compile the project from source code for the target to run on Windows, carry 
 
 In Visual Studio, open Visual Studio Command Prompt from the menu "Tools >> Visual Studio Command Prompt"
 It will open a new terminal window.
-
-***
-Note: To build for a 32-bit target , select `x86 Native Tools Command Console` to run building commands, otherwise, select `x64 Native Tools Command Console` for a 64-bit target.
-***
 
 Navigate to the previously downloaded folder that contains the source code of the Carrier project.
 
@@ -576,20 +573,23 @@ $ cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=outputs ..\..
 ```
 
 
-Build the program:
+Build the program: <br/>
+Note: If "make" fails due to missing permissions, use "sudo make" instead.
 ```shell
 $ nmake
 ```
 
 
 
-Install the program:
+Install the program: <br/>
+Note: If "make install" fails due to missing permissions, use "sudo make install" instead.
 ```shell
 $ nmake install
 ```
 
 
-Create distribution package:
+Create distribution package: <br/>
+Note: If "make dist" fails due to missing permissions, use "sudo make dist" instead.
 ```
 $ nmake dist
 ```
