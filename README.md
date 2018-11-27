@@ -16,19 +16,19 @@ The authentication process of peer nodes utilizes the Elastos Decentralized ID (
 	- [Introduction](#introduction)
 	- [Table of Contents](#table-of-contents)
 	- [Usage](#usage)
-- [Ubuntu](#ubuntu)
+- [Build on Ubuntu / Debian / Linux Host](#build-on-ubuntu--debian--linux-host)
 	- [1. Brief introduction](#1-brief-introduction)
 	- [2. Install Pre-Requirements](#2-install-pre-requirements)
 	- [3. Build to run on host (Ubuntu / Debian / Linux)](#3-build-to-run-on-host-ubuntu--debian--linux)
 	- [4. Cross-compilation for Android Platform](#4-cross-compilation-for-android-platform)
 	- [5. Cross-compilation for Raspberry Pi](#5-cross-compilation-for-raspberry-pi)
-- [macOS](#macos)
+- [Build on MacOS Host](#build-on-macos-host)
   - [1. Brief introduction](#1-brief-introduction-1)
   - [2. Install Pre-Requirements](#2-install-pre-requirements-1)
   - [3. Build to Run on MacOS](#3-build-to-run-on-macos)
   - [4. Cross-compilation for Android Platform](#4-cross-compilation-for-android-platform-1)
   - [5. Cross-compilation for iOS Platform](#5-cross-compilation-for-ios-platform)
-- [Windows](#windows)
+- [Build on Windows Host](#build-on-windows-host)
   - [1. Brief introduction](#1-brief-introduction-2)
   - [2. Set up Environment](#2-set-up-environment)
   - [2. Build](#2-build)
@@ -321,7 +321,7 @@ Download this repository using Git:
 $ git clone https://github.com/elastos/Elastos.NET.Carrier.Native.SDK
 ```
 
-#### 3. Build to Run on MacOS
+#### 3. Build to run on host
 
 To compile the project from source code for the target to run on MacOS, carry out the following steps:
 
@@ -672,7 +672,7 @@ $ sudo python /tmp/get-pip.py
 $ sudo pip install breathe
 ```
 
-#### 2. Build on Ubuntu / Debian / Linux Host
+#### 2. Build to run on host
 
 Change to the directory where the build for any target has been previously executed. For example,
 if the target was Linux, the folder structure would be similar to:
