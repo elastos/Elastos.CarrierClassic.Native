@@ -1387,8 +1387,7 @@ int ela_session_add_service(ElaSession *ws, const char *service,
     svc->name = p;
 
     p += (service_len + 1);
-    // TODO: overflow?
-    strcpy(p, host);
+    strcpy(p, host);  //TODO: check overflow.
     svc->host = p;
 
     p += (host_len + 1);
