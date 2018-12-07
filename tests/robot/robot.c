@@ -289,6 +289,12 @@ static void group_message_cb(ElaCarrier *carrier, const char *groupid,
     write_ack("gmsg %s\n", message);
 }
 
+static void group_title_cb(ElaCarrier *carrier, const char *groupid,
+                        const char *from, const char *title, void *context)
+{
+    write_ack("gtitle %s\n", title);
+}
+
 static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
                                  void *context)
 {
@@ -318,6 +324,7 @@ static ElaCallbacks callbacks = {
     .group_callbacks = {
         .group_connected = group_connected_cb,
         .group_message   = group_message_cb,
+        .group_title     = group_title_cb,
         .peer_list_changed = peer_list_changed_cb
     }
 };

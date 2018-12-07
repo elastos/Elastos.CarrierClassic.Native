@@ -76,6 +76,10 @@ typedef struct CarrierContext {
        FAILED
     } friend_status;
 
+    char groupid[ELA_MAX_ID_LEN + 1];
+    char joined_groupid[ELA_MAX_ID_LEN + 1];
+    int peer_list_cnt;
+
     CarrierContextExtra *extra;
 } CarrierContext;
 
