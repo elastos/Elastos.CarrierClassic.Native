@@ -19,28 +19,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-#include <CUnit/Basic.h>
-#include <vlog.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <posix_helper.h>
 #endif
 
-#include "ela_carrier.h"
+#include <CUnit/Basic.h>
+#include <vlog.h>
 
+#include "ela_carrier.h"
 #include "cond.h"
 #include "test_helper.h"
 
 struct CarrierContextExtra {
-    char* from;
-
     ElaConnectionStatus connection_status;
 
     ElaGroupPeer group_peers[2];
@@ -48,8 +44,6 @@ struct CarrierContextExtra {
 };
 
 static CarrierContextExtra extra = {
-    .from   = NULL,
-
     .connection_status = ElaConnectionStatus_Disconnected,
 
     .group_peers = {0},
@@ -69,13 +63,11 @@ static void ready_cb(ElaCarrier *w, void *context)
 static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
 {
     wakeup(context);
-    vlogD("Friend %s added.", info->user_info.userid);
 }
 
 static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
 {
     wakeup(context);
-    vlogD("Friend %s removed.\n", friendid);
 }
 
 static void friend_connection_cb(ElaCarrier *w, const char *friendid,
@@ -132,6 +124,10 @@ static ElaCallbacks callbacks = {
     .friend_invite   = NULL,
     .group_invite    = NULL,
     .group_callbacks = {
+        .group_connected = NULL,
+        .group_message = NULL,
+        .group_title = NULL,
+        .peer_name = NULL,
         .peer_list_changed = peer_list_changed_cb
     }
 };
@@ -163,7 +159,7 @@ static TestContext test_context = {
     .context_reset = test_context_reset
 };
 
-static int test_group_get_peer_work_cb(TestContext *ctx)
+static int group_get_peer_cb(TestContext *ctx)
 {
     CarrierContext *wctx = test_context.carrier;
     char userid[ELA_MAX_ID_LEN + 1] = {0};
@@ -182,7 +178,7 @@ static int test_group_get_peer_work_cb(TestContext *ctx)
     return 0;
 }
 
-static int test_group_get_peers_work_cb(TestContext *ctx)
+static int group_get_peers_cb(TestContext *ctx)
 {
     CarrierContext *wctx = test_context.carrier;
     CarrierContextExtra *extra = wctx->extra;
@@ -214,12 +210,12 @@ static int test_group_get_peers_work_cb(TestContext *ctx)
 
 static void test_group_get_peer(void)
 {
-    test_group_scheme(&test_context, test_group_get_peer_work_cb);
+    test_group_scheme(&test_context, group_get_peer_cb);
 }
 
 static void test_group_get_peers(void)
 {
-    test_group_scheme(&test_context, test_group_get_peers_work_cb);
+    test_group_scheme(&test_context, group_get_peers_cb);
 }
 
 static CU_TestInfo cases[] = {

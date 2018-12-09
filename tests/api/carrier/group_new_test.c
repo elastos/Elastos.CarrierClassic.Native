@@ -26,15 +26,14 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-#include <CUnit/Basic.h>
-#include <vlog.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <posix_helper.h>
 #endif
 
-#include "ela_carrier.h"
+#include <CUnit/Basic.h>
+#include <vlog.h>
 
+#include "ela_carrier.h"
 #include "cond.h"
 #include "test_helper.h"
 
@@ -62,13 +61,12 @@ static ElaCallbacks callbacks = {
 };
 
 static Condition DEFINE_COND(ready_cond);
-static Condition DEFINE_COND(cond);
 
 static CarrierContext carrier_context = {
     .cbs = &callbacks,
     .carrier = NULL,
     .ready_cond = &ready_cond,
-    .cond = &cond,
+    .cond = NULL,
     .friend_status_cond = NULL,
     .extra = NULL
 };
@@ -88,7 +86,7 @@ static void test_new_group(void)
 
     rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FATAL(strlen(groupid));
+    CU_ASSERT_FATAL(strlen(groupid) > 0);
 
     rc = ela_leave_group(wctx->carrier, groupid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
@@ -102,7 +100,7 @@ static void test_leave_group_twice(void)
 
     rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FATAL(strlen(groupid));
+    CU_ASSERT_FATAL(strlen(groupid) > 0);
 
     rc = ela_leave_group(wctx->carrier, groupid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);

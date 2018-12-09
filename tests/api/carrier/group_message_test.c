@@ -26,15 +26,14 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-#include <CUnit/Basic.h>
-#include <vlog.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <posix_helper.h>
 #endif
 
-#include "ela_carrier.h"
+#include <CUnit/Basic.h>
+#include <vlog.h>
 
+#include "ela_carrier.h"
 #include "cond.h"
 #include "test_helper.h"
 
@@ -65,13 +64,11 @@ static void ready_cb(ElaCarrier *w, void *context)
 static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
 {
     wakeup(context);
-    vlogD("Friend %s added.", info->user_info.userid);
 }
 
 static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
 {
     wakeup(context);
-    vlogD("Friend %s removed.\n", friendid);
 }
 
 static void friend_connection_cb(ElaCarrier *w, const char *friendid,
@@ -126,8 +123,11 @@ static ElaCallbacks callbacks = {
     .friend_invite   = NULL,
     .group_invite    = NULL,
     .group_callbacks = {
-        .peer_list_changed = peer_list_changed_cb,
-        .group_message = group_message_cb
+        .group_connected = NULL,
+        .group_message = group_message_cb,
+        .group_title = NULL,
+        .peer_name = NULL,
+        .peer_list_changed = peer_list_changed_cb
     }
 };
 
@@ -157,7 +157,7 @@ static TestContext test_context = {
     .context_reset = test_context_reset
 };
 
-static int test_group_message_work_cb(TestContext *ctx)
+static int group_message_routine(TestContext *ctx)
 {
     CarrierContext *wctx = test_context.carrier;
     CarrierContextExtra *extra = wctx->extra;
@@ -189,7 +189,7 @@ static int test_group_message_work_cb(TestContext *ctx)
 
 static void test_group_message(void)
 {
-    test_group_scheme(&test_context, test_group_message_work_cb);
+    test_group_scheme(&test_context, group_message_routine);
 }
 
 static void test_group_message_to_myself(void)

@@ -26,15 +26,13 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-#include <CUnit/Basic.h>
-#include <vlog.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <posix_helper.h>
 #endif
+#include <CUnit/Basic.h>
+#include <vlog.h>
 
 #include "ela_carrier.h"
-
 #include "cond.h"
 #include "test_helper.h"
 
@@ -79,13 +77,11 @@ static void ready_cb(ElaCarrier *w, void *context)
 static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
 {
     wakeup(context);
-    vlogD("Friend %s added.", info->user_info.userid);
 }
 
 static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
 {
     wakeup(context);
-    vlogD("Friend %s removed.\n", friendid);
 }
 
 static void friend_connection_cb(ElaCarrier *w, const char *friendid,
@@ -101,30 +97,18 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void friend_request_cb(ElaCarrier *w, const char *userid,
-                              const ElaUserInfo *info,
-                              const char *hello, void* context)
-{
-    CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
-
-    extra->from  = strdup(userid);
-    extra->hello = strdup(hello);
-    memcpy(&extra->info, info, sizeof(*info));
-
-    wakeup(context);
-}
-
 static void group_invite_cb(ElaCarrier *w, const char *from,
                             const void *cookie, size_t len, void *context)
 {
     CarrierContext *wctx = (CarrierContext *)context;
+    CarrierContextExtra *extra = wctx->extra;
 
-    memcpy(wctx->extra->gcookie, cookie, len);
-    wctx->extra->gcookie_len = len;
-    if (wctx->extra->gfrom)
-        free(wctx->extra->gfrom);
+    memcpy(extra->gcookie, cookie, len);
+    extra->gcookie_len = len;
+    if (extra->gfrom)
+        free(extra->gfrom);
 
-    wctx->extra->gfrom = strdup(from);
+    extra->gfrom = strdup(from);
 
     wakeup(context);
 }
@@ -155,15 +139,18 @@ static ElaCallbacks callbacks = {
     .friend_connection = friend_connection_cb,
     .friend_info     = NULL,
     .friend_presence = NULL,
-    .friend_request  = friend_request_cb,
+    .friend_request  = NULL,
     .friend_added    = friend_added_cb,
     .friend_removed  = friend_removed_cb,
     .friend_message  = NULL,
     .friend_invite   = NULL,
     .group_invite    = group_invite_cb,
     .group_callbacks = {
+        .group_connected = group_connected_cb,
+        .group_message = NULL,
+        .group_title = NULL,
+        .peer_name = NULL,
         .peer_list_changed = peer_list_changed_cb,
-        .group_connected = group_connected_cb
     }
 };
 
@@ -193,12 +180,7 @@ static TestContext test_context = {
     .context_reset = test_context_reset
 };
 
-static void test_group_invite_join(void)
-{
-    test_group_scheme(&test_context, NULL);
-}
-
-static int test_group_invite_after_joining_work_cb(TestContext *ctx)
+static int group_invite_after_joining_cb(TestContext *ctx)
 {
     CarrierContext *wctx = test_context.carrier;
     int rc;
@@ -209,119 +191,7 @@ static int test_group_invite_after_joining_work_cb(TestContext *ctx)
     return 0;
 }
 
-static void test_group_invite_after_joining(void)
-{
-    test_group_scheme(&test_context, test_group_invite_after_joining_work_cb);
-}
-
-static void test_group_invite_by_friend(void)
-{
-    CarrierContext *wctx = test_context.carrier;
-    CarrierContextExtra *extra = wctx->extra;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
-    char useraddr[ELA_MAX_ADDRESS_LEN + 1] = {0};
-    const char *hello = "hello";
-    char *p;
-    int rc;
-
-    test_context.context_reset(&test_context);
-
-    rc = add_friend_anyway(&test_context, robotid, robotaddr);
-    CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctx->carrier, robotid));
-
-    rc = write_cmd("gnew\n");
-    CU_ASSERT_FATAL(rc > 0);
-
-    char cmd[32];
-    char result[32];
-    rc = read_ack("%32s %32s", cmd, result);
-    CU_ASSERT_EQUAL_FATAL(rc, 2);
-    CU_ASSERT_STRING_EQUAL_FATAL(cmd, "gnew");
-    CU_ASSERT_STRING_EQUAL_FATAL(result, "succeeded");
-
-    p = ela_get_userid(wctx->carrier, userid, sizeof(userid));
-    CU_ASSERT_EQUAL_FATAL(p, userid);
-
-    rc = write_cmd("ginvite %s\n", userid);
-    CU_ASSERT_FATAL(rc > 0);
-
-    rc = read_ack("%32s %32s", cmd, result);
-    CU_ASSERT_TRUE_FATAL(rc == 2);
-    CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ginvite") == 0);
-    CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
-
-    cond_wait(wctx->cond);
-    CU_ASSERT_TRUE_FATAL(strcmp(extra->gfrom, robotid) == 0);
-    FREE_ANYWAY(extra->gfrom);
-    rc = ela_group_join(wctx->carrier, robotid, extra->gcookie,
-                        extra->gcookie_len, extra->groupid,
-                        sizeof(extra->groupid));
-    CU_ASSERT_EQUAL_FATAL(rc, 0);
-
-    cond_wait(wctx->cond);
-    cond_wait(wctx->cond);
-    cond_wait(wctx->cond);
-
-    rc = write_cmd("gleave\n");
-    CU_ASSERT_FATAL(rc > 0);
-
-    // wait until robot having left the group
-    rc = read_ack("%32s %32s", cmd, result);
-    CU_ASSERT_TRUE_FATAL(rc == 2);
-    CU_ASSERT_TRUE_FATAL(strcmp(cmd, "gleave") == 0);
-    CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
-
-    // wait until peer_list_changed callback invoked
-    cond_wait(wctx->cond);
-
-    rc = ela_leave_group(wctx->carrier, extra->groupid);
-    CU_ASSERT_EQUAL_FATAL(rc, 0);
-}
-
-static void test_group_invite_stranger(void)
-{
-    CarrierContext *wctx = test_context.carrier;
-    char groupid[ELA_MAX_ID_LEN + 1] = {0};
-    char userid[ELA_MAX_ID_LEN + 1];
-    int rc;
-
-    rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
-    CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FATAL(strlen(groupid));
-
-    rc = ela_group_invite(wctx->carrier, groupid, userid);
-    CU_ASSERT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-
-    rc = ela_leave_group(wctx->carrier, groupid);
-    CU_ASSERT_EQUAL_FATAL(rc, 0);
-}
-
-static void test_group_invite_myself(void)
-{
-    CarrierContext *wctx = test_context.carrier;
-    char groupid[ELA_MAX_ID_LEN + 1] = {0};
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
-    char *p;
-    int rc;
-
-    rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
-    CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FATAL(strlen(groupid));
-
-    p = ela_get_userid(wctx->carrier, userid, sizeof(userid));
-    CU_ASSERT_EQUAL_FATAL(p, userid);
-
-    rc = ela_group_invite(wctx->carrier, groupid, userid);
-    CU_ASSERT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
-
-    rc = ela_leave_group(wctx->carrier, groupid);
-    CU_ASSERT_EQUAL_FATAL(rc, 0);
-}
-
-static int test_group_join_twice_work_cb(TestContext *ctx)
+static int group_join_twice_cb(TestContext *ctx)
 {
     int rc;
     char cmd[32];
@@ -338,12 +208,7 @@ static int test_group_join_twice_work_cb(TestContext *ctx)
     return 0;
 }
 
-static void test_group_join_twice(void)
-{
-    test_group_scheme(&test_context, test_group_join_twice_work_cb);
-}
-
-static int test_group_invite_join_after_leaving_work_cb(TestContext *ctx)
+static int group_leave_then_join_cb(TestContext *ctx)
 {
     CarrierContext *wctx = test_context.carrier;
     char cmd[32];
@@ -384,19 +249,139 @@ static int test_group_invite_join_after_leaving_work_cb(TestContext *ctx)
     return 0;
 }
 
-static void test_group_invite_join_after_leaving(void)
+static void test_group_invite(void)
 {
-    test_group_scheme(&test_context, test_group_invite_join_after_leaving_work_cb);
+    test_group_scheme(&test_context, NULL);
+}
+
+static void test_group_invite_twice(void)
+{
+    test_group_scheme(&test_context, group_invite_after_joining_cb);
+}
+
+static void test_group_join(void)
+{
+    CarrierContext *wctx = test_context.carrier;
+    CarrierContextExtra *extra = wctx->extra;
+    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    char useraddr[ELA_MAX_ADDRESS_LEN + 1] = {0};
+    const char *hello = "hello";
+    char *p;
+    int rc;
+
+    test_context.context_reset(&test_context);
+
+    rc = add_friend_anyway(&test_context, robotid, robotaddr);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctx->carrier, robotid));
+
+    rc = write_cmd("gnew\n");
+    CU_ASSERT_FATAL(rc > 0);
+
+    char cmd[32];
+    char result[32];
+    rc = read_ack("%32s %32s", cmd, result);
+    CU_ASSERT_EQUAL_FATAL(rc, 2);
+    CU_ASSERT_STRING_EQUAL_FATAL(cmd, "gnew");
+    CU_ASSERT_STRING_EQUAL_FATAL(result, "succeeded");
+
+    ela_get_userid(wctx->carrier, userid, sizeof(userid));
+    rc = write_cmd("ginvite %s\n", userid);
+    CU_ASSERT_FATAL(rc > 0);
+
+    rc = read_ack("%32s %32s", cmd, result);
+    CU_ASSERT_TRUE_FATAL(rc == 2);
+    CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ginvite") == 0);
+    CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
+
+    cond_wait(wctx->cond);
+    CU_ASSERT_TRUE_FATAL(strcmp(extra->gfrom, robotid) == 0);
+    FREE_ANYWAY(extra->gfrom);
+    rc = ela_group_join(wctx->carrier, robotid, extra->gcookie,
+                        extra->gcookie_len, extra->groupid,
+                        sizeof(extra->groupid));
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+
+    cond_wait(wctx->cond); //TODO: comment.
+    cond_wait(wctx->cond);
+    cond_wait(wctx->cond);
+
+    rc = write_cmd("gleave\n");
+    CU_ASSERT_FATAL(rc > 0);
+
+    // wait until robot having left the group
+    rc = read_ack("%32s %32s", cmd, result);
+    CU_ASSERT_TRUE_FATAL(rc == 2);
+    CU_ASSERT_TRUE_FATAL(strcmp(cmd, "gleave") == 0);
+    CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
+
+    // wait until peer_list_changed callback invoked
+    cond_wait(wctx->cond);
+
+    rc = ela_leave_group(wctx->carrier, extra->groupid);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+}
+
+static void test_group_invite_stranger(void)
+{
+    CarrierContext *wctx = test_context.carrier;
+    char groupid[ELA_MAX_ID_LEN + 1] = {0};
+    char userid[ELA_MAX_ID_LEN + 1];
+    int rc;
+
+    //TO make robot as stranger.
+
+    rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+    CU_ASSERT_FATAL(strlen(groupid));
+
+    rc = ela_group_invite(wctx->carrier, groupid, userid);
+    CU_ASSERT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+
+    rc = ela_leave_group(wctx->carrier, groupid);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+}
+
+static void test_group_invite_myself(void)
+{
+    CarrierContext *wctx = test_context.carrier;
+    char groupid[ELA_MAX_ID_LEN + 1] = {0};
+    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    char *p;
+    int rc;
+
+    rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+    CU_ASSERT_FATAL(strlen(groupid));
+
+    ela_get_userid(wctx->carrier, userid, sizeof(userid));
+    rc = ela_group_invite(wctx->carrier, groupid, userid);
+    CU_ASSERT_EQUAL_FATAL(rc, -1);
+    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+
+    rc = ela_leave_group(wctx->carrier, groupid);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+}
+
+static void test_group_join_twice(void)
+{
+    test_group_scheme(&test_context, group_join_twice_cb);
+}
+
+static void test_group_leave_then_join(void)
+{
+    test_group_scheme(&test_context, group_leave_then_join_cb);
 }
 
 static CU_TestInfo cases[] = {
-    { "test_group_invite_join",                     test_group_invite_join },
-    { "test_group_invite_after_joining",            test_group_invite_after_joining },
-    { "test_group_invite_by_friend",                test_group_invite_by_friend },
-    { "test_group_invite_stranger",                 test_group_invite_stranger },
-    { "test_group_invite_myself",                   test_group_invite_myself },
-    { "test_group_join_twice",                      test_group_join_twice },
-    { "test_group_invite_join_after_leaving",       test_group_invite_join_after_leaving },
+    { "test_group_invite_join",         test_group_invite           },
+    { "test_group_invite_twice",        test_group_invite_twice     },
+    { "test_group_invite_stranger",     test_group_invite_stranger  },
+    { "test_group_invite_myself",       test_group_invite_myself    },
+    { "test_group_join",                test_group_join             },
+    { "test_group_join_twice",          test_group_join_twice       },
+    { "test_group_leave_then_join",     test_group_leave_then_join  },
     { NULL, NULL }
 };
 

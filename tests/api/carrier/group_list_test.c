@@ -26,15 +26,13 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-#include <CUnit/Basic.h>
-#include <vlog.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <posix_helper.h>
 #endif
+#include <CUnit/Basic.h>
+#include <vlog.h>
 
 #include "ela_carrier.h"
-
 #include "cond.h"
 #include "test_helper.h"
 

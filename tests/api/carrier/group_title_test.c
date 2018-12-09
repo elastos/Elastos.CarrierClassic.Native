@@ -26,15 +26,14 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-#include <CUnit/Basic.h>
-#include <vlog.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <posix_helper.h>
 #endif
 
-#include "ela_carrier.h"
+#include <CUnit/Basic.h>
+#include <vlog.h>
 
+#include "ela_carrier.h"
 #include "cond.h"
 #include "test_helper.h"
 
@@ -44,6 +43,7 @@ struct CarrierContextExtra {
 
 static CarrierContextExtra extra = {
     .connection_status = ElaConnectionStatus_Disconnected
+
 };
 
 static inline void wakeup(void* context)
@@ -106,6 +106,10 @@ static ElaCallbacks callbacks = {
     .friend_invite   = NULL,
     .group_invite    = NULL,
     .group_callbacks = {
+        .group_connected = NULL,
+        .group_message = NULL,
+        .group_title = NULL,
+        .peer_name = NULL,
         .peer_list_changed = peer_list_changed_cb
     }
 };
@@ -136,56 +140,43 @@ static TestContext test_context = {
     .context_reset = test_context_reset
 };
 
-static int check_set_title(TestContext *ctx)
+static int set_title_routine(TestContext *ctx, size_t title_len)
 {
     CarrierContext *wctx = test_context.carrier;
-    char title[32] = {0};
     char check[ELA_MAX_GROUP_TITLE_LEN + 1];
-    char cmd[32];
-    char result[32];
-    int rc;
-
-    memset(title, 'S', sizeof(title) - 1);
-
-    rc = ela_group_set_title(wctx->carrier, wctx->groupid, title);
-    CU_ASSERT_EQUAL_FATAL(rc, 0);
-
-    rc = ela_group_get_title(wctx->carrier, wctx->groupid, check, sizeof(check));
-    CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_STRING_EQUAL(title, check);
-
-    rc = read_ack("%32s %32s", cmd, result);
-    CU_ASSERT_TRUE_FATAL(rc == 2);
-    CU_ASSERT_TRUE_FATAL(strcmp(cmd, "gtitle") == 0);
-    CU_ASSERT_TRUE_FATAL(strcmp(result, check) == 0);
-
-    return 0;
-}
-
-static int check_set_max_length_title(TestContext *ctx)
-{
-    CarrierContext *wctx = test_context.carrier;
-    char title[ELA_MAX_GROUP_TITLE_LEN + 1] = {0};
-    char check[ELA_MAX_GROUP_TITLE_LEN + 1];
+    char *title;
     char cmd[128];
     char result[128];
     int rc;
 
-    memset(title, 'L', sizeof(title) - 1);
+    title = (char *)alloca(title_len + 1);
+    memset(title, 'D', title_len);
+    title[title_len] = 0;
 
     rc = ela_group_set_title(wctx->carrier, wctx->groupid, title);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    rc = ela_group_get_title(wctx->carrier, wctx->groupid, check, sizeof(check));
+    rc = ela_group_get_title(wctx->carrier, wctx->groupid, check,
+                             sizeof(check));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_STRING_EQUAL(title, check);
 
     rc = read_ack("%128s %128s", cmd, result);
     CU_ASSERT_TRUE_FATAL(rc == 2);
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "gtitle") == 0);
-    CU_ASSERT_TRUE_FATAL(strcmp(result, check) == 0);
+    CU_ASSERT_TRUE_FATAL(strcmp(result, title) == 0);
 
     return 0;
+}
+
+static int check_set_title(TestContext *ctxt)
+{
+    return  set_title_routine(ctxt, 31);
+}
+
+static int check_set_max_length_title(TestContext *ctxt)
+{
+    return set_title_routine(ctxt, ELA_MAX_GROUP_TITLE_LEN);
 }
 
 static void test_group_set_title(void)
