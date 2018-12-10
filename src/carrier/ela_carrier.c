@@ -374,7 +374,7 @@ static void get_self_info_cb(const uint8_t *address, const uint8_t *public_key,
     if (name_len < 0)
         return;
 
-    if ((name_len <= 1 && !strlen(w->me.name)) ||
+    if ((name_len <= 1 && !*w->me.name) ||
         (name_len > 1 && !strcmp(dht_name, w->me.name)))
         return;
 
@@ -3508,12 +3508,12 @@ int ela_group_get_title(ElaCarrier *w, const char *groupid, char *title,
         return  -1;
     }
 
+    memset(title, 0, length);
     rc = dht_group_get_title(&w->dht, group_number, (uint8_t *)title, length);
     if (rc < 0) {
         ela_set_error(rc);
         return -1;
-    } else if (!rc)
-        title[0] = '\0';
+    }
 
     return 0;
 }
@@ -3521,7 +3521,7 @@ int ela_group_get_title(ElaCarrier *w, const char *groupid, char *title,
 int ela_group_set_title(ElaCarrier *w, const char *groupid, const char *title)
 {
     uint32_t group_number;
-    char tbuf[ELA_MAX_GROUP_TITLE_LEN + 1];
+    char buf[ELA_MAX_GROUP_TITLE_LEN + 1];
     int rc;
 
     if (!w || !groupid || !*groupid || !title || !*title ||
@@ -3541,18 +3541,17 @@ int ela_group_set_title(ElaCarrier *w, const char *groupid, const char *title)
         return -1;
     }
 
-    rc = dht_group_get_title(&w->dht, group_number,
-                             (uint8_t *)tbuf, sizeof(tbuf));
+    rc = dht_group_get_title(&w->dht, group_number, (uint8_t *)buf, sizeof(buf));
     if (rc < 0) {
         ela_set_error(rc);
         return -1;
-    } else if ((rc <= 1 && !strlen(title)) ||
-               (rc > 1 && !strcmp(tbuf, title))) {
-        return 0;
     }
 
-    rc = dht_group_set_title(&w->dht, group_number,
-                             (uint8_t *)title, strlen(title) + 1);
+    if ((rc <= 1 && !*title) || (rc > 1 && strcmp(buf, title) == 0))
+        return 0;
+
+    rc = dht_group_set_title(&w->dht, group_number, (uint8_t *)title,
+                             strlen(title) + 1);
     if (rc < 0) {
         ela_set_error(rc);
         return -1;
@@ -3604,8 +3603,11 @@ int ela_group_get_peers(ElaCarrier *w, const char *groupid,
             vlogW("Carrier: Get peer %lu name from group:%lu error.",
                   i, group_number);
             continue;
-        } else if (!rc)
+        } else if (rc == 0) {
             peer.name[0] = '\0';
+        } else {
+            //Dothing.
+        }
 
         rc = dht_group_get_peer_public_key(&w->dht, group_number, i, public_key);
         if (rc < 0) {
@@ -3694,10 +3696,12 @@ int ela_group_get_peer(ElaCarrier *w, const char *groupid,
               group_number);
         ela_set_error(rc);
         return -1;
-    } else if (!rc)
+    } else if (rc == 0) {
         peer->name[0] = '\0';
+    } else {
+        strcpy(peer->userid, peerid);
+    }
 
-    strcpy(peer->userid, peerid);
     return 0;
 }
 

@@ -1035,7 +1035,7 @@ int dht_self_get_name(DHT *dht, uint8_t *name, size_t length)
         return ELA_DHT_ERROR(ELAERR_BUFFER_TOO_SMALL);
     }
 
-    tox_self_get_name(tox, (uint8_t *)name);
+    tox_self_get_name(tox, name);
     return name_len;
 }
 
