@@ -409,6 +409,13 @@ static bool transfer_data_cb(ElaFileTransfer *ft, const char *fileid,
         goto cancel_transfer;
     }
 
+    if (!length) {
+        console("received cancel to transfer %s", fileid);
+        ela_filetransfer_set_userdata(ft, fileid, NULL);
+        deref(list_remove_entry(entry->fctx->filentries, &entry->le));
+        return false;
+    }
+
     rc = fwrite(data, length, 1, entry->fp);
     if (rc != 1) {
         console("Error: write data to file failed.");
@@ -421,7 +428,6 @@ static bool transfer_data_cb(ElaFileTransfer *ft, const char *fileid,
         console("Error: receive excessive data.");
         errno = ENOSPC;
         goto cancel_transfer;
-
     } else if (entry->sentsz == entry->filesz) {
         char filename[ELA_MAX_FILE_NAME_LEN + 1] = {0};
 
@@ -772,12 +778,23 @@ static void cancel_file(filectx_t *fctx, int argc, char *argv[])
     }
 
     entry = ela_filetransfer_get_userdata(fctx->ft, argv[1]);
-    rc = ela_filetransfer_cancel(fctx->ft, argv[1], 1, "cancel filetransfer");
-    if (rc < 0)
+    if (!entry)
+        return;
+
+    rc = fctx->receiver ?
+         ela_filetransfer_cancel(fctx->ft, argv[1], 1, "cancel filetransfer") :
+         ela_filetransfer_send(fctx->ft, argv[1], NULL, 0);
+    if (rc < 0) {
         console("Error: cancel %s failed (0x%x)", argv[1], ela_get_error());
-    ela_filetransfer_set_userdata(fctx->ft, argv[1], NULL);
-    if (entry)
-        deref(list_remove_entry(fctx->filentries, &entry->le));
+        return;
+    }
+
+    if (fctx->receiver) {
+        ela_filetransfer_set_userdata(fctx->ft, argv[1], NULL);
+        if (entry)
+            deref(list_remove_entry(fctx->filentries, &entry->le));
+    } else
+        entry->cancel(entry);
 }
 
 static void system_cmd(filectx_t *fctx, int argc, char *argv[])

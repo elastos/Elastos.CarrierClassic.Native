@@ -561,7 +561,6 @@ static bool stream_channel_data(ElaSession *ws, int stream, int channel,
 
     switch(ft->sender_receiver) {
     case SENDER:
-
         packet->type = ntohs(packet->type);
 
         switch(packet->type) {
@@ -627,7 +626,7 @@ static bool stream_channel_data(ElaSession *ws, int stream, int channel,
             rc = ft->callbacks.data(ft, fileid, data, len, ft->callbacks_context);
             if (!rc) { // Tell filetransfering is finished.
                 vlogW(TAG "file transferring finished over channel %d, ",
-                       "closing channel.", channel);
+                      "closing channel.", channel);
                 return false;
             }
         }
@@ -1221,7 +1220,7 @@ int ela_filetransfer_send(ElaFileTransfer *ft, const char *fileid,
     FileTransferItem *item;
     ssize_t rc;
 
-    if (!ft || !fileid || !*fileid || !data || !length) {
+    if (!ft || !fileid || !*fileid || (length && !data) || (!length && data)) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
         return -1;
     }
@@ -1306,7 +1305,8 @@ int ela_filetransfer_cancel(ElaFileTransfer *ft, const char *fileid,
     assert(ft->stream > 0);
     assert(item->channel > 0);
 
-    cancel_data = (packet_cancel_t *)alloca(sizeof(cancel_data) + strlen(reason));
+    cancel_data = (packet_cancel_t *)alloca(sizeof(*cancel_data) +
+                                            strlen(reason));
     cancel_data->type = htons(PACKET_CANCEL);
     cancel_data->status = htonl(status);
     strcpy(cancel_data->reason, reason);
@@ -1314,13 +1314,14 @@ int ela_filetransfer_cancel(ElaFileTransfer *ft, const char *fileid,
     rc = ela_stream_write_channel(ft->session, ft->stream, item->channel,
                                   (uint8_t *)cancel_data,
                                   sizeof(*cancel_data) + strlen(reason));
-    if (rc < 0)
+    if (rc < 0) {
         vlogE(TAG "receiver canceling to transfer file %s error (0x%x).",
               item->fileid, ela_get_error());
-    else
-        vlogT(TAG "receiver canceled to transfer file %s over channel %d.",
-              item->fileid, item->channel);
+        return -1;
+    }
 
+    vlogT(TAG "receiver canceled to transfer file %s over channel %d.",
+          item->fileid, item->channel);
     return 0;
 }
 
