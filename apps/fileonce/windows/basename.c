@@ -20,36 +20,15 @@
  * SOFTWARE.
  */
 
-#ifndef __EASYFILE_H__
-#define __EASYFILE_H__
+#include <string.h>
 
-#include <stdint.h>
+char *basename(char *realpath)
+{
+	char *p;
 
-#include "ela_filetransfer.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct EasyFile {
-    ElaFileTransfer         *ft;
-
-    ElaFileProgressCallbacks callbacks;
-    void                    *callbacks_context;
-
-    FILE                    *fp;
-    char                    fileid[ELA_MAX_FILE_ID_LEN + 1];
-    uint64_t                filesz;
-    uint64_t                offset;
-
-    int                     sys_errno;
-    int                     carrier_errno;
-} EasyFile;
-
-void ela_set_error(int error);
-
-#ifdef __cplusplus
+	p = strrchr(realpath, '\\');
+	if (!p)
+		return realpath;
+	else
+		return p + 1;
 }
-#endif
-
-#endif /* __EASYFILE_H__ */
