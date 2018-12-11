@@ -69,9 +69,28 @@
 
 const char *bundle_prefix = "filetransfer";
 
-static void cleanup_expired_filereqs(hashtable_t *filelreqs)
+static void cleanup_expired_filereqs(hashtable_t *filereqs)
 {
-    //TODO;
+    hashtable_iterator_t it;
+    struct timeval now;
+
+    gettimeofday(&now, NULL);
+
+    filereqs_iterate(filereqs, &it);
+    while(filereqs_iterator_has_next(&it)) {
+        FileRequest *fr;
+        int rc;
+
+        rc = filereqs_iterator_next(&it, &fr);
+        if (rc <= 0)
+            break;
+
+        if (timercmp(&now, &fr->expire_time, >)) {
+            hashtable_iterator_remove(&it);
+        }
+
+        deref(fr);
+    }
 }
 
 static
@@ -1253,7 +1272,7 @@ int ela_filetransfer_cancel(ElaFileTransfer *ft, const char *fileid,
 {
     FileTransferItem *item;
     packet_cancel_t *cancel_data;
-    int rc;
+    ssize_t rc;
 
     if (!ft || !fileid || !*fileid)  {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
