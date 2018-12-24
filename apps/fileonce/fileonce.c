@@ -126,8 +126,8 @@ static void file_sent(size_t length, uint64_t totalsz, void *context)
     }
 
     if (length == totalsz) {
-        printf("\nfileonce has sent file [%s] to friend [%s]. total size: %lld.\n",
-               fctx->path, fctx->friendid, totalsz);
+        printf("\nfileonce has sent file [%s] to friend [%s]. total size: %llu.\n",
+               fctx->path, fctx->friendid, (unsigned long long)totalsz);
         ela_kill(fctx->carrier);
     }
 }
@@ -144,8 +144,8 @@ static void file_received(size_t length, uint64_t totalsz, void *context)
     }
 
     if (length == totalsz) {
-        printf("\nfileonce has received file [%s] from friend [%s]. total size: %lld.\n",
-               fctx->path, fctx->friendid, totalsz);
+        printf("\nfileonce has received file [%s] from friend [%s]. total size: %llu.\n",
+               fctx->path, fctx->friendid, (unsigned long long)totalsz);
         ela_kill(fctx->carrier);
     }
 }

@@ -48,12 +48,6 @@ set(SRC
     fileonce.c
     config.c)
 
-if(WIN32)
-    set(SRC
-        ${SRC}
-        windows/basename.c)
-endif()
-
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(SYSTEM_LIBS pthread)
 endif()
