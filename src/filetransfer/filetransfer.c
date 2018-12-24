@@ -112,7 +112,7 @@ void sessionreq_callback(ElaCarrier *w, const char *from, const char *bundle,
         return;
     }
 
-    if (strchr(bundle, ':')) {
+    if (strchr(bundle, ' ')) {
         int rc;
 
         fti = (ElaFileTransferInfo *)alloca(sizeof(*fti));
@@ -247,7 +247,6 @@ static void sender_state_changed(ElaFileTransfer *ft, ElaStreamState state)
     int rc;
 
     assert(ft->session);
-    assert(ft->stream > 0);
     assert(ft->sender_receiver == SENDER);
 
     switch(state) {
@@ -255,6 +254,9 @@ static void sender_state_changed(ElaFileTransfer *ft, ElaStreamState state)
         vlogD(TAG "sender filetransfer connection state changed to be "
               "internal stream_initalized, waiting...");
         notify_state_changed(ft, FileTransferConnection_connecting);
+
+        if (ft->state >= FileTransferConnection_closed)
+            return;
 
         if (item->state == FileTransferState_standby)
             sprintf(bundle, "%s %s %s %llu", bundle_prefix, item->filename,
@@ -288,6 +290,9 @@ static void sender_state_changed(ElaFileTransfer *ft, ElaStreamState state)
         vlogD(TAG "sender filetransfer connection state changed to be "
               "connected, ready to carry filetransfering.", ft->address);
         notify_state_changed(ft, FileTransferConnection_connected);
+
+        if (ft->state >= FileTransferConnection_closed)
+            return;
 
         if (item->state != FileTransferState_standby)
             return;
@@ -341,7 +346,6 @@ static void receiver_state_changed(ElaFileTransfer *ft, ElaStreamState state)
     int rc;
 
     assert(ft->session);
-    assert(ft->stream > 0);
     assert(ft->sender_receiver == RECEIVER);
 
     switch(state) {
@@ -349,6 +353,9 @@ static void receiver_state_changed(ElaFileTransfer *ft, ElaStreamState state)
         vlogD(TAG "receiver filetransfer connection state changed to be "
               "internal stream_initalized, waiting...");
         notify_state_changed(ft, FileTransferConnection_connecting);
+
+        if (ft->state >= FileTransferConnection_closed)
+            return;
 
         if (item->state == FileTransferState_standby)
             sprintf(bundle, "%s %s", bundle_prefix, item->fileid);
@@ -429,7 +436,9 @@ static void stream_state_changed(ElaSession *session, int stream,
         return;
     }
 
+    ref(ft);
     cbs[ft->sender_receiver](ft, state);
+    deref(ft);
 }
 
 static bool stream_channel_open(ElaSession *ws, int stream, int channel,
@@ -1231,7 +1240,7 @@ int ela_filetransfer_send(ElaFileTransfer *ft, const char *fileid,
         return -1;
     }
 
-    if (length >= item->filesz) {
+    if (length > item->filesz) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
         return -1;
     }
