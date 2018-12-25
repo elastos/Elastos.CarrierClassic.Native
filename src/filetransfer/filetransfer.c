@@ -497,6 +497,12 @@ static bool stream_channel_open(ElaSession *ws, int stream, int channel,
                   "in wrong state %d, dropping.", channel, item->state);
             return false;
         }
+        if (item->filesz != fti.size) {
+            vlogE(TAG, "receiver received file request with unmatched file "
+                  "size %llu over channel %d", _LLUV(fti.size), channel);
+            return false;
+        }
+
         item->channel = channel;
     }
 
@@ -1226,7 +1232,7 @@ int ela_filetransfer_pull(ElaFileTransfer *ft, const char *fileid,
     return 0;
 }
 
-int ela_filetransfer_send(ElaFileTransfer *ft, const char *fileid,
+ssize_t ela_filetransfer_send(ElaFileTransfer *ft, const char *fileid,
                           const uint8_t *data, size_t length)
 {
     FileTransferItem *item;
