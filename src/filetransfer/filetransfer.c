@@ -497,6 +497,7 @@ static bool stream_channel_open(ElaSession *ws, int stream, int channel,
                   "in wrong state %d, dropping.", channel, item->state);
             return false;
         }
+        item->channel = channel;
     }
 
     return true;
@@ -1276,7 +1277,7 @@ int ela_filetransfer_send(ElaFileTransfer *ft, const char *fileid,
 
     vlogV(TAG "sender send file %s data over channel %d with length %z.",
           item->fileid, item->channel, length);
-    return 0;
+    return rc;
 }
 
 int ela_filetransfer_cancel(ElaFileTransfer *ft, const char *fileid,
