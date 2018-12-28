@@ -58,6 +58,9 @@
 #include <time_util.h>
 #include <base58.h>
 #include <vlog.h>
+#if defined(__ANDROID__) && defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <posix_helper.h>
@@ -1095,6 +1098,11 @@ int ice_handler_write_packet(IceHandler *handler, int comp, IcePacket *packet)
     status = pj_ice_strans_sendto(handler->st, (unsigned)comp, packet, len,
                                   &handler->remote.def_addr[comp-1],
                                   pj_sockaddr_get_len(&handler->remote.def_addr[0]));
+#if defined(__ANDROID__)
+    if (status == PJ_EPENDING) {
+        usleep(500000);
+    } else
+#endif
     if (status != PJ_SUCCESS) {
         vlogW("Session: ICE handler %d sending data error: %s", stream->base.id,
               ice_strerror(status));
