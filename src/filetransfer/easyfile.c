@@ -218,9 +218,6 @@ bool notify_data_cb(ElaFileTransfer *ft, const char *fileid, const uint8_t *data
                                 strerror(file->sys_errno));
         return true;
     } else {
-        if (file->callbacks.received)
-            file->callbacks.received(file->offset, file->filesz, file->callbacks_context);
-
         if (file->offset == file->filesz) {
             char tmp[PATH_MAX] = {0};
 
@@ -231,6 +228,9 @@ bool notify_data_cb(ElaFileTransfer *ft, const char *fileid, const uint8_t *data
             strcat(tmp, TMP_EXTENSION);
             rename(tmp, file->filename);
         }
+
+        if (file->callbacks.received)
+            file->callbacks.received(file->offset, file->filesz, file->callbacks_context);
 
         return (file->offset < file->filesz);
     }
@@ -376,7 +376,7 @@ int ela_file_recv(ElaCarrier *w, const char *address, const char *filename,
         return -1;
     }
 
-    if (strlen(p) + strlen(TMP_EXTENSION) >= PATH_MAX) {
+    if (strlen(path) + strlen(TMP_EXTENSION) >= PATH_MAX) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
         return -1;
     }
