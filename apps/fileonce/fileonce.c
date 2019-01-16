@@ -76,7 +76,7 @@ typedef struct filectx filectx_t;
 
 struct filectx {
     ElaCarrier *carrier;
-    bool tx_in_progress;
+    bool in_progress;
     char path[PATH_MAX];
 
     bool receiver;
@@ -96,7 +96,7 @@ static void file_state_changed(FileTransferConnection state, void *context)
     switch(state) {
         case FileTransferConnection_connecting:
             printf("fileonce is connecting to %s...\n", fctx->friendid);
-            fctx->tx_in_progress = true;
+            fctx->in_progress = true;
             break;
 
         case FileTransferConnection_connected:
@@ -180,7 +180,7 @@ static void connection_callback(ElaCarrier *w, ElaConnectionStatus status,
 
         case ElaConnectionStatus_Disconnected:
             vlogD("Self carrier node disconnected from carrier network.");
-            if (!fctx->tx_in_progress)
+            if (!fctx->in_progress)
                 ela_kill(w);
             break;
 
@@ -213,7 +213,7 @@ static void friend_connection_callback(ElaCarrier *w, const char *friendid,
 
         case ElaConnectionStatus_Disconnected:
             vlogD("Friend %s disconnected from carrier network.", friendid);
-            if (!fctx->tx_in_progress)
+            if (!fctx->in_progress)
                 ela_kill(w);
             break;
 
