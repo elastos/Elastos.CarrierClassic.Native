@@ -1225,6 +1225,16 @@ static void ft_connect_cb(ElaCarrier *carrier,
     write_ack("ft_connect received\n");
 }
 
+static void fp_sent(size_t length, uint64_t totalsz, void *context)
+{
+    TestContext *wtxt = (TestContext*)context;
+    CarrierContext *ctx = wtxt->carrier;
+    CarrierContextExtra *extra = ctx->extra;
+
+    if (length == totalsz)
+        remove(extra->recv_file);
+}
+
 static void fp_received(size_t length, uint64_t totalsz, void *context)
 {
     TestContext *ctx = (TestContext *)context;
@@ -1236,7 +1246,7 @@ static void fp_received(size_t length, uint64_t totalsz, void *context)
 
 static ElaFileProgressCallbacks file_progress_cb = {
     .state_changed = NULL,
-    .sent = NULL,
+    .sent = fp_sent,
     .received = fp_received
 };
 
@@ -1373,12 +1383,28 @@ static void ft_cancel(TestContext *context, int argc, char *argv[])
     write_ack("ft_cancel succeeded\n");
 }
 
+static void ft_send(TestContext *context, int argc, char *argv[])
+{
+    TestContext *ctx = (TestContext *)context;
+    CarrierContext *wctx = ctx->carrier;
+    CarrierContextExtra *extra = wctx->extra;
+    int rc;
+
+    CHK_ARGS(argc == 2);
+
+    rc = ela_file_send(wctx->carrier, argv[1], extra->recv_file,
+                       &file_progress_cb, context);
+    if (rc < 0)
+        write_ack("ft_send failed\n");
+    else
+        write_ack("ft_send succeeded\n");
+}
+
 static void ft_recv(TestContext *context, int argc, char *argv[])
 {
     TestContext *ctx = (TestContext *)context;
     CarrierContext *wctx = ctx->carrier;
     CarrierContextExtra *extra = wctx->extra;
-    char buf[512] = {0};
     int rc;
 
     CHK_ARGS(argc == 2 || argc == 3);
@@ -1386,19 +1412,62 @@ static void ft_recv(TestContext *context, int argc, char *argv[])
     remove(extra->recv_file);
 
     if (argc == 3) {
-        sprintf(buf, "printf %s > %s.ft~part", argv[2], extra->recv_file);
-        system(buf);
+        FILE *fp = NULL;
+        char tmp_file[512] = {0};
+
+        // Create a temporary file for resuming interrupted transferring.
+        strcat(tmp_file, extra->recv_file);
+        strcat(tmp_file, ".ft~part");
+        fp = fopen(tmp_file, "w+b");
+        if (!fp) {
+            write_ack("ft_recv failed\n");
+            return;
+        }
+
+        rc = fputs(argv[2], fp);
+        fclose(fp);
+        if (rc == EOF) {
+            write_ack("ft_recv failed\n");
+            return;
+        }
     }
 
     rc = ela_file_recv(wctx->carrier, argv[1], extra->recv_file,
                        &file_progress_cb, context);
     if (rc == 0)
         write_ack("ft_recv succeeded\n");
-    else
+    else {
+        vlogE("Receive failed: 0x%x", ela_get_error());
         write_ack("ft_recv failed\n");
+    }
 }
 
-static void ft_res(TestContext *context, int argc, char *argv[])
+static void ft_file(TestContext *context, int argc, char *argv[])
+{
+    TestContext *ctx = (TestContext *)context;
+    CarrierContext *wctx = ctx->carrier;
+    CarrierContextExtra *extra = wctx->extra;
+    FILE *fp = NULL;
+    int rc;
+
+    CHK_ARGS(argc == 2);
+
+    fp = fopen(extra->recv_file, "w+b");
+    if (!fp) {
+        write_ack("ft_file failed\n");
+        return;
+    }
+
+    rc = fputs(argv[1], fp);
+    fclose(fp);
+
+    if (rc == EOF)
+        write_ack("ft_file failed\n");
+    else
+        write_ack("ft_file succeeded\n");
+}
+
+static void ft_result(TestContext *context, int argc, char *argv[])
 {
     TestContext *ctx = (TestContext *)context;
     CarrierContext *wctx = ctx->carrier;
@@ -1411,20 +1480,20 @@ static void ft_res(TestContext *context, int argc, char *argv[])
     fp = fopen(extra->recv_file, "rb");
     if (!fp) {
         remove(extra->recv_file);
-        write_ack("ft_res failed\n");
+        write_ack("ft_result failed\n");
         return;
     }
 
     if (!fgets(buf, sizeof(buf), fp)) {
         fclose(fp);
         remove(extra->recv_file);
-        write_ack("ft_res failed\n");
+        write_ack("ft_result failed\n");
         return;
     }
 
     fclose(fp);
     remove(extra->recv_file);
-    write_ack("ft_res %s\n", buf);
+    write_ack("ft_result %s\n", buf);
 }
 
 static void ft_cleanup(TestContext *context, int argc, char *argv[])
@@ -1434,7 +1503,11 @@ static void ft_cleanup(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 1);
 
-    ela_filetransfer_close(wctx->ft);
+    if (wctx->ft) {
+        ela_filetransfer_close(wctx->ft);
+        wctx->ft = NULL;
+    }
+
     ela_filetransfer_cleanup(wctx->carrier);
     write_ack("ft_cleanup succeeded\n");
 }
@@ -1476,8 +1549,10 @@ static struct command {
     { "ft_pend",      ft_pend      },
     { "ft_resume",    ft_resume    },
     { "ft_cancel",    ft_cancel    },
+    { "ft_send",      ft_send      },
     { "ft_recv",      ft_recv      },
-    { "ft_res",       ft_res       },
+    { "ft_file",      ft_file      },
+    { "ft_result",    ft_result    },
     { "ft_cleanup",   ft_cleanup   },
     { NULL, NULL},
 };
