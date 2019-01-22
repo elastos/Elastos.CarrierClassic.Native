@@ -1244,12 +1244,6 @@ static void fp_received(size_t length, uint64_t totalsz, void *context)
         write_ack("fp_recv done\n");
 }
 
-static ElaFileProgressCallbacks file_progress_cb = {
-    .state_changed = NULL,
-    .sent = fp_sent,
-    .received = fp_received
-};
-
 static void ft_init(TestContext *context, int argc, char *argv[])
 {
     TestContext *ctx = (TestContext *)context;
@@ -1388,10 +1382,12 @@ static void ft_send(TestContext *context, int argc, char *argv[])
     TestContext *ctx = (TestContext *)context;
     CarrierContext *wctx = ctx->carrier;
     CarrierContextExtra *extra = wctx->extra;
+    ElaFileProgressCallbacks file_progress_cb = {0};
     int rc;
 
     CHK_ARGS(argc == 2);
 
+    file_progress_cb.sent = fp_sent;
     rc = ela_file_send(wctx->carrier, argv[1], extra->recv_file,
                        &file_progress_cb, context);
     if (rc < 0)
@@ -1405,6 +1401,7 @@ static void ft_recv(TestContext *context, int argc, char *argv[])
     TestContext *ctx = (TestContext *)context;
     CarrierContext *wctx = ctx->carrier;
     CarrierContextExtra *extra = wctx->extra;
+    ElaFileProgressCallbacks file_progress_cb = {0};
     int rc;
 
     CHK_ARGS(argc == 2 || argc == 3);
@@ -1432,6 +1429,7 @@ static void ft_recv(TestContext *context, int argc, char *argv[])
         }
     }
 
+    file_progress_cb.received = fp_received;
     rc = ela_file_recv(wctx->carrier, argv[1], extra->recv_file,
                        &file_progress_cb, context);
     if (rc == 0)

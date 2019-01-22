@@ -114,12 +114,6 @@ static void received_cb(size_t length, uint64_t totalsz, void *context)
         cond_signal(ctx->ft_cond);
 }
 
-static ElaFileProgressCallbacks fp_calllbacks = {
-    .state_changed = ft_state_changed_cb,
-    .sent = sent_cb,
-    .received = received_cb
-};
-
 struct CarrierContextExtra {
     char file_name[ELA_MAX_FILE_NAME_LEN + 1];
 };
@@ -165,6 +159,7 @@ static void test_filetransfer_file(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
+    ElaFileProgressCallbacks fp_callbacks = {0};
     FILE *fp = NULL;
     char userid[ELA_MAX_ID_LEN + 1] = {0};
     char cmd[32] = {0};
@@ -197,7 +192,9 @@ static void test_filetransfer_file(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_init") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    rc = ela_file_send(wctxt->carrier, robotid, extra->file_name, &fp_calllbacks, &test_context);
+    fp_callbacks.state_changed = ft_state_changed_cb;
+    fp_callbacks.sent = sent_cb;
+    rc = ela_file_send(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = read_ack("%32s %32s", cmd, result);
@@ -263,6 +260,7 @@ static void test_filetransfer_receive_file(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
+    ElaFileProgressCallbacks fp_callbacks = {0};
     FILE *fp = NULL;
     char userid[ELA_MAX_ID_LEN + 1] = {0};
     char cmd[32] = {0};
@@ -311,7 +309,9 @@ static void test_filetransfer_receive_file(void)
     cond_wait(wctxt->ft_cond);
 
     remove(extra->file_name);
-    rc = ela_file_recv(wctxt->carrier, robotid, extra->file_name, &fp_calllbacks, &test_context);
+    fp_callbacks.state_changed = ft_state_changed_cb;
+    fp_callbacks.received = received_cb;
+    rc = ela_file_recv(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     /* Wait for the ft_state_changed_cb to be invoked. After invocation,
@@ -358,6 +358,7 @@ static void test_filetransfer_file_resume_interrupted_transferring(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
+    ElaFileProgressCallbacks fp_callbacks = {0};
     FILE *fp = NULL;
     char userid[ELA_MAX_ID_LEN + 1] = {0};
     char cmd[32] = {0};
@@ -390,7 +391,9 @@ static void test_filetransfer_file_resume_interrupted_transferring(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_init") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    rc = ela_file_send(wctxt->carrier, robotid, extra->file_name, &fp_calllbacks, &test_context);
+    fp_callbacks.state_changed = ft_state_changed_cb;
+    fp_callbacks.sent = sent_cb;
+    rc = ela_file_send(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = read_ack("%32s %32s", cmd, result);
@@ -456,6 +459,7 @@ static void test_filetransfer_resume_receiving_file(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
+    ElaFileProgressCallbacks fp_callbacks = {0};
     FILE *fp = NULL;
     char userid[ELA_MAX_ID_LEN + 1] = {0};
     char tmp_file[512] = {0};
@@ -513,7 +517,9 @@ static void test_filetransfer_resume_receiving_file(void)
     cond_wait(wctxt->ft_cond);
 
     remove(extra->file_name);
-    rc = ela_file_recv(wctxt->carrier, robotid, extra->file_name, &fp_calllbacks, &test_context);
+    fp_callbacks.state_changed = ft_state_changed_cb;
+    fp_callbacks.received = received_cb;
+    rc = ela_file_recv(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     /* Wait for the ft_state_changed_cb to be invoked. After invocation,
