@@ -1401,16 +1401,21 @@ static void ft_recv(TestContext *context, int argc, char *argv[])
     CarrierContext *wctx = ctx->carrier;
     CarrierContextExtra *extra = wctx->extra;
     ElaFileProgressCallbacks file_progress_cb = {0};
+    char path[PATH_MAX] = {0};
+    char *p;
     int rc;
 
     CHK_ARGS(argc == 2 || argc == 3);
 
-    rc = remove(extra->recv_file);
-    if (rc < 0) {
-        vlogE("remove failed: %d\n", errno);
-        if (errno == EACCES || errno == EPERM) {
-            write_ack("recv failed\n");
-            return;
+    p = realpath(extra->recv_file, path);
+    if (p) {
+        rc = remove(path);
+        if (rc < 0) {
+            vlogE("remove failed: %d\n", errno);
+            if (errno == EACCES || errno == EPERM) {
+                write_ack("recv failed\n");
+                return;
+            }
         }
     }
 
