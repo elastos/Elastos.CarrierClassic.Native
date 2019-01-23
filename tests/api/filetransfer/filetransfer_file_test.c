@@ -328,6 +328,12 @@ static void test_filetransfer_receive_file(void)
     ft_con_state_bits |= 1 << FileTransferConnection_connected;
     CU_ASSERT_EQUAL_FATAL(wctxt->ft_con_state_bits, ft_con_state_bits);
 
+    // Wait for the sender to finish sending.
+    rc = read_ack("%32s %32s", cmd, result);
+    CU_ASSERT_TRUE_FATAL(rc == 2);
+    CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_send") == 0);
+    CU_ASSERT_TRUE_FATAL(strcmp(result, "done") == 0);
+
     // Wait for the received_cb to be invoked.
     cond_wait(wctxt->ft_cond);
 
@@ -535,6 +541,12 @@ static void test_filetransfer_resume_receiving_file(void)
     ft_con_state_bits |= 1 << FileTransferConnection_connecting;
     ft_con_state_bits |= 1 << FileTransferConnection_connected;
     CU_ASSERT_EQUAL_FATAL(wctxt->ft_con_state_bits, ft_con_state_bits);
+
+    // Wait for the sender to finish sending.
+    rc = read_ack("%32s %32s", cmd, result);
+    CU_ASSERT_TRUE_FATAL(rc == 2);
+    CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_send") == 0);
+    CU_ASSERT_TRUE_FATAL(strcmp(result, "done") == 0);
 
     // Wait for the received_cb to be invoked.
     cond_wait(wctxt->ft_cond);
