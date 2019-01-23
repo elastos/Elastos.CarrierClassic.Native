@@ -265,6 +265,7 @@ static void test_filetransfer_receive_file(void)
     char userid[ELA_MAX_ID_LEN + 1] = {0};
     char cmd[32] = {0};
     char result[32] = {0};
+    char path[PATH_MAX] = {0};
     char *p;
     const char *data = "hello";
     uint8_t ft_con_state_bits = 0;
@@ -308,7 +309,12 @@ static void test_filetransfer_receive_file(void)
     // Wait for the ft_connect_cb to be invoked.
     cond_wait(wctxt->ft_cond);
 
-    remove(extra->file_name);
+    p = realpath(extra->file_name, path);
+    if (p) {
+        rc = remove(path);
+        CU_ASSERT_EQUAL(rc, 0);
+    }
+
     fp_callbacks.state_changed = ft_state_changed_cb;
     fp_callbacks.received = received_cb;
     rc = ela_file_recv(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
@@ -471,6 +477,7 @@ static void test_filetransfer_resume_receiving_file(void)
     char tmp_file[512] = {0};
     char cmd[32] = {0};
     char result[32] = {0};
+    char path[PATH_MAX] = {0};
     char *p;
     const char *data = "abcd";
     uint8_t ft_con_state_bits = 0;
@@ -522,7 +529,12 @@ static void test_filetransfer_resume_receiving_file(void)
     // Wait for the ft_connect_cb to be invoked.
     cond_wait(wctxt->ft_cond);
 
-    remove(extra->file_name);
+    p = realpath(extra->file_name, path);
+    if (p) {
+        rc = remove(path);
+        CU_ASSERT_EQUAL(rc, 0);
+    }
+
     fp_callbacks.state_changed = ft_state_changed_cb;
     fp_callbacks.received = received_cb;
     rc = ela_file_recv(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
