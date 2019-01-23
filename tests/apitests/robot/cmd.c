@@ -1229,8 +1229,10 @@ static void fp_sent(size_t length, uint64_t totalsz, void *context)
     CarrierContext *ctx = wtxt->carrier;
     CarrierContextExtra *extra = ctx->extra;
 
-    if (length == totalsz)
+    if (length == totalsz) {
         remove(extra->recv_file);
+        write_ack("ft_send done\n");
+    }
 }
 
 static void fp_received(size_t length, uint64_t totalsz, void *context)
