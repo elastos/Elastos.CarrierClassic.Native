@@ -1408,7 +1408,14 @@ static void ft_recv(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 2 || argc == 3);
 
-    remove(extra->recv_file);
+    rc = remove(extra->recv_file);
+    if (rc < 0) {
+        vlogE("remove failed: %d\n", errno);
+        if (errno == EACCES || errno == EPERM) {
+            write_ack("recv failed\n");
+            return;
+        }
+    }
 
     if (argc == 3) {
         FILE *fp = NULL;
