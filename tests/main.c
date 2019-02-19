@@ -49,7 +49,17 @@
 
 static int mode = MODE_UNKNOWN;
 
-#define DEFAULT_CONFIG  "tests.conf";
+#define TESTS_CONFIG_FILE   "tests.conf"
+
+static const char *config_files[] = {
+    "./"TESTS_CONFIG_FILE,
+    "../etc/carrier/"TESTS_CONFIG_FILE,
+#if !defined(_WIN32) && !defined(_WIN64)
+    "/usr/local/etc/carrier/"TESTS_CONFIG_FILE,
+    "/etc/carrier/"TESTS_CONFIG_FILE,
+#endif
+    NULL
+};
 
 int test_main(int argc, char *argv[]);
 int robot_main(int argc, char *argv[]);
@@ -124,7 +134,7 @@ int main(int argc, char *argv[])
     int debug = 0;
     char buffer[PATH_MAX];
 
-    const char *config_file;
+    const char *config_file = NULL;
 
     int opt;
     int idx;
@@ -189,7 +199,7 @@ int main(int argc, char *argv[])
 #endif
 
     if (!config_file)
-        config_file = DEFAULT_CONFIG;
+        config_file = get_config_file(config_files);
 
     if (mode == MODE_UNKNOWN)
         mode = MODE_LAUNCHER;
