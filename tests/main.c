@@ -49,14 +49,14 @@
 
 static int mode = MODE_UNKNOWN;
 
-#define TESTS_CONFIG_FILE   "tests.conf"
+#define CONFIG_NAME   "tests.conf"
 
 static const char *config_files[] = {
-    "./"TESTS_CONFIG_FILE,
-    "../etc/carrier/"TESTS_CONFIG_FILE,
+    "./"CONFIG_NAME,
+    "../etc/carrier/"CONFIG_NAME,
 #if !defined(_WIN32) && !defined(_WIN64)
-    "/usr/local/etc/carrier/"TESTS_CONFIG_FILE,
-    "/etc/carrier/"TESTS_CONFIG_FILE,
+    "/usr/local/etc/carrier/"CONFIG_NAME,
+    "/etc/carrier/"CONFIG_NAME,
 #endif
     NULL
 };
@@ -126,6 +126,23 @@ static void usage(void)
     printf("\n");
     printf("Usage: elatests [--cases | --robot] -c CONFIG\n");
     printf("\n");
+}
+
+const char *get_config_path(const char *config_files[])
+{
+    const char **file;
+
+    for (file = config_files; *file; file++) {
+        FILE *fp = fopen(*file, "r");
+        if (!fp)
+            continue;
+
+        fclose(fp);
+
+        return *file;
+    }
+
+    return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -199,7 +216,13 @@ int main(int argc, char *argv[])
 #endif
 
     if (!config_file)
-        config_file = get_config_file(config_files);
+        config_file = get_config_path(config_files);
+
+    if (!config_file) {
+        printf("Error: Missing config file.\n");
+        usage();
+        return -1;
+     }
 
     if (mode == MODE_UNKNOWN)
         mode = MODE_LAUNCHER;
