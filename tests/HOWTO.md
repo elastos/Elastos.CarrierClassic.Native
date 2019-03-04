@@ -12,19 +12,19 @@ You can also use --cases or --robot option when starts elatests. If either of th
 For example, you can use the following commands to start elatests on Macintosh:
 ```shell
 $cd CMAKE_INSTALL_PREFIX/bin
-$DYLD_LIBRARY_PATH=../lib ./elatests
+$DYLD_LIBRARY_PATH=../lib ./elatests [--cases | --robot] [-c CONFIG]
 ```
 
 or the following commands on Linux:
 ```shell
 $cd CMAKE_INSTALL_PREFIX/bin
-$LD_LIBRARY_PATH=../lib ./elatests
+$LD_LIBRARY_PATH=../lib ./elatests [--cases | --robot] [-c CONFIG]
 ```
 
 or the following commands on Windows:
 ```shell
 >cd CMAKE_INSTALL_PREFIX/bin
->elatests.exe
+>elatests.exe [--cases | --robot] [-c CONFIG]
 ```
 
 Remember to replace the CMAKE_INSTALL_PREFIX with the value you set when you build Carrier.
