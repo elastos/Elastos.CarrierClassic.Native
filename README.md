@@ -172,7 +172,7 @@ Available commands in the shell can be listed by using the command **help**. Spe
 Or run Elatests:
 
 ```shell
-$ ./elatests.sh
+$ ./elatests [--cases | --robot] -c CONFIG
 ```
 
 
@@ -401,7 +401,7 @@ Available commands in the shell can be listed by using the command **help**. Spe
 Or run Elatests:
 
 ```shell
-$ ./elatests.sh
+$ ./elatests [--cases | --robot] -c CONFIG
 ```
 
 ## Build on MacOS Host
@@ -529,7 +529,7 @@ Available commands in the shell can be listed by using the command **help**. Spe
 Or run Elatests:
 
 ```shell
-$ ./elatests.sh
+$ ./elatests [--cases | --robot] -c CONFIG
 ```
 
 #### 5. Cross-compilation for Android Platform
@@ -785,7 +785,7 @@ Or run Elatests:
 *Make sure to replace 'YOUR-DISTRIBUTION-PACKAGE-PATH'.*
 
 ```shell
-$ elatests --config=YOUR-DISTRIBUTION-PACKAGE-PATH\etc\carrier\tests.conf
+$ elatests [--cases | --robot] --config=YOUR-DISTRIBUTION-PACKAGE-PATH\etc\carrier\tests.conf
 ```
 
 ## Build API Documentation
