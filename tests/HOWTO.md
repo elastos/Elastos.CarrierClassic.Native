@@ -1,16 +1,16 @@
 # HOW-TO-USE
 ## Usages
 
-The **elatests** must be run with config file of which you can specifiy it with option **-c**:
+The **elatests** must be run with configuration file of which you can specifiy it with option **-c**:
 
 ```shell
-$./elatests -c YOUR-CONFIG-PATH/elatests.conf 
+$./elatests -c YOUR-CONFIG-PATH/elatests.conf
 ```
 
  or run without options:
 
 ```shell
-$ ./elatestssh
+$ ./elatests
 ```
 
  In this case, the upper command would be internally configured with the following paths in order of search priority:
