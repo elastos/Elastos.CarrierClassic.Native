@@ -1,30 +1,55 @@
-Elatests
-========
-## How to use
-Before using elatests, make sure that the libraries needed by the elatests are in the paths which the executable file can link with.
+# HOW-TO-USE
+## Usages
 
-Elatests must be run with a configuration file which you can specify with the -c option. If you run elatests without specifying a configuration file, it will use tests.conf in the following paths in order: '.', '../etc/carrier', '/usr/local/etc/carrier', '/etc/carrier'. However, the last two paths will be neglected on Windows.
+The **elatests** must be run with config file of which you can specifiy it with option **-c**:
 
-Elatests will start successfully if either you specify a configuration file or the tests.conf is found in any of those paths mentioned before. Otherwise, it will fail to start.
-
-You can also use --cases or --robot option when starts elatests. If either of them is provided, only one of them will be started. If neither of them is provided, both the cases and the robot will be started.
-
-For example, you can use the following commands to start elatests on Macintosh:
 ```shell
-$cd CMAKE_INSTALL_PREFIX/bin
-$DYLD_LIBRARY_PATH=../lib ./elatests [--cases | --robot] [-c CONFIG]
+$./elatests -c YOUR-CONFIG-PATH/elatests.conf 
 ```
 
-or the following commands on Linux:
+ or run without options:
+
 ```shell
-$cd CMAKE_INSTALL_PREFIX/bin
-$LD_LIBRARY_PATH=../lib ./elatests [--cases | --robot] [-c CONFIG]
+$ ./elatestssh
 ```
 
-or the following commands on Windows:
-```shell
->cd CMAKE_INSTALL_PREFIX/bin
->elatests.exe [--cases | --robot] [-c CONFIG]
+ In this case, the upper command would be internally configured with the following paths in order of search priority:
+
+```markdown
+./elatests.conf
+../etc/carrier/elatests.conf
+/usr/local/etc/carrier/elatests.conf
+/etc/carrier/elatests.conf
 ```
 
-Remember to replace the CMAKE_INSTALL_PREFIX with the value you set when you build Carrier.
+Beware that the last two candidate paths would be neglected on Windows.
+
+### Standalone Usages
+
+In default, **elatests** would run with two child processes running in parallel, one is to run as a robot to backend testing, the other is the main body to verify all exported APIs.  Please use `ps` command to check all running processes of **elatests**.
+
+The **elatests** can be specifically to run as the **robot** or the **testcase** in standalone with option **—robot** or **—cases**.
+
+Assumed that under the distribution directory, run the command to run as test-suite app:
+
+```shell
+$./elatests --cases [-c YOUR-CONFIG-FILE]
+```
+
+Or run the command below to run as the robot to backend testing:
+
+```shell
+$./elatests --robot [-c YOUR-CONFIG-FILE]
+```
+
+Notice that the environment value **DYLD_LIBRARY_PATH** should be explicitly set to the path of dynamic libraries when running on MacOS:
+
+```shell
+$DYLD_LIBRARY_PATH=../lib ./elatests [--cases | --robot][-c YOUR-CONFIG-FILE]
+```
+
+On windows, run the following command:
+
+```shell
+$elatests.exe [--cases | --robot][-c YOUR-CONFIG-FILE]
+```
