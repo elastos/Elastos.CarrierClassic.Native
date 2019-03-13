@@ -27,8 +27,7 @@ if(IOS)
 endif()
 
 if(ANDROID)
-    set(XDK_TOOLCHAIN "${CMAKE_BINARY_DIR}/.android_toolchain")
-    set(XDK_SYSROOT "${XDK_TOOLCHAIN}/sysroot")
+    set(XDK_SYSROOT "${CMAKE_BINARY_DIR}/.android_toolchain/sysroot")
     set(CMAKE_ARGS_INIT ${CMAKE_ARGS_INIT}
         -DANDROID_NDK_HOME=${CMAKE_ANDROID_NDK}
         -DANDROID_ABI=${ANDROID_ABI})
@@ -40,7 +39,6 @@ if(RASPBERRYPI)
         -DRPI_TOOLCHAIN_HOME=${RPI_TOOLCHAIN_HOME})
 endif()
 
-
 if(CMAKE_CROSSCOMPILING)
     set(CMAKE_ARGS_INIT ${CMAKE_ARGS_INIT}
         -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
@@ -49,7 +47,7 @@ if(CMAKE_CROSSCOMPILING)
         -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY
         -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY
         -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY
-        "-DCMAKE_FIND_ROOT_PATH=${CARRIER_INT_DIST_DIR}")
+        -DCMAKE_FIND_ROOT_PATH=${CARRIER_INT_DIST_DIR})
 
 #[[
     message("========== Cross compiling environment for CMake 3rd party ==========")
