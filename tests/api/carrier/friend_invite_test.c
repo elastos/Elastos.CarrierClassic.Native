@@ -177,7 +177,7 @@ static void test_friend_invite_confirm(void)
         CU_ASSERT_NSTRING_EQUAL(extra->from, robotid, strlen(robotid));
         CU_ASSERT_EQUAL(extra->status, 0);
         CU_ASSERT_PTR_NULL(extra->reason);
-        CU_ASSERT_NSTRING_EQUAL(extra->data, invite_rsp_data, extra->len - 1);
+        CU_ASSERT_NSTRING_EQUAL(extra->data, invite_rsp_data, extra->len);
         CU_ASSERT_EQUAL(extra->len, strlen(invite_rsp_data));
 
         FREE_ANYWAY(extra->from);
