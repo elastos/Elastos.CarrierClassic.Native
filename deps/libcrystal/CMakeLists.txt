@@ -9,7 +9,7 @@ ExternalProject_Add(
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
     URL "https://github.com/iwhisperio/libcrystal/archive/v1.0.3.tar.gz"
-    URL_HASH SHA256=a559ab2e1246bdf95b3a3fd6a26d816c95e78bb897ac55fbfefc288cb5385204
+    URL_HASH SHA256=867200b6e0314a69b7dc9792bc05f18a75f375ce4332127caa4a73630814af06
     DOWNLOAD_NAME "libcrystal-v1.0.3.tar.gz"
     DOWNLOAD_DIR ${CARRIER_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1

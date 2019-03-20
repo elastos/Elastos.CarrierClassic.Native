@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <getopt.h>
+#include <crystal.h>
 #include <fcntl.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <io.h>
@@ -41,8 +41,6 @@
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
 #endif
-
-#include <vlog.h>
 
 #include "config.h"
 

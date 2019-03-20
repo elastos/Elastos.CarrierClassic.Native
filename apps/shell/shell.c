@@ -27,7 +27,7 @@
 #include <ctype.h>
 #include <signal.h>
 #include <stdarg.h>
-#include <getopt.h>
+#include <crystal.h>
 #include <limits.h>
 #include <inttypes.h>
 #include <sys/stat.h>
@@ -56,7 +56,6 @@
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
-#include <posix_helper.h>
 #include <io.h>
 
 // Undefine Windows defined MOUSE_MOVED for PDCurses
@@ -69,7 +68,6 @@
 #define PTHREAD_RECURSIVE_MUTEX_INITIALIZER PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP
 #endif
 
-#include <rc_mem.h>
 #include <pthread.h>
 
 #include <ela_carrier.h>

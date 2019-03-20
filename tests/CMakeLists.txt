@@ -70,8 +70,7 @@ set(LIBS
     elacarrier
     elasession
     elafiletrans
-    crystal
-    )
+    crystal)
 
 set(DEPS
     ela-carrier

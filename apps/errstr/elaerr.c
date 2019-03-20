@@ -27,7 +27,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <getopt.h>
+#include <crystal.h>
 
 #include <ela_carrier.h>
 
