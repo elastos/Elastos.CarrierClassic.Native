@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <getopt.h>
+#include <crystal.h>
 #include <assert.h>
 #include <pthread.h>
 
@@ -34,16 +34,15 @@
 #ifdef HAVE_PROCESS_H
 #include <process.h>
 #endif
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif
 
 #include <ela_carrier.h>
 #include <ela_session.h>
-#include <vlog.h>
-#include <linkedhashtable.h>
-#include <rc_mem.h>
 
 #if defined(_WIN32) || defined(_WIN64)
-#include <builtins.h>
-#include <posix_helper.h>
+#include <io.h>
 #endif
 
 #include "config.h"
@@ -449,7 +448,7 @@ static void setup_portforwardings(void)
     }
 }
 
-static void shutdown(void)
+static void stop(void)
 {
     hashtable_t *ss = sessions;
 
@@ -471,7 +470,7 @@ static void shutdown(void)
 
 static void signal_handler(int signum)
 {
-    shutdown();
+    stop();
 }
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -622,7 +621,7 @@ int main(int argc, char *argv[])
     if (!carrier) {
         fprintf(stderr, "Can not create Carrier instance (%08X).\n",
                 ela_get_error());
-        shutdown();
+        stop();
         return -1;
     }
 
@@ -630,7 +629,7 @@ int main(int argc, char *argv[])
     if (rc < 0) {
         fprintf(stderr, "Can not initialize Carrier session extension (%08X).",
                 ela_get_error());
-        shutdown();
+        stop();
         return -1;
     }
 
@@ -638,7 +637,7 @@ int main(int argc, char *argv[])
     if (rc < 0) {
         fprintf(stderr, "Can not set callbacks (%08X).",
                 ela_get_error());
-        shutdown();
+        stop();
         return -1;
     }
 
@@ -646,6 +645,6 @@ int main(int argc, char *argv[])
     if (rc < 0)
         fprintf(stderr, "Can not start Carrier.\n");
 
-    shutdown();
+    stop();
     return rc;
 }

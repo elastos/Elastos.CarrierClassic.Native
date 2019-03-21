@@ -24,12 +24,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <getopt.h>
+#include <crystal.h>
+#include <fcntl.h>
+#if defined(_WIN32) || defined(_WIN64)
+#include <io.h>
+#endif
 #ifdef HAVE_PROCESS_H
 #include <process.h>
 #endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
 #endif
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -37,8 +44,6 @@
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
 #endif
-
-#include <vlog.h>
 
 #include "config.h"
 
