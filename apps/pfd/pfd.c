@@ -35,6 +35,9 @@
 #ifdef HAVE_PROCESS_H
 #include <process.h>
 #endif
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif
 
 #include <ela_carrier.h>
 #include <ela_session.h>

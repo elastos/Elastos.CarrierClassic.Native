@@ -54,6 +54,9 @@
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
 #endif
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <io.h>
@@ -61,6 +64,7 @@
 // Undefine Windows defined MOUSE_MOVED for PDCurses
 #undef MOUSE_MOVED
 #endif
+
 #include <curses.h>
 
 #ifdef __linux__
