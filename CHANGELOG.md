@@ -1,3 +1,24 @@
+04/10/2019 Tang Zhilong stiartsly@gmail.com
+
+**version 5.2.4**, main changes to previous version:
+
+```markdown
+- Export only static libraries for iOS, and static/dynamic libraries for other platforms;
+- Update dependency cygwin to 3.0.6-1 for windows platform;
+- Update dependency libcrystal to v1.0.4.
+```
+
+03/18/2019 Tang Zhilong stiartsly@gmail.com
+
+**version 5.2.3**, main changes to previous version:
+
+```markdown
+- Fix ios cross-compilation issue for some macos environment;
+- Fix issue for calling open_portforwarding and close_portforwarding in stream without PORTFORWARDING option;
+- Update dependency cygwin libraries need on Windows platforms;
+- Fix issue of implementing ela_get_version().
+```
+
 03/02/2019 Tang Zhilong stiartsly@gmail.com
 
 **version 5.2.2**, main changes to previous version:
