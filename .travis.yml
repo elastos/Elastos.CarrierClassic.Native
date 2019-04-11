@@ -4,49 +4,29 @@ matrix:
   include:
   - os: osx
     env: BUILD_ENV=darwin_x64 BUILD_TYPE=Debug RUN_TEST=ON
-    if: |
-      NOT tag IS present OR \
-      tag =~ /^(internal-test)/
+    # if: |
+    #   NOT tag IS present OR \
+    #   tag =~ /^(internal-test)/
 
   - os: osx
     env: BUILD_ENV=darwin_x64 BUILD_TYPE=Release RUN_TEST=ON
-    if: |
-      NOT tag =~ /^(internal-test)/
+    # if: |
+    #   NOT tag =~ /^(internal-test)/
 
   - os: osx
     env: BUILD_ENV=ios_arm64 PLATFORM=iphoneos BUILD_TYPE=Debug
-    if: |
-      NOT tag IS present OR \
-      tag =~ /^(internal-test)/
-
-  - os: osx
-    env: BUILD_ENV=ios_arm64 PLATFORM=iphoneos BUILD_TYPE=Release
-    if: |
-      tag IS present AND \
-      NOT tag =~ /^(internal-test)/
 
   - os: osx
     env: BUILD_ENV=ios_x64 PLATFORM=iphonesimulator BUILD_TYPE=Debug
-    if: |
-      NOT tag IS present OR \
-      tag =~ /^(internal-test)/
 
   - os: osx
-    env: BUILD_ENV=ios_x64 PLATFORM=iphonesimulator BUILD_TYPE=Release
-    if: |
-      tag IS present AND \
-      NOT tag =~ /^(internal-test)/
+    env: BUILD_ENV=darwin_android_arm64 ANDROID_ABI=arm64-v8a BUILD_TYPE=Debug NO_DEPLOY=ON
 
   - env: BUILD_ENV=linux_x64 BUILD_TYPE=Debug RUN_TEST=ON
     sudo: true
-    if: |
-      NOT tag IS present OR \
-      tag =~ /^(internal-test)/
 
   - env: BUILD_ENV=linux_x64 ENABLE_DOCS=ON BUILD_TYPE=Release RUN_TEST=ON
     sudo: true
-    if: |
-      NOT tag =~ /^(internal-test)/
 
   - language: android
     sudo: true
@@ -57,22 +37,6 @@ matrix:
         - build-tools-23.0.2
         - android-21
     env: BUILD_ENV=android_armv7a ANDROID_ABI=armeabi-v7a BUILD_TYPE=Debug
-    if: |
-      NOT tag IS present OR \
-      tag =~ /^(internal-test)/
-
-  - language: android
-    sudo: true
-    android:
-      components:
-        - tools
-        - platform-tools
-        - build-tools-23.0.2
-        - android-21
-    env: BUILD_ENV=android_armv7a ANDROID_ABI=armeabi-v7a BUILD_TYPE=Release
-    if: |
-      tag IS present AND \
-      NOT tag =~ /^(internal-test)/
 
   - language: android
     sudo: true
@@ -83,22 +47,6 @@ matrix:
         - build-tools-23.0.2
         - android-21
     env: BUILD_ENV=android_arm64 ANDROID_ABI=arm64-v8a BUILD_TYPE=Debug
-    if: |
-      NOT tag IS present OR \
-      tag =~ /^(internal-test)/
-
-  - language: android
-    sudo: true
-    android:
-      components:
-        - tools
-        - platform-tools
-        - build-tools-23.0.2
-        - android-21
-    env: BUILD_ENV=android_arm64 ANDROID_ABI=arm64-v8a BUILD_TYPE=Release
-    if: |
-      tag IS present AND \
-      NOT tag =~ /^(internal-test)/
 
   - language: android
     sudo: true
@@ -109,22 +57,6 @@ matrix:
         - build-tools-23.0.2
         - android-21
     env: BUILD_ENV=android_x86 ANDROID_ABI=x86 BUILD_TYPE=Debug
-    if: |
-      NOT tag IS present OR \
-      tag =~ /^(internal-test)/
-
-  - language: android
-    sudo: true
-    android:
-      components:
-        - tools
-        - platform-tools
-        - build-tools-23.0.2
-        - android-21
-    env: BUILD_ENV=android_x86 ANDROID_ABI=x86 BUILD_TYPE=Release
-    if: |
-      tag IS present AND \
-      NOT tag =~ /^(internal-test)/
 
   - language: android
     sudo: true
@@ -135,36 +67,12 @@ matrix:
         - build-tools-23.0.2
         - android-21
     env: BUILD_ENV=android_x86_64 ANDROID_ABI=x86_64 BUILD_TYPE=Debug
-    if: |
-      NOT tag IS present OR \
-      tag =~ /^(internal-test)/
-
-  - language: android
-    sudo: true
-    android:
-      components:
-        - tools
-        - platform-tools
-        - build-tools-23.0.2
-        - android-21
-    env: BUILD_ENV=android_x86_64 ANDROID_ABI=x86_64 BUILD_TYPE=Release
-    if: |
-      tag IS present AND \
-      NOT tag =~ /^(internal-test)/
 
   - sudo: true
     env: BUILD_ENV=raspberrypi RASPBERRRIPI=TRUE BUILD_TYPE=Debug
-    if: |
-      NOT tag IS present OR \
-      tag =~ /^(internal-test)/
-
-  - sudo: true
-    env: BUILD_ENV=raspberrypi RASPBERRRIPI=TRUE BUILD_TYPE=Release
-    if: |
-      tag IS present AND \
-      NOT tag =~ /^(internal-test)/
 
 install:
+  - cd /tmp
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       if [[ "$ENABLE_DOCS" != "" ]]; then
         sudo apt-get update;
@@ -179,7 +87,6 @@ install:
 
       if [[ "$ANDROID_ABI" == "" ]]; then
         if [[ "$RASPBERRRIPI" != "" ]]; then
-          cd /tmp;
           git clone https://github.com/raspberrypi/tools.git raspberrypitools;
           export RPI_TOOLCHAIN_HOME=/tmp/raspberrypitools;
           wget -q https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.tar.gz;
@@ -187,7 +94,6 @@ install:
           export PATH=/tmp/cmake-3.11.4-Linux-x86_64/bin:$PATH;
         fi
       else
-        cd /tmp;
         wget -q https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.tar.gz;
         tar -xzf cmake-3.11.4-Linux-x86_64.tar.gz;
         export PATH=/tmp/cmake-3.11.4-Linux-x86_64/bin:$PATH;
@@ -199,28 +105,31 @@ install:
       ulimit -c unlimited;
       sudo sysctl kern.corefile=/cores/core;
       easy_install six;
+      if [[ "$ANDROID_ABI" != "" ]]; then
+        wget -q https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip;
+        unzip -q android-ndk-r16b-darwin-x86_64.zip;
+        export ANDROID_NDK_HOME=/tmp/android-ndk-r16b;
+      fi
     fi
 
 script:
   - cd $TRAVIS_BUILD_DIR/build && mkdir ${BUILD_ENV}_$BUILD_TYPE && cd ${BUILD_ENV}_$BUILD_TYPE
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      export OUTPUT_TYPE=so;
-      if [[ "$ANDROID_ABI" == "" ]]; then
+  - if [[ "$ANDROID_ABI" == "" ]]; then
+      if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
         if [[ "$RASPBERRRIPI" == "" ]]; then
           cmake -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DENABLE_DOCS=$ENABLE_DOCS ../.. ;
         else
           cmake -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=../../cmake/RPiToolchain.cmake ../.. ;
         fi
       else
-        cmake -DANDROID_ABI=$ANDROID_ABI -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=../../cmake/AndroidToolchain.cmake ../.. ;
+        if [[ "$PLATFORM" == "" ]]; then
+          cmake -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_BUILD_TYPE=BUILD_VER ../.. ;
+        else
+          cmake -DIOS_PLATFORM=$PLATFORM -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_BUILD_TYPE=BUILD_VER -DCMAKE_TOOLCHAIN_FILE=../../cmake/iOSToolchain.cmake ../.. ;
+        fi
       fi
     else
-      export OUTPUT_TYPE=dylib;
-      if [[ "$PLATFORM" == "" ]]; then
-        cmake -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_BUILD_TYPE=BUILD_VER ../.. ;
-      else
-        cmake -DIOS_PLATFORM=$PLATFORM -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_BUILD_TYPE=BUILD_VER -DCMAKE_TOOLCHAIN_FILE=../../cmake/iOSToolchain.cmake ../.. ;
-      fi
+      cmake -DANDROID_ABI=$ANDROID_ABI -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=../../cmake/AndroidToolchain.cmake ../.. ;
     fi
   - make && make install && make dist && cd dist
   - if [[ "$RUN_TEST" != "" ]]; then
@@ -232,7 +141,7 @@ script:
 after_success:
   - if [[ "$TRAVIS_TAG" != "" ]]; then
       cd $TRAVIS_BUILD_DIR/build/${BUILD_ENV}_$BUILD_TYPE/dist;
-      tar -czf $TRAVIS_TAG-$BUILD_ENV-$(date +'%Y%m%d').tar.gz include lib/*.$OUTPUT_TYPE;
+      tar -czf $TRAVIS_TAG-$BUILD_ENV-$(date +'%Y%m%d').tar.gz include lib;
       if [[ "$ENABLE_DOCS" != "" ]]; then
         tar -czf $TRAVIS_TAG-$BUILD_ENV-docs-$(date +'%Y%m%d').tar.gz  -C share/elastos/carrier html;
       fi;
@@ -261,6 +170,7 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
+    condition: $NO_DEPLOY = "" && $TRAVIS_TAG =~ ^internal-test
     # branches:
     #   only:
     #     - master
