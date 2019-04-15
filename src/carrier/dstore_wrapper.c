@@ -189,6 +189,73 @@ static bool check_offline_msg_cb(uint32_t friend_number,
 static void * crawl_offline_msg(void *arg)
 {
     DStoreWrapper *ctx = (DStoreWrapper *)arg;
+    ElaCarrier *w = ctx->carrier;
+    int rc;
+    char conf_cache[PATH_MAX];
+
+    rc = snprintf(conf_cache, sizeof(conf_cache), "%s/dstore_ache.conf",
+                  w->pref.data_location);
+    if (rc >= sizeof(conf_cache)) {
+        pthread_mutex_lock(&ctx->lock);
+        ctx->state = DSTORE_STATE_STOP;
+        pthread_mutex_unlock(&ctx->lock);
+        deref(ctx);
+        return NULL;
+    }
+
+    if (access(conf_cache, F_OK)) {
+        FILE *fp = fopen(conf_cache, "w");
+        if (!fp) {
+            pthread_mutex_lock(&ctx->lock);
+            ctx->state = DSTORE_STATE_STOP;
+            pthread_mutex_unlock(&ctx->lock);
+            deref(ctx);
+            return NULL;
+        }
+
+        const char *conf_str = NULL;
+        int i;
+        for (i = 0; i < w->pref.hive_bootstraps_size && !conf_str; ++i) {
+            if (w->pref.hive_bootstraps[i].ipv4[0]) {
+                conf_str = hive_generate_conf(w->pref.hive_bootstraps[i].ipv4,
+                                              w->pref.hive_bootstraps[i].port);
+            }
+            if (!conf_str && w->pref.hive_bootstraps[i].ipv6[0]) {
+                conf_str = hive_generate_conf(w->pref.hive_bootstraps[i].ipv6,
+                                              w->pref.hive_bootstraps[i].port);
+            }
+        }
+        if (!conf_str) {
+            pthread_mutex_lock(&ctx->lock);
+            ctx->state = DSTORE_STATE_STOP;
+            pthread_mutex_unlock(&ctx->lock);
+            deref(ctx);
+            fclose(fp);
+            remove(conf_cache);
+            return NULL;
+        }
+
+        size_t nwr = fwrite(conf_str, strlen(conf_str), 1, fp);
+        fclose(fp);
+        free((void *)conf_str);
+        if (nwr != 1) {
+            remove(conf_cache);
+            pthread_mutex_lock(&ctx->lock);
+            ctx->state = DSTORE_STATE_STOP;
+            pthread_mutex_unlock(&ctx->lock);
+            deref(ctx);
+            return NULL;
+        }
+    }
+
+    ctx->dstore = dstore_create(conf_cache);
+    if (!ctx->dstore) {
+        pthread_mutex_lock(&ctx->lock);
+        ctx->state = DSTORE_STATE_STOP;
+        pthread_mutex_unlock(&ctx->lock);
+        deref(ctx);
+        return NULL;
+    }
 
 crawl:
     pthread_mutex_lock(&ctx->lock);
@@ -221,64 +288,14 @@ DStoreWrapper *dstore_wrapper_create(ElaCarrier *w, DStoreOnMsgCallback cb)
 {
     DStoreWrapper *ctx;
     int rc;
-    char conf_cache[PATH_MAX];
     pthread_t worker;
 
     ctx = rc_zalloc(sizeof(DStoreWrapper), DStoreWrapperDestroy);
     if (!ctx)
         return NULL;
 
-    rc = snprintf(conf_cache, sizeof(conf_cache), "%s/dstore_cache.conf",
-                  w->pref.data_location);
-    if (rc >= sizeof(conf_cache)) {
-        deref(ctx);
-        return NULL;
-    }
-
-    if (access(conf_cache, F_OK)) {
-        FILE *fp = fopen(conf_cache, "w");
-        if (!fp) {
-            deref(ctx);
-            return NULL;
-        }
-
-        const char *conf_str = NULL;
-        int i;
-        for (i = 0; i < w->pref.hive_bootstraps_size && !conf_str; ++i) {
-            if (w->pref.hive_bootstraps[i].ipv4[0]) {
-                conf_str = hive_generate_conf(w->pref.hive_bootstraps[i].ipv4,
-                                              w->pref.hive_bootstraps[i].port);
-            }
-            if (!conf_str && w->pref.hive_bootstraps[i].ipv6[0]) {
-                conf_str = hive_generate_conf(w->pref.hive_bootstraps[i].ipv6,
-                                              w->pref.hive_bootstraps[i].port);
-            }
-        }
-        if (!conf_str) {
-            deref(ctx);
-            fclose(fp);
-            remove(conf_cache);
-            return NULL;
-        }
-
-        size_t nwr = fwrite(conf_str, strlen(conf_str), 1, fp);
-        fclose(fp);
-        free((void *)conf_str);
-        if (nwr != 1) {
-            remove(conf_cache);
-            deref(ctx);
-            return NULL;
-        }
-    }
-
     pthread_mutex_init(&ctx->lock, NULL);
     pthread_cond_init(&ctx->cond, NULL);
-
-    ctx->dstore = dstore_create(conf_cache);
-    if (!ctx->dstore) {
-        deref(ctx);
-        return NULL;
-    }
 
     ctx->carrier = w;
     ctx->cb = cb;
