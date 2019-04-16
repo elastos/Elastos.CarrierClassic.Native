@@ -257,7 +257,7 @@ static void * crawl_offline_msg(void *arg)
         return NULL;
     }
 
-    while(true) {
+    while (true) {
         pthread_mutex_lock(&ctx->lock);
         while (ctx->state == DSTORE_STATE_IDLE)
             pthread_cond_wait(&ctx->cond, &ctx->lock);
