@@ -205,7 +205,7 @@ static int redeem_dstore_file(ElaCarrier *w,
         return -1;
 
     if (!access(conf_path, F_OK))
-        return 0; // ?
+        return 0;
 
     for (i = 0; i < w->pref.hive_bootstraps_size && !conf_str; ++i) {
         if (w->pref.hive_bootstraps[i].ipv4[0])
