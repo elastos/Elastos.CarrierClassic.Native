@@ -45,10 +45,13 @@ static const char *default_config_files[] = {
 
 static void print_options(ElaOptions *options)
 {
+    int i;
+
     printf("Current configuration\n");
     printf("===============================================================\n");
     printf("%zi bootstrap nodes:\n", options->bootstraps_size);
-    for (int i = 0; i < options->bootstraps_size; i++) {
+
+    for (i = 0; i < options->bootstraps_size; i++) {
         BootstrapNode *node = options->bootstraps + i;
 
         printf("  %-44s, ", node->public_key ? node->public_key : "N/A");
