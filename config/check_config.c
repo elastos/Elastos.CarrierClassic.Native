@@ -22,8 +22,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_GETOPT_H
 #include <getopt.h>
+#endif
 
+#include <crystal.h>
 #include <ela_carrier.h>
 
 #include "carrier_config.h"
