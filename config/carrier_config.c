@@ -54,10 +54,11 @@
 
 static void bootstraps_destructor(void *p)
 {
+    int i;
     size_t *size = (size_t *)p;
     BootstrapNode *bootstraps = (struct BootstrapNode *)(size + 1);
 
-    for (int i = 0; i < *size; i++) {
+    for (i = 0; i < *size; i++) {
         BootstrapNode *node = bootstraps + i;
 
         if (node->ipv4)
