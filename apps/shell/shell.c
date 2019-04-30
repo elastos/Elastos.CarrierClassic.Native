@@ -846,39 +846,40 @@ static void send_message(ElaCarrier *w, int argc, char *argv[])
 
 static void send_bulk_message(ElaCarrier *w, int argc, char *argv[])
 {
-    int rc;
-    int i;
-    int msg_len;
-    int count;
+    int total_count;
     int failed_count;
+    size_t msglen;
+    int i;
+    int rc;
 
     if (argc != 4) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    count = atoi(argv[2]);
-    if (count <= 0) {
+    total_count = atoi(argv[2]);
+    if (total_count <= 0) {
         output("Count is invalid.\n");
         return;
     }
 
-    msg_len = strlen(argv[3]);
-    if (msg_len >= ELA_MAX_APP_MESSAGE_LEN - 11) {
+    msglen = strlen(argv[3]);
+    if (msglen >= ELA_MAX_APP_MESSAGE_LEN - 16) {
         output("Message is too long.\n");
         return;
     }
 
     output("Sending");
     failed_count = 0;
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < total_count; i++) {
         char msg[ELA_MAX_APP_MESSAGE_LEN + 1] = {0};
-        char buf[16] = {0};
+        char index[16] = {0};
 
+        sprintf(index, "#%d", i + 1);
         strcpy(msg, argv[3]);
-        sprintf(buf, "#%d", i + 1);
-        strcpy(msg + msg_len, buf);
-        rc = ela_send_friend_message(w, argv[1], msg, msg_len + strlen(buf));
+        strcat(msg, index);
+
+        rc = ela_send_friend_message(w, argv[1], msg, strlen(msg) + 1);
         if (rc < 0) {
             output("x(0x%x)", ela_get_error());
             failed_count++;
@@ -887,10 +888,10 @@ static void send_bulk_message(ElaCarrier *w, int argc, char *argv[])
         }
     }
 
-    output("\nSend bulk messages succeeded: %d", count - failed_count);
-    if (failed_count)
-        output(", failed: %d", failed_count);
-    output("\n");
+    output("\nSend bulk messages finished\n");
+    output("  totoal: %d\n", total_count);
+    output(" success: %d\n", total_count - failed_count);
+    output("  failed: %d\n", failed_count);
 }
 
 static void invite_response_callback(ElaCarrier *w, const char *friendid,
