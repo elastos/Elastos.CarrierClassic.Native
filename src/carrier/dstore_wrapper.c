@@ -74,6 +74,8 @@ typedef struct DStoreOffMsg {
     char val[4];
 } DStoreOffMsg;
 
+static const char *dstore_data_filename = "dstore.data";
+
 static inline uint8_t *compute_nonce(const char *dstore_key)
 {
     uint8_t offset;
@@ -107,14 +109,13 @@ int dstore_enqueue_offmsg(DStoreWrapper *ctx, const char *friendid,
     uint8_t sharedkey[SYMMETRIC_KEY_BYTES];
     uint8_t *msgbody = alloca(MAC_BYTES + length);
     ssize_t size;
-    size_t  _len;
     uint8_t *nonce;
     char msgkey[(SHA256_BYTES << 1) + 1];
     char *key;
     DStoreOffMsg *offmsg;
 
-    _len = base58_decode(friendid, strlen(friendid), peer_pk, sizeof(peer_pk));
-    if (_len != sizeof(peer_pk))  {
+    size = base58_decode(friendid, strlen(friendid), peer_pk, sizeof(peer_pk));
+    if ((size_t)size != sizeof(peer_pk))  {
         vlogE("Carrier: Decode base58 friendid %s error", friendid);
         return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
     }
@@ -145,7 +146,7 @@ int dstore_enqueue_offmsg(DStoreWrapper *ctx, const char *friendid,
     offmsg->base.ctx = ctx;
     offmsg->base.handle_cb = dstore_offmsg_send;
     offmsg->base.le.data = offmsg;
-    offmsg->val_sz = size;
+    offmsg->val_sz = (size_t)size;
     strcpy(offmsg->key, msgkey);
     memcpy(offmsg->val, msgbody, size);
 
@@ -239,6 +240,8 @@ void dstore_enqueue_pollmsg(DStoreWrapper *ctx)
 {
     DStorePollMsg *pollmsg;
 
+    assert(ctx);
+
     pollmsg = (DStorePollMsg *)rc_zalloc(sizeof(DStorePollMsg), NULL);
     if (!pollmsg)
         return;
@@ -255,8 +258,7 @@ void dstore_enqueue_pollmsg(DStoreWrapper *ctx)
     pthread_cond_signal(&ctx->cond);
 }
 
-static int redeem_dstore_file(ElaCarrier *w,
-                              char *conf_path, size_t length)
+static int redeem_dstore_file(ElaCarrier *w, char *data_path, size_t length)
 {
     const char *conf_str = NULL;
     FILE *fp;
@@ -264,11 +266,14 @@ static int redeem_dstore_file(ElaCarrier *w,
     int rc;
     int i;
 
-    rc = snprintf(conf_path, length, "%s/dstore_cache.conf", w->pref.data_location);
+    assert(data_path);
+
+    rc = snprintf(data_path, length, "%s/%s", w->pref.data_location,
+                  dstore_data_filename);
     if (rc < 0 || rc >= (int)length)
         return -1;
 
-    if (!access(conf_path, F_OK))
+    if (!access(data_path, F_OK))
         return 0;
 
     for (i = 0; i < w->pref.hive_bootstraps_size && !conf_str; ++i) {
@@ -286,7 +291,7 @@ static int redeem_dstore_file(ElaCarrier *w,
         return -1;
     }
 
-    fp = fopen(conf_path, "w");
+    fp = fopen(data_path, "w");
     if (!fp) {
         free((void *)conf_str);
         return -1;
@@ -351,6 +356,8 @@ static void *dstore_msgs_dispatch(void *arg)
 static void DStoreWrapperDestroy(void *arg)
 {
     DStoreWrapper *ctx = (DStoreWrapper *)arg;
+
+    assert(ctx);
 
     if (ctx->dstore) {
         dstore_destroy(ctx->dstore);
