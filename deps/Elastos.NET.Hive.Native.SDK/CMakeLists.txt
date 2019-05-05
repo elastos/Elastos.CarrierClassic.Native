@@ -14,13 +14,11 @@ ExternalProject_Add(
     Elastos.NET.Hive.Native.SDK
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
-    URL "https://github.com/elastos/Elastos.NET.Hive.Native.SDK/archive/release-v0.0.1.0.tar.gz"
-    URL_HASH SHA256=43dadca95cdac4e5dbf4e2c82ca2b74a12cf9e7bd8b712fc1662b44356642427
-    DOWNLOAD_NAME "Elastos.NET.Hive.Native.SDK-v0.0.1.0.tar.gz"
+    URL "https://github.com/elastos/Elastos.NET.Hive.Native.SDK/archive/release-v0.1.1.tar.gz"
+    URL_HASH SHA256=3a203a5746479421d434cbdc91e434b9ae078231b2645c55f3c58a161b403240
+    DOWNLOAD_NAME "Elastos.NET.Hive.Native.SDK-release-v0.1.1.tar.gz"
     DOWNLOAD_DIR ${CARRIER_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1
-
-    PATCH_COMMAND ${PATCH_EXE} -s -p1 < ${CMAKE_CURRENT_LIST_DIR}/hive.patch
 
     CMAKE_ARGS
         "-DCMAKE_INSTALL_PREFIX=${CARRIER_INT_DIST_DIR}"
