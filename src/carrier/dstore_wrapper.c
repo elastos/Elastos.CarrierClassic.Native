@@ -359,6 +359,9 @@ static void DStoreWrapperDestroy(void *arg)
 
     assert(ctx);
 
+    if (ctx->carrier)
+        deref(ctx->carrier);
+
     if (ctx->dstore) {
         dstore_destroy(ctx->dstore);
         ctx->dstore = NULL;
@@ -395,6 +398,7 @@ DStoreWrapper *dstore_wrapper_create(ElaCarrier *w, DStoreOnMsgCallback cb)
         return NULL;
     }
 
+    ref(w);
     ctx->carrier = w;
     ctx->cb = cb;
     ctx->stopped = 0;
