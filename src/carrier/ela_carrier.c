@@ -428,6 +428,7 @@ static const char *old_eladata_filename = "eladata";
 #define ROUND256(s)     (((((s) + 64) >> 8) + 1) << 8)
 
 typedef struct persistence_data {
+    bool dht_savedata_is_sk;
     size_t dht_savedata_len;
     const uint8_t *dht_savedata;
     size_t extra_savedata_len;
@@ -1240,9 +1241,25 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     }
 
     memset(&data, 0, sizeof(data));
-    load_persistence_data(opts->persistent_location, &data);
+    rc = load_persistence_data(opts->persistent_location, &data);
+    if (rc == 0) {
+        vlogI("Carrier: new carrier from local data.");
+    } else if (rc < 0 && opts->secret_key != NULL) {
+        vlogI("Carrier: new carrier from secret key.");
+        uint8_t *sk = (uint8_t *)malloc(PUBLIC_KEY_BYTES);
+        ssize_t len = base58_decode(opts->secret_key, strlen(opts->secret_key), sk, PUBLIC_KEY_BYTES);
+        if (len != PUBLIC_KEY_BYTES) {
+            vlogE("Carrier: secret key %s is not base58 encoded.", opts->secret_key);
+            return NULL;
+        }
+        data.dht_savedata = sk;
+        data.dht_savedata_len = len;
+        data.dht_savedata_is_sk = true;
+    } else {
+        vlogI("Carrier: new carrier from none.");
+    }
 
-    rc = dht_new(data.dht_savedata, data.dht_savedata_len, w->pref.udp_enabled, &w->dht);
+    rc = dht_new(data.dht_savedata, data.dht_savedata_len, data.dht_savedata_is_sk, w->pref.udp_enabled, &w->dht);
     if (rc < 0) {
         free_persistence_data(&data);
         deref(w);
@@ -2378,6 +2395,29 @@ int ela_run(ElaCarrier *w, int interval)
     deref(w);
 
     return 0;
+}
+
+char *ela_get_secret_key(ElaCarrier *w, char *secret_key, size_t length)
+{
+    if (!w || !secret_key || !length) {
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        return NULL;
+    }
+
+    if (length <= ELA_MAX_SECRET_KEY_LEN) {
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_BUFFER_TOO_SMALL));
+        return NULL;
+    }
+
+    uint8_t sk[PUBLIC_KEY_BYTES];
+    dht_self_get_secret_key(&w->dht, sk);
+    char* ret = base58_encode(sk, sizeof(sk), secret_key, &length);
+    if (!ret) {
+        vlogW("Carrier: Convert secret key to string error");
+        return NULL;
+    }
+
+    return secret_key;
 }
 
 char *ela_get_address(ElaCarrier *w, char *address, size_t length)

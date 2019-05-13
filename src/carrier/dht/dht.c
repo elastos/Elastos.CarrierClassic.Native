@@ -742,7 +742,7 @@ void log_cb(Tox *tox, TOX_LOG_LEVEL level, const char *file, uint32_t line,
     vlog(_level, "<%s>:%s\n", func, message);
 }
 
-int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht)
+int dht_new(const uint8_t *savedata, size_t datalen, bool is_sk_data, bool udp_enabled, DHT *dht)
 {
     struct Tox_Options options;
     TOX_ERR_NEW error;
@@ -757,7 +757,11 @@ int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht)
     options.log_callback = log_cb;
 
     if (savedata && datalen) {
-        options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
+        if(is_sk_data) {
+            options.savedata_type = TOX_SAVEDATA_TYPE_SECRET_KEY;
+        } else {
+            options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
+        }
         options.savedata_data = savedata;
         options.savedata_length = datalen;
     } else {

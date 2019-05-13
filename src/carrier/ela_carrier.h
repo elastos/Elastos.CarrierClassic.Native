@@ -155,6 +155,12 @@ extern "C" {
 
 /**
  * \~English
+ * Carrier Secret key max length.
+ */
+#define ELA_MAX_SECRET_KEY_LEN          44
+
+/**
+ * \~English
  * ElaCarrier representing carrier node singleton instance.
  */
 typedef struct ElaCarrier ElaCarrier;
@@ -274,6 +280,12 @@ typedef struct ElaOptions {
      * The array of Hive bootstrap nodes.
      */
     HiveBootstrapNode *hive_bootstraps;
+
+    /**
+     * \~English
+     * The secret key to restore the app for the first time.
+     */
+    const char *secret_key;
 } ElaOptions;
 
 /**
@@ -944,6 +956,25 @@ int ela_run(ElaCarrier *carrier, int interval);
 /******************************************************************************
  * Internal node information
  *****************************************************************************/
+
+/**
+ * \~English
+ * Get secret key associated with the Carrier node.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      secret_key  [out] The buffer that will receive the secret key.
+ *                        The buffer size should at least
+ *                        (ELA_MAX_SECRET_KEY_LEN + 1) bytes.
+ * @param
+ *      len         [in] The buffer size of secret key.
+ *
+ * @return
+ *      The address string pointer, or NULL if buffer is too small.
+ */
+CARRIER_API
+char *ela_get_secret_key(ElaCarrier *carrier, char *secret_key, size_t len);
 
 /**
  * \~English

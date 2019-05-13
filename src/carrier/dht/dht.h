@@ -43,7 +43,7 @@ typedef void (*SelfInfoCallback)(const uint8_t *address,
                                  const uint8_t *desc, size_t desc_length,
                                  void *context);
 
-int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht);
+int dht_new(const uint8_t *savedata, size_t datalen, bool is_sk_data, bool udp_enabled, DHT *dht);
 
 void dht_kill(DHT *dht);
 
