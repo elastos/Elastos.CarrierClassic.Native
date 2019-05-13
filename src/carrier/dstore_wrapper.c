@@ -316,6 +316,7 @@ static void *dstore_msgs_dispatch(void *arg)
     if (rc < 0) {
         vlogE("Carrier: Redeem hive bootstraps nodes");
         deref(ctx);
+        deref(ctx->carrier);
         return NULL;
     }
 
@@ -323,6 +324,7 @@ static void *dstore_msgs_dispatch(void *arg)
     if (!ctx->dstore) {
         vlogE("Carrier: Create Dstore object error");
         deref(ctx);
+        deref(ctx->carrier);
         return NULL;
     }
     vlogI("Carrier: Dstore is ready now.");
@@ -349,6 +351,7 @@ static void *dstore_msgs_dispatch(void *arg)
     pthread_mutex_unlock(&ctx->lock);
 
     deref(ctx);
+    deref(ctx->carrier);
 
     return NULL;
 }
@@ -360,7 +363,7 @@ static void DStoreWrapperDestroy(void *arg)
     assert(ctx);
 
     if (ctx->carrier)
-        deref(ctx->carrier);
+        ctx->carrier = NULL;
 
     if (ctx->dstore) {
         dstore_destroy(ctx->dstore);
@@ -398,15 +401,16 @@ DStoreWrapper *dstore_wrapper_create(ElaCarrier *w, DStoreOnMsgCallback cb)
         return NULL;
     }
 
-    ref(w);
     ctx->carrier = w;
     ctx->cb = cb;
     ctx->stopped = 0;
 
+    ref(w);
     ref(ctx);
     rc = pthread_create(&tid, NULL, dstore_msgs_dispatch, ctx);
     if (rc != 0) {
         deref(ctx);
+        deref(w);
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return NULL;
     }
@@ -415,7 +419,7 @@ DStoreWrapper *dstore_wrapper_create(ElaCarrier *w, DStoreOnMsgCallback cb)
     return ctx;
 }
 
-void dstore_wrapper_destroy(DStoreWrapper *ctx)
+void dstore_wrapper_kill(DStoreWrapper *ctx)
 {
     assert(ctx);
 
@@ -423,6 +427,4 @@ void dstore_wrapper_destroy(DStoreWrapper *ctx)
     ctx->stopped = 1;
     pthread_cond_signal(&ctx->cond);
     pthread_mutex_unlock(&ctx->lock);
-
-    deref(ctx);
 }
