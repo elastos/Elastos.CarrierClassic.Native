@@ -177,6 +177,12 @@ void load_config(const char *config_file)
     qualified_path(path, config_file, global_config.data_location);
 
     global_config.tests.loglevel = (int)get_int(&cfg, "tests.loglevel", 4);
+    rc = config_lookup_string(&cfg, "tests.secret_key", (const char **)&stropt);
+    if (rc && *stropt)
+        global_config.tests.secret_key = strdup(stropt);
+    else
+        global_config.tests.secret_key = NULL;
+
     global_config.robot.loglevel = (int)get_int(&cfg, "robot.loglevel", 4);
     get_str(&cfg, "robot.host", NULL, global_config.robot.host, sizeof(global_config.robot.host));
     sprintf(global_config.robot.port, "%d", get_int(&cfg, "robot.port", 7237));

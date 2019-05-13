@@ -37,6 +37,7 @@ typedef struct TestConfig {
 
     struct {
         int loglevel;
+        char *secret_key;
     } tests;
 
     struct {

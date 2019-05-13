@@ -303,6 +303,10 @@ int test_suite_init_ext(TestContext *context, bool udp_disabled)
 
     sprintf(datadir, "%s/tests", global_config.data_location);
 
+    if(global_config.tests.secret_key != NULL) {
+        opts.secret_key = global_config.tests.secret_key;
+    }
+
     opts.bootstraps = (BootstrapNode *)calloc(1, sizeof(BootstrapNode) * opts.bootstraps_size);
     if (!opts.bootstraps) {
         vlogE("Error: out of memory.");
@@ -326,6 +330,14 @@ int test_suite_init_ext(TestContext *context, bool udp_disabled)
         vlogE("Error: Carrier new error (0x%x)", ela_get_error());
         return -1;
     }
+
+    char secret_key[ELA_MAX_SECRET_KEY_LEN + 1];
+    ela_get_secret_key(wctxt->carrier, secret_key, sizeof(secret_key));
+    vlogI("Carrier SK: %s", secret_key);
+
+    char address[ELA_MAX_ADDRESS_LEN + 1];
+    ela_get_address(wctxt->carrier, address, sizeof(address));
+    vlogI("Carrier address: %s", address);
 
     cond_reset(wctxt->cond);
     cond_reset(wctxt->ready_cond);
