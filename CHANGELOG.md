@@ -1,4 +1,13 @@
-﻿05/06/2019 Chen Yu chenyu@gmail.com
+﻿05/14/2019 Chen Yu chenyu@gmail.com
+
+**version 5.3.2**, main changes to previous version:
+
+```markdown
+- Configure NDK for Android Platform;
+- Fix android armeabi-v7a wrong link by hiding some symbols;
+- Add refcounting after reference of carrier.
+```
+05/06/2019 Chen Yu chenyu@gmail.com
 
 **version 5.3.1**, main changes to previous version:
 
