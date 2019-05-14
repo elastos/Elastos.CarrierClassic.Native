@@ -36,14 +36,20 @@ set(HIVE_DEPS
 if(WIN32)
     set(HIVE_DEPS ${HIVE_DEPS} zlib1 ws2_32)
 elseif(ANDROID)
-    set(LIBC++_SHARED
-        ${CMAKE_ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${CMAKE_ANDROID_ARCH_ABI}/libc++_shared.so)
+    set(ANDROID_LIBRARY_SEARCH_PATH
+        "${CMAKE_ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${CMAKE_ANDROID_ARCH_ABI}")
+    set(LIBC++_STATIC
+        "${ANDROID_LIBRARY_SEARCH_PATH}/libc++_static.a")
+    set(LIBC++ABI_STATIC
+        "${ANDROID_LIBRARY_SEARCH_PATH}/libc++abi.a")
     if(${ANDROID_ABI} STREQUAL armeabi-v7a)
+        set(LIBANDROID_SUPPORT_STATIC
+            "${ANDROID_LIBRARY_SEARCH_PATH}/libandroid_support.a")
         set(LIBUNWIND_STATIC
-            ${CMAKE_ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${CMAKE_ANDROID_ARCH_ABI}/libunwind.a)
-        set(HIVE_DEPS ${HIVE_DEPS} ${LIBUNWIND_STATIC})
+            "${ANDROID_LIBRARY_SEARCH_PATH}/libunwind.a")
     endif()
-    set(HIVE_DEPS ${HIVE_DEPS} z ${LIBC++_SHARED})
+    set(HIVE_DEPS ${HIVE_DEPS}
+        z "${LIBUNWIND_STATIC}" "${LIBC++_STATIC}" "${LIBC++ABI_STATIC}" "${LIBANDROID_SUPPORT_STATIC}")
 else()
     set(HIVE_DEPS ${HIVE_DEPS} z stdc++)
 endif()
@@ -54,8 +60,4 @@ target_link_libraries(hive INTERFACE ${HIVE_DEPS})
 if(ENABLE_STATIC)
     export_static_library(hive-api++)
     export_static_library(hive-api)
-endif()
-
-if(ENABLE_STATIC AND ANDROID)
-    install(FILES ${LIBC++_SHARED} DESTINATION lib)
 endif()
