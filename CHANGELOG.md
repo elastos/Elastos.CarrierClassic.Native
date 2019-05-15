@@ -5,7 +5,8 @@
 ```markdown
 - Configure NDK for Android Platform;
 - Fix android armeabi-v7a wrong link by hiding some symbols;
-- Add refcounting after reference of carrier.
+- Add refcounting after reference of carrier;
+- Link static libc++ library.
 ```
 05/06/2019 Chen Yu chenyu@gmail.com
 
