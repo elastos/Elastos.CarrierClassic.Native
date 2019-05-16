@@ -3,10 +3,10 @@
 **version 5.3.2**, main changes to previous version:
 
 ```markdown
-- Configure NDK for Android Platform;
-- Fix android armeabi-v7a wrong link by hiding some symbols;
-- Add refcounting after reference of carrier;
-- Link static libc++ library.
+- Update CI scripts for configuring android ndk for different arches;
+- Fix crash issue for using C++ libraries on android armeabi-v7a platform;
+- Correct reference count of using carrier instance;
+- Change back to use static libraries on Android platform to resolve crash issue.
 ```
 05/06/2019 Chen Yu chenyu@gmail.com
 
