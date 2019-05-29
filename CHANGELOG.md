@@ -1,4 +1,12 @@
-﻿05/14/2019 Chen Yu chenyu@gmail.com
+﻿05/29/2019 Chen Yu chenyu@gmail.com
+
+**version 5.3.3**, main changes to previous version:
+
+```markdown
+- Update dependency libcrystal to v1.0.5.
+```
+
+05/14/2019 Chen Yu chenyu@gmail.com
 
 **version 5.3.2**, main changes to previous version:
 
