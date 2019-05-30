@@ -38,6 +38,7 @@
 #include "ela_carrier.h"
 #include "ela_session.h"
 #include "ela_filetransfer.h"
+#include "easyfile.h"
 
 #include "cond.h"
 #include "cmd.h"
