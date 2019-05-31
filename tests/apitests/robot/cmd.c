@@ -1362,11 +1362,7 @@ static void ft_cleanup(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 1);
 
-    if (wctx->ft) {
-        ela_filetransfer_close(wctx->ft);
-        wctx->ft = NULL;
-    }
-
+    ela_filetransfer_close(wctx->ft);
     ela_filetransfer_cleanup(wctx->carrier);
     write_ack("ft_cleanup succeeded\n");
 }
