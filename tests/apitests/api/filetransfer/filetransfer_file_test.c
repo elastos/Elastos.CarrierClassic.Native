@@ -23,7 +23,6 @@
 #include <stdlib.h>
 
 #include <CUnit/Basic.h>
-#include <vlog.h>
 
 #include "ela_carrier.h"
 #include "ela_filetransfer.h"
@@ -31,6 +30,7 @@
 #include "config.h"
 #include "cond.h"
 #include "test_helper.h"
+#include "easyfile.h"
 
 static inline void wakeup(void* context)
 {
