@@ -374,10 +374,10 @@ int add_friend_anyway(TestContext *context, const char *userid,
     CU_ASSERT_STRING_EQUAL_FATAL(buf[1], "succeeded");
 
     // wait for friend_connection (online) callback invoked.
-    while (wctxt->friend_status != ONLINE) {
+    do {
         CU_ASSERT_FATAL(wctxt->friend_status != FAILED);
         cond_wait(wctxt->friend_status_cond);
-    }
+    } while (wctxt->friend_status != ONLINE);
 
     return 0;
 }
