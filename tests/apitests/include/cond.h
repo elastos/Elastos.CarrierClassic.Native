@@ -42,8 +42,18 @@ typedef struct Condition {
     int signaled;
 } Condition;
 
+typedef struct Condition2 {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int signaled;
+    bool has_signaled;
+} Condition2;
+
 #define DEFINE_COND(obj) \
 	obj = { .mutex = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER }
+
+#define DEFINE_COND2(obj) \
+	obj = { .mutex = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER, .signaled = 0, .has_signaled = false }
 
 static inline void cond_init(Condition *cond)
 {
@@ -108,9 +118,24 @@ static inline void cond_reset(Condition *cond)
     pthread_mutex_unlock(&cond->mutex);
 }
 
+static inline void cond_reset2(Condition2 *cond)
+{
+    struct timespec timeout = {0, 1000};
+    int rc;
+
+    pthread_mutex_lock(&cond->mutex);
+    do {
+        rc = pthread_cond_timedwait(&cond->cond, &cond->mutex, &timeout);
+    } while (rc != ETIMEDOUT);
+
+    cond->signaled = 0;
+    cond->has_signaled = false;
+    pthread_mutex_unlock(&cond->mutex);
+}
+
 static inline void cond_deinit(Condition *cond)
 {
-    cond->signaled = false;
+    cond->signaled = 0;
     pthread_mutex_destroy(&cond->mutex);
     pthread_cond_destroy(&cond->cond);
 }

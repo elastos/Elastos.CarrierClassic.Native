@@ -84,9 +84,13 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     CarrierContext *wctxt = (CarrierContext *)context;
 
     wctxt->extra->connection_status = status;
+    pthread_mutex_lock(&wctxt->friend_status_cond->mutex);
     wctxt->friend_status = (status == ElaConnectionStatus_Connected) ?
                          ONLINE : OFFLINE;
-    cond_signal(wctxt->friend_status_cond);
+    wctxt->friend_status_cond->signaled++;
+    wctxt->friend_status_cond->has_signaled = true;
+    pthread_cond_signal(&wctxt->friend_status_cond->cond);
+    pthread_mutex_unlock(&wctxt->friend_status_cond->mutex);
 
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
@@ -122,7 +126,7 @@ static ElaCallbacks callbacks = {
 
 static Condition DEFINE_COND(ready_cond);
 static Condition DEFINE_COND(cond);
-static Condition DEFINE_COND(friend_status_cond);
+static Condition2 DEFINE_COND2(friend_status_cond);
 
 static CarrierContext carrier_context = {
     .cbs = &callbacks,
@@ -176,9 +180,33 @@ static void test_add_friend(void)
     cond_trywait(wctxt->cond, 60000);
     CU_ASSERT_TRUE(ela_is_friend(wctxt->carrier, robotid));
     // wait for friend connection (online) callback to be invoked.
-    while (wctxt->friend_status != ONLINE) {
-        CU_ASSERT_FATAL(wctxt->friend_status != FAILED);
-        cond_wait(wctxt->friend_status_cond);
+    while (1) {
+        int status;
+
+        pthread_mutex_lock(&wctxt->friend_status_cond->mutex);
+        status = wctxt->friend_status;
+        // wait for friend_connection (online) callback invoked.
+        if (status != ONLINE) {
+            CU_ASSERT_FATAL(status != FAILED);
+            if (wctxt->friend_status_cond->signaled <= 0) {
+                pthread_cond_wait(&wctxt->friend_status_cond->cond, &wctxt->friend_status_cond->mutex);
+            }
+            wctxt->friend_status_cond->signaled--;
+            wctxt->friend_status_cond->has_signaled = false;
+            pthread_mutex_unlock(&wctxt->friend_status_cond->mutex);
+        } else {
+            if (wctxt->friend_status_cond->has_signaled) {
+                if (wctxt->friend_status_cond->signaled <= 0) {
+                    pthread_cond_wait(&wctxt->friend_status_cond->cond, &wctxt->friend_status_cond->mutex);
+                }
+                wctxt->friend_status_cond->signaled--;
+                wctxt->friend_status_cond->has_signaled = false;
+            }
+
+            pthread_mutex_unlock(&wctxt->friend_status_cond->mutex);
+            
+            break;
+        }
     }
     CU_ASSERT_TRUE(extra->connection_status == ElaConnectionStatus_Connected);
 
@@ -229,9 +257,33 @@ static void test_accept_friend(void)
         CU_ASSERT_TRUE(ela_is_friend(wctxt->carrier, robotid));
 
         // wait for friend connection (online) callback invoked.
-        while (wctxt->friend_status != ONLINE) {
-            CU_ASSERT_FATAL(wctxt->friend_status != FAILED);
-            cond_wait(wctxt->friend_status_cond);
+        while (1) {
+            int status;
+
+            pthread_mutex_lock(&wctxt->friend_status_cond->mutex);
+            status = wctxt->friend_status;
+            // wait for friend_connection (online) callback invoked.
+            if (status != ONLINE) {
+                CU_ASSERT_FATAL(status != FAILED);
+                if (wctxt->friend_status_cond->signaled <= 0) {
+                    pthread_cond_wait(&wctxt->friend_status_cond->cond, &wctxt->friend_status_cond->mutex);
+                }
+                wctxt->friend_status_cond->signaled--;
+                wctxt->friend_status_cond->has_signaled = false;
+                pthread_mutex_unlock(&wctxt->friend_status_cond->mutex);
+            } else {
+                if (wctxt->friend_status_cond->has_signaled) {
+                    if (wctxt->friend_status_cond->signaled <= 0) {
+                        pthread_cond_wait(&wctxt->friend_status_cond->cond, &wctxt->friend_status_cond->mutex);
+                    }
+                    wctxt->friend_status_cond->signaled--;
+                    wctxt->friend_status_cond->has_signaled = false;
+                }
+
+                pthread_mutex_unlock(&wctxt->friend_status_cond->mutex);
+
+                break;
+            }
         }
         CU_ASSERT_TRUE(extra->connection_status == ElaConnectionStatus_Connected);
 

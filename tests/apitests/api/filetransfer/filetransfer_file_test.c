@@ -53,9 +53,13 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
+    pthread_mutex_lock(&wctxt->friend_status_cond->mutex);
     wctxt->friend_status = (status == ElaConnectionStatus_Connected) ?
                          ONLINE : OFFLINE;
-    cond_signal(wctxt->friend_status_cond);
+    wctxt->friend_status_cond->signaled++;
+    wctxt->friend_status_cond->has_signaled = true;
+    pthread_cond_signal(&wctxt->friend_status_cond->cond);
+    pthread_mutex_unlock(&wctxt->friend_status_cond->mutex);
 
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
@@ -125,8 +129,8 @@ static CarrierContextExtra extra = {
 
 static Condition DEFINE_COND(ready_cond);
 static Condition DEFINE_COND(cond);
-static Condition DEFINE_COND(friend_status_cond);
 static Condition DEFINE_COND(ft_cond);
+static Condition2 DEFINE_COND2(friend_status_cond);
 
 static CarrierContext carrier_context = {
     .cbs = &callbacks,
@@ -144,8 +148,8 @@ static CarrierContext carrier_context = {
 static void test_context_reset(TestContext *context)
 {
     cond_reset(context->carrier->cond);
-    cond_reset(context->carrier->friend_status_cond);
     cond_reset(context->carrier->ft_cond);
+    cond_reset2(context->carrier->friend_status_cond);
     context->carrier->ft_con_state_bits = 0;
 }
 

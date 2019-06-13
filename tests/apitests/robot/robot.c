@@ -45,28 +45,23 @@
 #include "test_helper.h"
 #include "config.h"
 #include "cmd.h"
+#include "robot.h"
 
 static ElaFileTransferInfo file_transfer_info;
 static ElaFileTransferCallbacks file_transfer_cbs;
 
-struct CarrierContextExtra {
-    char userid[ELA_MAX_ID_LEN + 1];
-    char *bundle;
-    char *data;
-    int len;
-    char gcookie[128];
-    int gcookie_len;
-    char gfrom[ELA_MAX_ID_LEN + 1];
-    char groupid[ELA_MAX_ID_LEN + 1];
-    char fileid[ELA_MAX_FILE_ID_LEN + 1];
-    char recv_file[ELA_MAX_FILE_NAME_LEN + 1];
-};
-
 static CarrierContextExtra extra = {
+    .tid = 0,
+    .mutex = PTHREAD_MUTEX_INITIALIZER,
     .userid = {0},
     .bundle = NULL,
     .data   = NULL,
     .len    = 0,
+    .test_offmsg = 0,
+    .test_offmsg_count = 0,
+    .expected_offmsg_count = 0,
+    .test_offmsg_expires = {0},
+    .offmsg = {0},
     .gcookie = {0},
     .gcookie_len = 0,
     .gfrom  = {0},
@@ -95,6 +90,32 @@ void print_friend_info(const ElaFriendInfo* info, int order)
     print_user_info(&info->user_info);
     vlogD("        label: %s", info->label);
     vlogD("     presence: %d", info->presence);
+}
+
+static void idle_cb(ElaCarrier *w, void *context)
+{
+    CarrierContextExtra *extra = ((TestContext*)context)->carrier->extra;
+    struct timeval now;
+
+    pthread_mutex_lock(&extra->mutex);
+    if (extra->test_offmsg == OffMsgCase_Single) {
+        gettimeofday(&now, NULL);
+        if (timercmp(&now, &extra->test_offmsg_expires, >)) {
+            write_ack("offmsglost\n");
+            extra->test_offmsg = 0;
+            memset(extra->offmsg, 0, sizeof(extra->offmsg));
+        }
+    } else if(extra->test_offmsg == OffMsgCase_Bulk) {
+        gettimeofday(&now, NULL);
+        if (timercmp(&now, &extra->test_offmsg_expires, >)) {
+            write_ack("%d\n", extra->test_offmsg_count);
+            extra->test_offmsg = 0;
+            extra->test_offmsg_count = 0;
+            extra->expected_offmsg_count = 0;
+            memset(extra->offmsg, 0, sizeof(extra->offmsg));
+        }
+    }
+    pthread_mutex_unlock(&extra->mutex);
 }
 
 static void connection_status_cb(ElaCarrier *w, ElaConnectionStatus status,
@@ -154,9 +175,13 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Friend %s's connection status changed -> %s",
           friendid, connection_str(status));
 
+    pthread_mutex_lock(&wctx->friend_status_cond->mutex);
     wctx->friend_status = (status == ElaConnectionStatus_Connected) ?
                         ONLINE : OFFLINE;
-    cond_signal(wctx->friend_status_cond);
+    wctx->friend_status_cond->signaled++;
+    wctx->friend_status_cond->has_signaled = true;
+    pthread_cond_signal(&wctx->friend_status_cond->cond);
+    pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
 }
 
 static void friend_info_cb(ElaCarrier *w, const char *friendid,
@@ -234,10 +259,33 @@ static void friend_removed_cb(ElaCarrier* w, const char* friendid, void *context
 static void friend_message_cb(ElaCarrier *w, const char *from,
                              const void *msg, size_t len, void *context)
 {
+    CarrierContextExtra *extra = ((TestContext*)context)->carrier->extra;
+
     vlogD("Received message from %s", from);
     vlogD(" msg: %.*s", len, (const char *)msg);
 
-    write_ack("%.*s\n", len, msg);
+    pthread_mutex_lock(&extra->mutex);
+    if (extra->test_offmsg == OffMsgCase_Single) {
+        if (strncmp((const char*)msg, extra->offmsg, len) == 0) {
+            write_ack("%.*s\n", len, msg);
+            extra->test_offmsg = 0;
+            memset(extra->offmsg, 0, sizeof(extra->offmsg));
+        }
+    } else if (extra->test_offmsg == OffMsgCase_Bulk) {
+        if (strncmp((const char*)msg, extra->offmsg, len) == 0) {
+            extra->test_offmsg_count++;
+            if (extra->test_offmsg_count == extra->expected_offmsg_count) {
+                write_ack("%d\n", extra->test_offmsg_count);
+                extra->test_offmsg = 0;
+                extra->test_offmsg_count = 0;
+                extra->expected_offmsg_count = 0;
+                memset(extra->offmsg, 0, sizeof(extra->offmsg));
+            }
+        }
+    } else {
+        write_ack("%.*s\n", len, msg);
+    }
+    pthread_mutex_unlock(&extra->mutex);
 }
 
 static void friend_invite_cb(ElaCarrier *w, const char *from, const char *bundle,
@@ -313,7 +361,7 @@ static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
 }
 
 static ElaCallbacks callbacks = {
-    .idle            = NULL,
+    .idle            = idle_cb,
     .connection_status = connection_status_cb,
     .ready           = ready_cb,
     .self_info       = self_info_cb,
@@ -407,7 +455,7 @@ static ElaFileTransferInfo ft_info = {
     .size = 1
 };
 
-static Condition DEFINE_COND(friend_status_cond);
+static Condition2 DEFINE_COND2(friend_status_cond);
 static Condition DEFINE_COND(cond);
 static Condition DEFINE_COND(group_cond);
 
@@ -424,27 +472,13 @@ CarrierContext carrier_context = {
     .extra = &extra
 };
 
-static void* carrier_run_entry(void *arg)
-{
-    ElaCarrier *w = (ElaCarrier *)arg;
-    int rc;
-
-    rc = ela_run(w, 10);
-    if (rc != 0) {
-        printf("Error: start carrier loop error %d.\n", ela_get_error());
-        ela_kill(w);
-    }
-
-    return NULL;
-}
-
-int robot_main(int argc, char *argv[])
+void *carrier_run_entry(void *arg)
 {
     ElaCarrier *w;
+    int rc;
     char datadir[PATH_MAX];
     char logfile[PATH_MAX];
-    pthread_t tid;
-    char *cmd;
+    bool reborn = false;
 
     ElaOptions opts = global_config.shared_options;
     opts.log_level = global_config.robot.loglevel;
@@ -459,26 +493,40 @@ int robot_main(int argc, char *argv[])
         opts.log_file = NULL;
     }
 
-    if (start_cmd_listener(global_config.robot.host, global_config.robot.port) < 0)
-        return -1;
-
     w = ela_new(&opts, &callbacks, &test_context);
     if (!w) {
         write_ack("failed\n");
         vlogE("Carrier new error (0x%x)", ela_get_error());
-        return -1;
+        return NULL;
     }
 
     carrier_context.carrier = w;
-    pthread_create(&tid, 0, &carrier_run_entry, w);
+    rc = ela_run(w, 10);
+    if (rc != 0) {
+        printf("Error: start carrier loop error %d.\n", ela_get_error());
+        ela_kill(w);
+    }
+    carrier_context.carrier = NULL;
+
+    return NULL;
+}
+
+int robot_main(int argc, char *argv[])
+{
+    CarrierContextExtra *extra = carrier_context.extra;
+    char *cmd;
+
+    if (start_cmd_listener(global_config.robot.host, global_config.robot.port) < 0)
+        return -1;
+
+    pthread_create(&extra->tid, 0, &carrier_run_entry, NULL);
 
     do {
         cmd = read_cmd();
         do_cmd(&test_context, cmd);
     } while (strcmp(cmd, "kill"));
 
-    pthread_join(tid, NULL);
-    carrier_context.carrier = NULL;
+    pthread_join(extra->tid, NULL);
 
     stop_cmd_listener();
 

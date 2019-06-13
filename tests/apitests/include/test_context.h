@@ -67,7 +67,7 @@ typedef struct CarrierContext {
     Condition *ft_cond;
     Condition *ready_cond;
     Condition *cond;
-    Condition *friend_status_cond;
+    Condition2 *friend_status_cond;
     Condition *group_cond;
 
     FileTransferConnection ft_con_state;

@@ -42,8 +42,11 @@
 
 #include "cond.h"
 #include "cmd.h"
+#include "robot.h"
 #include "test_context.h"
 #include "test_helper.h"
+
+#define MSG_INACTIVE_TIMEOUT   600
 
 const char *stream_state_name(ElaStreamState state);
 
@@ -51,19 +54,6 @@ const char *stream_state_name(ElaStreamState state);
         vlogE("Invalid command syntax"); \
         return; \
     }
-
-struct CarrierContextExtra {
-    char userid[ELA_MAX_ID_LEN + 1];
-    char *bundle;
-    char *data;
-    int len;
-    char gcookie[128];
-    int gcookie_len;
-    char gfrom[ELA_MAX_ID_LEN + 1];
-    char groupid[ELA_MAX_ID_LEN + 1];
-    char fileid[ELA_MAX_FILE_ID_LEN + 1];
-    char recv_file[ELA_MAX_FILE_NAME_LEN + 1];
-};
 
 struct SessionContextExtra {
     int init_flag;
@@ -322,9 +312,33 @@ static void fadd(TestContext *context, int argc, char *argv[])
         }
     }
 
-    // wait until elatests online.
-    while (wctx->friend_status != ONLINE) {
-        cond_wait(wctx->friend_status_cond);
+    while (1) {
+        int status;
+
+        pthread_mutex_lock(&wctx->friend_status_cond->mutex);
+        status = wctx->friend_status;
+        // wait for friend_connection (online) callback invoked.
+        if (status != ONLINE) {
+            assert(status != FAILED);
+            if (wctx->friend_status_cond->signaled <= 0) {
+                pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
+            }
+            wctx->friend_status_cond->signaled--;
+            wctx->friend_status_cond->has_signaled = false;
+            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
+        } else {
+            if (wctx->friend_status_cond->has_signaled) {
+                if (wctx->friend_status_cond->signaled <= 0) {
+                    pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
+                }
+                wctx->friend_status_cond->signaled--;
+                wctx->friend_status_cond->has_signaled = false;
+            }
+
+            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
+
+            break;
+        }
     }
     write_ack("fadd succeeded\n");
 }
@@ -351,8 +365,33 @@ void faccept(TestContext *context, int argc, char *argv[])
         cond_wait(wctx->cond);
     }
 
-    while (wctx->friend_status != ONLINE) {
-        cond_wait(wctx->friend_status_cond);
+    while (1) {
+        int status;
+
+        pthread_mutex_lock(&wctx->friend_status_cond->mutex);
+        status = wctx->friend_status;
+        // wait for friend_connection (online) callback invoked.
+        if (status != ONLINE) {
+            assert(status != FAILED);
+            if (wctx->friend_status_cond->signaled <= 0) {
+                pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
+            }
+            wctx->friend_status_cond->signaled--;
+            wctx->friend_status_cond->has_signaled = false;
+            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
+        } else {
+            if (wctx->friend_status_cond->has_signaled) {
+                if (wctx->friend_status_cond->signaled <= 0) {
+                    pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
+                }
+                wctx->friend_status_cond->signaled--;
+                wctx->friend_status_cond->has_signaled = false;
+            }
+
+            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
+
+            break;
+        }
     }
     write_ack("fadd succeeded\n");
 }
@@ -404,8 +443,33 @@ static void fremove(TestContext *context, int argc, char *argv[])
     cond_wait(wctx->cond);
 
     // wait until elatest offline.
-    while (wctx->friend_status != OFFLINE) {
-        cond_wait(wctx->friend_status_cond);
+    while (1) {
+        int status;
+
+        pthread_mutex_lock(&wctx->friend_status_cond->mutex);
+        status = wctx->friend_status;
+        // wait for friend_connection (online) callback invoked.
+        if (status != OFFLINE) {
+            assert(status != FAILED);
+            if (wctx->friend_status_cond->signaled <= 0) {
+                pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
+            }
+            wctx->friend_status_cond->signaled--;
+            wctx->friend_status_cond->has_signaled = false;
+            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
+        } else {
+            if (wctx->friend_status_cond->has_signaled) {
+                if (wctx->friend_status_cond->signaled <= 0) {
+                    pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
+                }
+                wctx->friend_status_cond->signaled--;
+                wctx->friend_status_cond->has_signaled = false;
+            }
+
+            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
+
+            break;
+        }
     }
 
     write_ack("fremove succeeded\n");
@@ -524,6 +588,48 @@ static void wkill(TestContext *context, int argc, char *argv[])
 
     vlogI("Kill robot instance.");
     ela_kill(w);
+}
+
+static void killnode(TestContext *context, int argc, char *argv[])
+{
+    CarrierContextExtra *extra = context->carrier->extra;
+    ElaCarrier *w = context->carrier->carrier;
+
+    vlogI("Kill robot node instance.");
+    ela_kill(w);
+
+    pthread_join(extra->tid, NULL);
+    write_ack("killnode success\n");
+}
+
+static void restartnode(TestContext *context, int argc, char *argv[])
+{
+    CarrierContextExtra *extra = context->carrier->extra;
+    struct timeval timeout_interval;
+    struct timeval now;
+    extern void *carrier_run_entry(void *);
+
+    CHK_ARGS(argc == 3);
+
+    vlogI("Robot will be reborn.");
+    strcpy(extra->offmsg, argv[1]);
+
+    pthread_mutex_lock(&extra->mutex);
+    if (atoi(argv[2]) == 1)
+        extra->test_offmsg = OffMsgCase_Single;
+    else {
+        extra->test_offmsg = OffMsgCase_Bulk;
+        extra->test_offmsg_count = 0;
+        extra->expected_offmsg_count = atoi(argv[2]);
+    }
+
+    gettimeofday(&now, NULL);
+    timeout_interval.tv_sec = MSG_INACTIVE_TIMEOUT;
+    timeout_interval.tv_usec = 0;
+    timeradd(&now, &timeout_interval, &extra->test_offmsg_expires);
+    pthread_mutex_unlock(&extra->mutex);
+
+    pthread_create(&extra->tid, 0, &carrier_run_entry, NULL);
 }
 
 static void robot_context_reset(TestContext *context)
@@ -1535,6 +1641,8 @@ static struct command {
     { "freplyinvite", freplyinvite },
     { "freplyinvite_bigdata", freplyinvite_bigdata },
     { "kill",         wkill        },
+    { "killnode",     killnode     },
+    { "restartnode",  restartnode  },
     { "sinit",        sinit        },
     { "srequest",     srequest     },
     { "sreply",       sreply       },
