@@ -312,34 +312,7 @@ static void fadd(TestContext *context, int argc, char *argv[])
         }
     }
 
-    while (1) {
-        int status;
-
-        pthread_mutex_lock(&wctx->friend_status_cond->mutex);
-        status = wctx->friend_status;
-        // wait for friend_connection (online) callback invoked.
-        if (status != ONLINE) {
-            assert(status != FAILED);
-            if (wctx->friend_status_cond->signaled <= 0) {
-                pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
-            }
-            wctx->friend_status_cond->signaled--;
-            wctx->friend_status_cond->has_signaled = false;
-            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
-        } else {
-            if (wctx->friend_status_cond->has_signaled) {
-                if (wctx->friend_status_cond->signaled <= 0) {
-                    pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
-                }
-                wctx->friend_status_cond->signaled--;
-                wctx->friend_status_cond->has_signaled = false;
-            }
-
-            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
-
-            break;
-        }
-    }
+    status_cond_wait(wctx->friend_status_cond, ONLINE);
     write_ack("fadd succeeded\n");
 }
 
@@ -365,34 +338,7 @@ void faccept(TestContext *context, int argc, char *argv[])
         cond_wait(wctx->cond);
     }
 
-    while (1) {
-        int status;
-
-        pthread_mutex_lock(&wctx->friend_status_cond->mutex);
-        status = wctx->friend_status;
-        // wait for friend_connection (online) callback invoked.
-        if (status != ONLINE) {
-            assert(status != FAILED);
-            if (wctx->friend_status_cond->signaled <= 0) {
-                pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
-            }
-            wctx->friend_status_cond->signaled--;
-            wctx->friend_status_cond->has_signaled = false;
-            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
-        } else {
-            if (wctx->friend_status_cond->has_signaled) {
-                if (wctx->friend_status_cond->signaled <= 0) {
-                    pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
-                }
-                wctx->friend_status_cond->signaled--;
-                wctx->friend_status_cond->has_signaled = false;
-            }
-
-            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
-
-            break;
-        }
-    }
+    status_cond_wait(wctx->friend_status_cond, ONLINE);
     write_ack("fadd succeeded\n");
 }
 
@@ -443,34 +389,7 @@ static void fremove(TestContext *context, int argc, char *argv[])
     cond_wait(wctx->cond);
 
     // wait until elatest offline.
-    while (1) {
-        int status;
-
-        pthread_mutex_lock(&wctx->friend_status_cond->mutex);
-        status = wctx->friend_status;
-        // wait for friend_connection (online) callback invoked.
-        if (status != OFFLINE) {
-            assert(status != FAILED);
-            if (wctx->friend_status_cond->signaled <= 0) {
-                pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
-            }
-            wctx->friend_status_cond->signaled--;
-            wctx->friend_status_cond->has_signaled = false;
-            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
-        } else {
-            if (wctx->friend_status_cond->has_signaled) {
-                if (wctx->friend_status_cond->signaled <= 0) {
-                    pthread_cond_wait(&wctx->friend_status_cond->cond, &wctx->friend_status_cond->mutex);
-                }
-                wctx->friend_status_cond->signaled--;
-                wctx->friend_status_cond->has_signaled = false;
-            }
-
-            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
-
-            break;
-        }
-    }
+    status_cond_wait(wctx->friend_status_cond, OFFLINE);
 
     write_ack("fremove succeeded\n");
 }

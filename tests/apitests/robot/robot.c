@@ -171,17 +171,12 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
                                  ElaConnectionStatus status, void *context)
 {
     CarrierContext *wctx = ((TestContext *)context)->carrier;
+    int friend_status = (status == ElaConnectionStatus_Connected) ? ONLINE : OFFLINE;
 
     vlogD("Friend %s's connection status changed -> %s",
           friendid, connection_str(status));
 
-    pthread_mutex_lock(&wctx->friend_status_cond->mutex);
-    wctx->friend_status = (status == ElaConnectionStatus_Connected) ?
-                        ONLINE : OFFLINE;
-    wctx->friend_status_cond->signaled++;
-    wctx->friend_status_cond->has_signaled = true;
-    pthread_cond_signal(&wctx->friend_status_cond->cond);
-    pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
+    status_cond_signal(wctx->friend_status_cond, friend_status);
 }
 
 static void friend_info_cb(ElaCarrier *w, const char *friendid,
@@ -455,7 +450,7 @@ static ElaFileTransferInfo ft_info = {
     .size = 1
 };
 
-static Condition2 DEFINE_COND2(friend_status_cond);
+static StatusCondition DEFINE_STATUS_COND(friend_status_cond);
 static Condition DEFINE_COND(cond);
 static Condition DEFINE_COND(group_cond);
 

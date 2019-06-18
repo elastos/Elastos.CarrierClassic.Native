@@ -159,12 +159,7 @@ static void carrier_friend_request_cb(ElaCarrier *w, const char *userid,
         if (rc < 0) {
             vlogE("Accept friend request from %s error (0x%x)",
                   userid, ela_get_error());
-            pthread_mutex_lock(&wctx->friend_status_cond->mutex);
-            wctx->friend_status = FAILED;
-            wctx->friend_status_cond->signaled++;
-            wctx->friend_status_cond->has_signaled = true;
-            pthread_cond_signal(&wctx->friend_status_cond->cond);
-            pthread_mutex_unlock(&wctx->friend_status_cond->mutex);
+            status_cond_signal(wctx->friend_status_cond, FAILED);
         }
         return;
     }
@@ -376,34 +371,7 @@ int add_friend_anyway(TestContext *context, const char *userid,
     CU_ASSERT_STRING_EQUAL_FATAL(buf[0], "fadd");
     CU_ASSERT_STRING_EQUAL_FATAL(buf[1], "succeeded");
 
-    while (1) {
-        int status;
-
-        pthread_mutex_lock(&wctxt->friend_status_cond->mutex);
-        status = wctxt->friend_status;
-        // wait for friend_connection (online) callback invoked.
-        if (status != ONLINE) {
-            CU_ASSERT_FATAL(status != FAILED);
-            if (wctxt->friend_status_cond->signaled <= 0) {
-                pthread_cond_wait(&wctxt->friend_status_cond->cond, &wctxt->friend_status_cond->mutex);
-            }
-            wctxt->friend_status_cond->signaled--;
-            wctxt->friend_status_cond->has_signaled = false;
-            pthread_mutex_unlock(&wctxt->friend_status_cond->mutex);
-        } else {
-            if (wctxt->friend_status_cond->has_signaled) {
-                if (wctxt->friend_status_cond->signaled <= 0) {
-                    pthread_cond_wait(&wctxt->friend_status_cond->cond, &wctxt->friend_status_cond->mutex);
-                }
-                wctxt->friend_status_cond->signaled--;
-                wctxt->friend_status_cond->has_signaled = false;
-            }
-
-            pthread_mutex_unlock(&wctxt->friend_status_cond->mutex);
-
-            break;
-        }
-    }
+    status_cond_wait(wctxt->friend_status_cond, ONLINE);
 
     return 0;
 }
@@ -422,34 +390,7 @@ int remove_friend_anyway(TestContext *context, const char *userid)
         }
 
         // wait until robot offline.
-        while (1) {
-            int status;
-
-            pthread_mutex_lock(&wctxt->friend_status_cond->mutex);
-            status = wctxt->friend_status;
-            // wait for friend_connection (online) callback invoked.
-            if (status != OFFLINE) {
-                CU_ASSERT_FATAL(status != FAILED);
-                if (wctxt->friend_status_cond->signaled <= 0) {
-                    pthread_cond_wait(&wctxt->friend_status_cond->cond, &wctxt->friend_status_cond->mutex);
-                }
-                wctxt->friend_status_cond->signaled--;
-                wctxt->friend_status_cond->has_signaled = false;
-                pthread_mutex_unlock(&wctxt->friend_status_cond->mutex);
-            } else {
-                if (wctxt->friend_status_cond->has_signaled) {
-                    if (wctxt->friend_status_cond->signaled <= 0) {
-                        pthread_cond_wait(&wctxt->friend_status_cond->cond, &wctxt->friend_status_cond->mutex);
-                    }
-                    wctxt->friend_status_cond->signaled--;
-                    wctxt->friend_status_cond->has_signaled = false;
-                }
-
-                pthread_mutex_unlock(&wctxt->friend_status_cond->mutex);
-
-                break;
-            }
-        }
+        status_cond_wait(wctxt->friend_status_cond, OFFLINE);
 
         // wait for friend_removed callback invoked.
         cond_wait(wctxt->cond);

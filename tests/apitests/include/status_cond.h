@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __API_TESTS_COND_H__
-#define __API_TESTS_COND_H__
+#ifndef __API_TESTS_STATUS_COND_H__
+#define __API_TESTS_STATUS_COND_H__
 
 #include <time.h>
 #include <errno.h>
@@ -36,65 +36,66 @@
 
 #include <crystal.h>
 
-typedef struct Condition {
+typedef struct StatusCondition {
+    enum {
+       OFFLINE,
+       ONLINE,
+       FAILED
+    } friend_status;
+    int status_changed;
+    int signaled;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
-    int signaled;
-} Condition;
+} StatusCondition;
 
-#define DEFINE_COND(obj) \
-	obj = { .mutex = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER }
+#define DEFINE_STATUS_COND(obj) \
+	obj = { .friend_status = OFFLINE, .status_changed = 0, .signaled = 0, .mutex = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER }
 
-static inline void cond_init(Condition *cond)
+static inline void status_cond_init(StatusCondition *cond)
 {
+    cond->friend_status = OFFLINE;
+    cond->status_changed = 0;
+    cond->signaled = 0;
     pthread_mutex_init(&cond->mutex, 0);
     pthread_cond_init(&cond->cond, 0);
-    cond->signaled = 0;
 }
 
-static inline void cond_wait(Condition *cond)
+static inline void status_cond_wait(StatusCondition *cond, int status)
 {
     pthread_mutex_lock(&cond->mutex);
-    if (cond->signaled <= 0) {
-        pthread_cond_wait(&cond->cond, &cond->mutex);
-    }
-    cond->signaled--;
+    do {
+        if (cond->friend_status != status) {
+            if (cond->signaled <= 0) {
+                pthread_cond_wait(&cond->cond, &cond->mutex);
+            }
+            cond->signaled--;
+            cond->status_changed = 0;
+        } else {
+            if (cond->status_changed) {
+                if (cond->signaled <= 0) {
+                    pthread_cond_wait(&cond->cond, &cond->mutex);
+                }
+                cond->signaled--;
+                cond->status_changed = 0;
+            }
+
+            break;
+        }
+    } while (cond->friend_status != status);
     pthread_mutex_unlock(&cond->mutex);
 }
 
-static inline bool cond_trywait(Condition *cond, int ms)
-{
-    struct timeval now;
-    struct timespec end_time;
-    bool bRet = false;
-    int rc = 0;
-
-    gettimeofday(&now, NULL);
-    end_time.tv_sec = now.tv_sec + ms / 1000;
-    end_time.tv_nsec = now.tv_usec * 1000;
-
-    pthread_mutex_lock(&cond->mutex);
-    if (cond->signaled <= 0) {
-        rc = pthread_cond_timedwait(&cond->cond, &cond->mutex, &end_time);
-    }
-    if (rc != ETIMEDOUT) {
-        cond->signaled--;
-        bRet = true;
-    }
-
-    pthread_mutex_unlock(&cond->mutex);
-    return bRet;
-}
-
-static inline void cond_signal(Condition *cond)
+static inline void status_cond_signal(StatusCondition *cond, int status)
 {
     pthread_mutex_lock(&cond->mutex);
+    cond->friend_status = status;
     cond->signaled++;
+    cond->status_changed = 1;
     pthread_cond_signal(&cond->cond);
     pthread_mutex_unlock(&cond->mutex);
 }
 
-static inline void cond_reset(Condition *cond)
+static inline void status_cond_reset(StatusCondition *cond)
 {
     struct timespec timeout = {0, 1000};
     int rc;
@@ -104,15 +105,18 @@ static inline void cond_reset(Condition *cond)
         rc = pthread_cond_timedwait(&cond->cond, &cond->mutex, &timeout);
     } while (rc != ETIMEDOUT);
 
+    cond->status_changed = 0;
     cond->signaled = 0;
     pthread_mutex_unlock(&cond->mutex);
 }
 
-static inline void cond_deinit(Condition *cond)
+static inline void status_cond_deinit(StatusCondition *cond)
 {
+    cond->friend_status = OFFLINE;
+    cond->status_changed = 0;
     cond->signaled = 0;
     pthread_mutex_destroy(&cond->mutex);
     pthread_cond_destroy(&cond->cond);
 }
 
-#endif /* __API_TESTS_COND_H__*/
+#endif /* __API_TESTS_STATUS_COND_H__*/
