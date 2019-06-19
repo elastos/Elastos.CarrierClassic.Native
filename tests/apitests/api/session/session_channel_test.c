@@ -81,7 +81,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     int friend_status = (status == ElaConnectionStatus_Connected) ?
                          ONLINE : OFFLINE;
 
-    status_cond_wait(wctxt->friend_status_cond, friend_status);
+    status_cond_signal(wctxt->friend_status_cond, friend_status);
 
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
