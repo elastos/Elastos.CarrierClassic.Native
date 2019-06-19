@@ -88,7 +88,7 @@ static inline void status_cond_wait(StatusCondition *cond, int status)
 static inline void status_cond_signal(StatusCondition *cond, int status)
 {
     pthread_mutex_lock(&cond->mutex);
-    cond->friend_status = status;
+    cond->friend_status = (status == ElaConnectionStatus_Connected) ? ONLINE : OFFLINE;
     cond->signaled++;
     cond->status_changed = 1;
     pthread_cond_signal(&cond->cond);

@@ -36,15 +36,6 @@
 #include "cond.h"
 #include "test_helper.h"
 
-struct CarrierContextExtra {
-    ElaConnectionStatus connection_status;
-};
-
-static CarrierContextExtra extra = {
-    .connection_status = ElaConnectionStatus_Disconnected
-
-};
-
 static inline void wakeup(void* context)
 {
     cond_signal(((CarrierContext *)context)->cond);
@@ -69,11 +60,8 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
                                  ElaConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
-    int friend_status = (status == ElaConnectionStatus_Connected) ?
-                           ONLINE : OFFLINE;
 
-    wctxt->extra->connection_status = status;
-    status_cond_signal(wctxt->friend_status_cond, friend_status);
+    status_cond_signal(wctxt->friend_status_cond, status);
 
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
@@ -125,7 +113,7 @@ static CarrierContext carrier_context = {
     .cond = &cond,
     .friend_status_cond = &friend_status_cond,
     .group_cond = &group_cond,
-    .extra = &extra
+    .extra = NULL
 };
 
 static void test_context_reset(TestContext *context)

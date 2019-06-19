@@ -171,12 +171,11 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
                                  ElaConnectionStatus status, void *context)
 {
     CarrierContext *wctx = ((TestContext *)context)->carrier;
-    int friend_status = (status == ElaConnectionStatus_Connected) ? ONLINE : OFFLINE;
 
     vlogD("Friend %s's connection status changed -> %s",
           friendid, connection_str(status));
 
-    status_cond_signal(wctx->friend_status_cond, friend_status);
+    status_cond_signal(wctx->friend_status_cond, status);
 }
 
 static void friend_info_cb(ElaCarrier *w, const char *friendid,

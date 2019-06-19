@@ -159,7 +159,7 @@ static void carrier_friend_request_cb(ElaCarrier *w, const char *userid,
         if (rc < 0) {
             vlogE("Accept friend request from %s error (0x%x)",
                   userid, ela_get_error());
-            status_cond_signal(wctx->friend_status_cond, FAILED);
+            status_cond_signal(wctx->friend_status_cond, ElaConnectionStatus_Disconnected);
         }
         return;
     }

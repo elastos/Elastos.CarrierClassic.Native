@@ -41,8 +41,6 @@ struct CarrierContextExtra {
     char* hello;
     int len;
 
-    ElaConnectionStatus connection_status;
-
     char groupid[ELA_MAX_ID_LEN + 1];
     char gcookie[128];
     int gcookie_len;
@@ -53,8 +51,6 @@ static CarrierContextExtra extra = {
     .gfrom = NULL,
     .hello  = NULL,
     .len    = 0,
-
-    .connection_status = ElaConnectionStatus_Disconnected,
 
     .groupid = {0},
     .gcookie = {0},
@@ -85,11 +81,8 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
                                  ElaConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
-    int friend_status = (status == ElaConnectionStatus_Connected) ?
-                         ONLINE : OFFLINE;
 
-    wctxt->extra->connection_status = status;
-    status_cond_signal(wctxt->friend_status_cond, friend_status);
+    status_cond_signal(wctxt->friend_status_cond, status);
 
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
