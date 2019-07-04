@@ -522,37 +522,34 @@ static void killnode(TestContext *context, int argc, char *argv[])
 static void restartnode(TestContext *context, int argc, char *argv[])
 {
     CarrierContextExtra *extra = context->carrier->extra;
-    struct timeval timeout_interval;
-    struct timeval now;
     extern void *carrier_run_entry(void *);
 
-    CHK_ARGS(argc == 2);
+    CHK_ARGS(argc == 1);
 
     vlogI("Robot will be reborn.");
-
-    pthread_mutex_lock(&extra->mutex);
-    extra->test_offmsg = OffMsgCase_Single;
-
-    gettimeofday(&now, NULL);
-    timeout_interval.tv_sec = atoi(argv[1]);
-    timeout_interval.tv_usec = 0;
-    timeradd(&now, &timeout_interval, &extra->test_offmsg_expires);
-    pthread_mutex_unlock(&extra->mutex);
 
     pthread_create(&extra->tid, 0, &carrier_run_entry, NULL);
 }
 
-static void setmsgheader(TestContext *context, int argc, char *argv[])
+static void setmsgattr(TestContext *context, int argc, char *argv[])
 {
     CarrierContextExtra *extra = context->carrier->extra;
+    struct timeval timeout_interval;
+    struct timeval now;
 
-    CHK_ARGS(argc == 2);
+    CHK_ARGS(argc == 4);
 
     pthread_mutex_lock(&extra->mutex);
     strcpy(extra->offmsg_header, argv[1]);
+    gettimeofday(&now, NULL);
+    timeout_interval.tv_sec = atoi(argv[2]);
+    timeout_interval.tv_usec = 0;
+    timeradd(&now, &timeout_interval, &extra->test_offmsg_expires);
+    if (atoi(argv[3]) == 1)
+        extra->test_offmsg = OffMsgCase_Single;
     pthread_mutex_unlock(&extra->mutex);
 
-    write_ack("setmsgheader success\n");
+    write_ack("setmsgattr success\n");
 }
 
 static void robot_context_reset(TestContext *context)
@@ -1566,7 +1563,7 @@ static struct command {
     { "kill",         wkill        },
     { "killnode",     killnode     },
     { "restartnode",  restartnode  },
-    { "setmsgheader", setmsgheader },
+    { "setmsgattr",   setmsgattr   },
     { "sinit",        sinit        },
     { "srequest",     srequest     },
     { "sreply",       sreply       },

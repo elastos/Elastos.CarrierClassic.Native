@@ -156,12 +156,12 @@ static void send_offmsg_to_friend(int count, int timeout)
     status_cond_wait(wctxt->friend_status_cond, OFFLINE);
 
     sprintf(header, "%ld:", time(NULL));
-    rc = write_cmd("setmsgheader %s\n", header);
+    rc = write_cmd("setmsgattr %s %d %d\n", header, timeout, count);
     CU_ASSERT_FATAL(rc > 0);
 
     rc = read_ack("%32s %32s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);
-    CU_ASSERT_STRING_EQUAL(buf[0], "setmsgheader");
+    CU_ASSERT_STRING_EQUAL(buf[0], "setmsgattr");
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 
     const char *out = NULL;
@@ -174,7 +174,7 @@ static void send_offmsg_to_friend(int count, int timeout)
         CU_ASSERT_EQUAL_FATAL(rc, 0);
     }
 
-    rc = write_cmd("restartnode %d\n", timeout);
+    rc = write_cmd("restartnode\n");
     CU_ASSERT_FATAL(rc > 0);
 
     status_cond_wait(wctxt->friend_status_cond, ONLINE);
