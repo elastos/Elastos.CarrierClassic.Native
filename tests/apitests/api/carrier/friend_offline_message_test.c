@@ -24,6 +24,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
@@ -171,6 +175,8 @@ static void send_offmsg_to_friend(int count, int timeout)
         rc = ela_send_friend_message(wctxt->carrier, robotid, out, strlen(out));
         CU_ASSERT_EQUAL_FATAL(rc, 0);
     }
+
+    usleep(5000000);
 
     if (count > 1)
         rc = write_cmd("restartnode %d %d\n", timeout, count);
