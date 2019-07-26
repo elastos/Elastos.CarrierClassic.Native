@@ -285,8 +285,6 @@ static void *dstore_msgs_dispatch(void *arg)
     }
     vlogI("Carrier: Dstore is ready now.");
 
-    dstore_enqueue_pollmsg(ctx); // First time to poll receiving messages.
-
     pthread_mutex_lock(&ctx->lock);
     while(!ctx->stopped) {
         if (list_is_empty(ctx->msg_list)) {
