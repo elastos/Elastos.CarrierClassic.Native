@@ -15,7 +15,7 @@ ExternalProject_Add(
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
     URL "https://github.com/elastos/Elastos.NET.Hive.Native.SDK/archive/fix_dstore.zip"
-    URL_HASH SHA256=ea382d4c0abffa276bdd73acf94b998f92091fa828a990da01d2e521d8940887
+    URL_HASH SHA256=21e57717be683f6b864187d8081f9a436f00e257a5bf1269e98fafd95c8c8bd2
     DOWNLOAD_NAME "Elastos.NET.Hive.Native.SDK-fix_dstore.zip"
     DOWNLOAD_DIR ${CARRIER_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1
