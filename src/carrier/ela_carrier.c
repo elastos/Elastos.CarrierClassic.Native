@@ -1397,9 +1397,6 @@ static void notify_connection_cb(bool connected, void *context)
 {
     ElaCarrier *w = (ElaCarrier *)context;
 
-    if (w->is_ready && connected && w->dstorectx)
-        dstore_enqueue_pollmsg(w->dstorectx);
-
     if (!w->is_ready && connected) {
         w->is_ready = true;
         if (w->callbacks.ready)
@@ -1411,6 +1408,9 @@ static void notify_connection_cb(bool connected, void *context)
 
     if (w->callbacks.connection_status)
         w->callbacks.connection_status(w, w->connection_status, w->context);
+
+    if (connected && w->dstorectx)
+        dstore_enqueue_pollmsg(w->dstorectx);
 }
 
 static void notify_friend_info(ElaCarrier *w, uint32_t friend_number,

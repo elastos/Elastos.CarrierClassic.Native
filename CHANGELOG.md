@@ -1,4 +1,13 @@
-﻿05/29/2019 Chen Yu chenyu@gmail.com
+﻿08/05/2019 Li Fenxiang lifenxiang@elastos.org
+
+**version 5.3.4**, main changes to previous version:
+
+```markdown
+- Make compiling options take effect in global scope.
+- Improve the initialization procedure of dstore on Hive SDK.
+```
+
+05/29/2019 Chen Yu chenyu@gmail.com
 
 **version 5.3.3**, main changes to previous version:
 
