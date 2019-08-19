@@ -1,3 +1,72 @@
+08/19/2019 Li Fenxiang lifenxiang@elastos.org
+
+**version 5.4.0**, main changes to previous version:
+
+```markdown
+- Introduce "include" directive in config file to import content of other config files. 
+- API changes in sending/receiving messages.
+```
+
+08/05/2019 Li Fenxiang lifenxiang@elastos.org
+
+**version 5.3.4**, main changes to previous version:
+
+```markdown
+- Make compiling options take effect in global scope.
+- Improve the initialization procedure of dstore on Hive SDK.
+```
+
+05/29/2019 Chen Yu chenyu@gmail.com
+
+**version 5.3.3**, main changes to previous version:
+
+```markdown
+- Update dependency libcrystal to v1.0.5.
+```
+
+05/14/2019 Chen Yu chenyu@gmail.com
+
+**version 5.3.2**, main changes to previous version:
+
+```markdown
+- Update CI scripts for configuring android ndk for different arches;
+- Fix crash issue for using C++ libraries on android armeabi-v7a platform;
+- Correct reference count of using carrier instance;
+- Change back to use static libraries on Android platform to resolve crash issue.
+```
+05/06/2019 Chen Yu chenyu@gmail.com
+
+**version 5.3.1**, main changes to previous version:
+
+```markdown
+- Update CI to upgrade sphinx version for building API docs;
+- Update dependency hive to release-v0.1.1;
+- Support offline message sending/receiving;
+- Add special test case to verify offline message;
+- Resize the hash table size to fit best performance;
+- Add bulkmsg command into elashell app.
+```
+04/10/2019 Tang Zhilong stiartsly@gmail.com
+
+**version 5.2.4**, main changes to previous version:
+
+```markdown
+- Export only static libraries for iOS, and static/dynamic libraries for other platforms;
+- Update dependency cygwin to 3.0.6-1 for windows platform;
+- Update dependency libcrystal to v1.0.4.
+```
+
+03/18/2019 Tang Zhilong stiartsly@gmail.com
+
+**version 5.2.3**, main changes to previous version:
+
+```markdown
+- Fix ios cross-compilation issue for some macos environment;
+- Fix issue for calling open_portforwarding and close_portforwarding in stream without PORTFORWARDING option;
+- Update dependency cygwin libraries need on Windows platforms;
+- Fix issue of implementing ela_get_version().
+```
+
 03/02/2019 Tang Zhilong stiartsly@gmail.com
 
 **version 5.2.2**, main changes to previous version:
