@@ -1164,12 +1164,16 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (b->ipv6)
             strcpy(bi->ipv6, b->ipv6);
 
-        bi->port = (int)strtol(b->port, &endptr, 10);
-        if (*endptr) {
-            vlogE("Carrier: Invalid DHT bootstrap port value (%s)", b->port);
-            deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-            return NULL;
+        if (!b->port)
+            bi->port = 33445;
+        else {
+            bi->port = (int)strtol(b->port, &endptr, 10);
+            if (*endptr) {
+                vlogE("Carrier: Invalid DHT bootstrap port value (%s)", b->port);
+                deref(w);
+                ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+                return NULL;
+            }
         }
 
         len = base58_decode(b->public_key, strlen(b->public_key), bi->public_key,
@@ -1226,12 +1230,16 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (b->ipv6)
             strcpy(bi->ipv6, b->ipv6);
 
-        bi->port = (int)strtol(b->port, &endptr, 10);
-        if (*endptr) {
-            vlogE("Carrier: Invalid Hive bootstrap port value (%s)", b->port);
-            deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-            return NULL;
+        if (!b->port)
+            bi->port = 9095;
+        else {
+            bi->port = (int)strtol(b->port, &endptr, 10);
+            if (*endptr) {
+                vlogE("Carrier: Invalid Hive bootstrap port value (%s)", b->port);
+                deref(w);
+                ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+                return NULL;
+            }
         }
     }
 
