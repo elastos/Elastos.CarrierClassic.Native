@@ -1135,7 +1135,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     for (i = 0; i < opts->bootstraps_size; i++) {
         BootstrapNode *b = &opts->bootstraps[i];
         DhtBootstrapNodeBuf *bi = &w->pref.dht_bootstraps[i];
-        char *endptr = NULL;
+        char *endptr = "";
         ssize_t len;
 
         if (b->ipv4 && strlen(b->ipv4) > MAX_IPV4_ADDRESS_LEN) {
@@ -1164,16 +1164,12 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (b->ipv6)
             strcpy(bi->ipv6, b->ipv6);
 
-        if (!b->port)
-            bi->port = 33445;
-        else {
-            bi->port = (int)strtol(b->port, &endptr, 10);
-            if (*endptr) {
-                vlogE("Carrier: Invalid DHT bootstrap port value (%s)", b->port);
-                deref(w);
-                ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-                return NULL;
-            }
+        bi->port = b->port ? (int)strtol(b->port, &endptr, 10) : 33445;
+        if (bi->port <= 0 || *endptr) {
+            vlogE("Carrier: Invalid DHT bootstrap port value (%s)", b->port);
+            deref(w);
+            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+            return NULL;
         }
 
         len = base58_decode(b->public_key, strlen(b->public_key), bi->public_key,
@@ -1202,7 +1198,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     for (i = 0; i < opts->hive_bootstraps_size; i++) {
         HiveBootstrapNode *b = &opts->hive_bootstraps[i];
         HiveBootstrapNodeBuf *bi = &w->pref.hive_bootstraps[i];
-        char *endptr = NULL;
+        char *endptr = "";
 
         if (b->ipv4 && strlen(b->ipv4) > MAX_IPV4_ADDRESS_LEN) {
             vlogE("Carrier: Hive bootstrap ipv4 address (%s) too long", b->ipv4);
@@ -1230,16 +1226,12 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (b->ipv6)
             strcpy(bi->ipv6, b->ipv6);
 
-        if (!b->port)
-            bi->port = 9095;
-        else {
-            bi->port = (int)strtol(b->port, &endptr, 10);
-            if (*endptr) {
-                vlogE("Carrier: Invalid Hive bootstrap port value (%s)", b->port);
-                deref(w);
-                ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-                return NULL;
-            }
+        bi->port = b->port ? (int)strtol(b->port, &endptr, 10) : 9095;
+        if (bi->port <= 0 || *endptr) {
+            vlogE("Carrier: Invalid Hive bootstrap port value (%s)", b->port);
+            deref(w);
+            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+            return NULL;
         }
     }
 
