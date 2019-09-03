@@ -1164,7 +1164,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (b->ipv6)
             strcpy(bi->ipv6, b->ipv6);
 
-        bi->port = b->port ? (int)strtol(b->port, &endptr, 10) : 33445;
+        bi->port = b->port ? (int)strtol(b->port, &endptr, 10) : DHT_BOOTSTRAP_DEFAULT_PORT;
         if (bi->port < 1 || bi->port > 65535 || *endptr) {
             vlogE("Carrier: Invalid DHT bootstrap port value (%s)", b->port);
             deref(w);
@@ -1226,7 +1226,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (b->ipv6)
             strcpy(bi->ipv6, b->ipv6);
 
-        bi->port = b->port ? (int)strtol(b->port, &endptr, 10) : 9095;
+        bi->port = b->port ? (int)strtol(b->port, &endptr, 10) : HIVE_BOOTSTRAP_DEFAULT_PORT;
         if (bi->port < 1 || bi->port > 65535 || *endptr) {
             vlogE("Carrier: Invalid Hive bootstrap port value (%s)", b->port);
             deref(w);
