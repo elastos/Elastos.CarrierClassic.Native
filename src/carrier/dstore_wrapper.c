@@ -38,12 +38,12 @@
 #endif
 
 #include <crystal.h>
-#include <hive/c-api.h>
 
 #include "dht.h"
 #include "ela_carrier.h"
 #include "ela_carrier_impl.h"
 #include "dstore_wrapper.h"
+#include "dstore.h"
 
 struct DStoreWrapper {
     ElaCarrier *carrier;
