@@ -200,7 +200,6 @@ static void test_group_message_to_myself(void)
     rc = ela_group_send_message(wctx->carrier, groupid, "hello",
                                 strlen("hello"));
     CU_ASSERT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_DHT_ERROR(ELAERR_WRONG_STATE));
 
     rc = ela_leave_group(wctx->carrier, groupid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
