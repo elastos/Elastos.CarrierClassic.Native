@@ -34,16 +34,16 @@ typedef struct dstorec_node {
     uint16_t port;
 } dstorec_node;
 
-typedef struct dstore DStoreC;
+typedef struct dstore DStore;
 
-DStoreC *dstore_create(dstorec_node *bootstraps, size_t sz);
-void dstore_destroy(DStoreC *dstore);
-int dstore_get_values(DStoreC *dstore, const char *key,
+DStore *dstore_create(dstorec_node *bootstraps, size_t sz);
+void dstore_destroy(DStore *dstore);
+int dstore_get_values(DStore *dstore, const char *key,
                       bool (*cb)(const char *key, const uint8_t *value,
                                  size_t length, void *ctx),
                       void *ctx);
-int dstore_add_value(DStoreC *dstore, const char *key,
+int dstore_add_value(DStore *dstore, const char *key,
                      const uint8_t *value, size_t len);
-int dstore_remove_values(DStoreC *dstore, const char *key);
+int dstore_remove_values(DStore *dstore, const char *key);
 
 #endif // __DSTORE_H__

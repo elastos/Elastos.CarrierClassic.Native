@@ -48,7 +48,7 @@
 struct DStoreWrapper {
     ElaCarrier *carrier;
     DStoreOnMsgCallback cb;
-    DStoreC *dstore;
+    DStore *dstore;
     list_t *msg_list;
 
     pthread_mutex_t lock;

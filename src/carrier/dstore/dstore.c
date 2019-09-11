@@ -586,7 +586,7 @@ error_exit:
     return -1;
 }
 
-static int select_bootstrap(DStoreC *ds)
+static int select_bootstrap(DStore *ds)
 {
     rpc_node_t *rpc_nodes = ds->rpc_nodes;
     size_t base;
@@ -622,7 +622,7 @@ static int select_bootstrap(DStoreC *ds)
     return -1;
 }
 
-static int synchronize_data_to_current_node(DStoreC *ds)
+static int synchronize_data_to_current_node(DStore *ds)
 {
     char *resp;
     cJSON *json = NULL;
@@ -674,7 +674,7 @@ static int synchronize_data_to_current_node(DStoreC *ds)
     return 0;
 }
 
-static int setup_working_node(DStoreC *ds)
+static int setup_working_node(DStore *ds)
 {
     int rc;
 
@@ -690,13 +690,13 @@ static int setup_working_node(DStoreC *ds)
 }
 
 
-DStoreC *dstore_create(dstorec_node *bootstraps, size_t sz)
+DStore *dstore_create(dstorec_node *bootstraps, size_t sz)
 {
-    DStoreC *ds;
+    DStore *ds;
     size_t i;
     int rc;
 
-    ds = rc_zalloc(sizeof(DStoreC) + sizeof(rpc_node_t) * sz, NULL);
+    ds = rc_zalloc(sizeof(DStore) + sizeof(rpc_node_t) * sz, NULL);
     if (!ds)
         return NULL;
 
@@ -724,7 +724,7 @@ DStoreC *dstore_create(dstorec_node *bootstraps, size_t sz)
     return ds;
 }
 
-void dstore_destroy(DStoreC *dstore)
+void dstore_destroy(DStore *dstore)
 {
     deref(dstore);
 }
@@ -769,7 +769,7 @@ static cJSON *parse_list_files_response(const char *response)
     return json;
 }
 
-static int read_file(DStoreC *ds, const char *path, void **pdata, size_t *plen)
+static int read_file(DStore *ds, const char *path, void **pdata, size_t *plen)
 {
     int rc;
     cJSON *json;
@@ -817,7 +817,7 @@ static int read_file(DStoreC *ds, const char *path, void **pdata, size_t *plen)
     return 0;
 }
 
-int dstore_get_values(DStoreC *ds, const char *key,
+int dstore_get_values(DStore *ds, const char *key,
                       bool (*cb)(const char *key, const uint8_t *value,
                                  size_t length, void *ctx),
                       void *ctx)
@@ -875,7 +875,7 @@ int dstore_get_values(DStoreC *ds, const char *key,
     return 0;
 }
 
-static int get_root_hash(DStoreC *ds, char *buf, size_t bufsz)
+static int get_root_hash(DStore *ds, char *buf, size_t bufsz)
 {
     int rc;
     char *resp;
@@ -911,7 +911,7 @@ static int get_root_hash(DStoreC *ds, char *buf, size_t bufsz)
     return 0;
 }
 
-static int publish_root_hash(DStoreC *ds)
+static int publish_root_hash(DStore *ds)
 {
     int rc;
     char hash[1024];
@@ -930,7 +930,7 @@ static int publish_root_hash(DStoreC *ds)
     return 0;
 }
 
-int dstore_add_value(DStoreC *ds, const char *key, const uint8_t *value, size_t len)
+int dstore_add_value(DStore *ds, const char *key, const uint8_t *value, size_t len)
 {
     char path[MAXPATHLEN + 1];
     int rc;
@@ -958,7 +958,7 @@ int dstore_add_value(DStoreC *ds, const char *key, const uint8_t *value, size_t 
     return 0;
 }
 
-int dstore_remove_values(DStoreC *ds, const char *key)
+int dstore_remove_values(DStore *ds, const char *key)
 {
     char path[MAXPATHLEN + 1];
     int rc;
