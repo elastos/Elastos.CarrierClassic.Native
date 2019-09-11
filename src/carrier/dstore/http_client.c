@@ -102,57 +102,6 @@ const char *curlu_strerror(int errcode)
     return NULL;
 }
 
-#if defined(_WIN32) || defined(_WIN64)
-BOOL APIENTRY DllMain(
-    HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
-{
-    CURLcode rc;
-
-    if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-        rc = curl_global_init(CURL_GLOBAL_ALL);
-        if (rc != CURLE_OK)
-            vlogE("HttpClient: Initialize global curl error (%d)", rc);
-        else
-            initialized = true;
-        return rc == CURLE_OK ? TRUE : FALSE;
-    } else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
-        if (!initialized)
-            return TRUE;
-
-        curl_global_cleanup();
-        initialized = false;
-        return TRUE;
-    }
-    return TRUE;
-}
-#else
-__attribute__((constructor))
-static void initializer(int argc, char** argv, char** envp)
-{
-    CURLcode rc;
-
-    (void)argc;
-    (void)argv;
-    (void)envp;
-
-    rc = curl_global_init(CURL_GLOBAL_ALL);
-    if (rc != CURLE_OK)
-        vlogE("HttpClient: Initialize global curl error (%d)", rc);
-    else
-        initialized = true;
-}
-
-__attribute__((destructor))
-static void finalizer()
-{
-    if (!initialized)
-       return;
-
-    curl_global_cleanup();
-    initialized = false;
-}
-#endif
-
 static
 void dump(const char *text, unsigned char *ptr, size_t size)
 {
