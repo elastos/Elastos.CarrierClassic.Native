@@ -31,8 +31,6 @@
 #include <crystal.h>
 #include <cjson/cJSON.h>
 
-#include <crystal.h>
-
 #include "dstore.h"
 #include "http_client.h"
 
@@ -51,19 +49,20 @@ typedef struct rpc_node {
     uint16_t port;
 } rpc_node_t;
 
-struct dstore {
+struct DStore {
     char current_node_ip[MAX_IPV6_ADDRESS_LEN + 1];
     uint16_t current_node_port;
+
     size_t rpc_nodes_count;
     rpc_node_t rpc_nodes[0];
 };
 
-static int ipfs_rest_get_node_version(const char *node_ip, uint16_t node_port)
+static int ipfs_get_node_version(const char *node_ip, uint16_t node_port)
 {
-    char url[MAXPATHLEN + 1];
+    char url[MAXPATHLEN + 1] = {0};
     http_client_t *httpc;
+    long resp_code = 0;
     int rc;
-    long resp_code;
 
     rc = snprintf(url, sizeof(url), "http://%s:%d/version", node_ip, node_port);
     if (rc < 0 || rc >= sizeof(url))
@@ -79,12 +78,13 @@ static int ipfs_rest_get_node_version(const char *node_ip, uint16_t node_port)
     http_client_set_timeout(httpc, 5);
 
     rc = http_client_request(httpc);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     rc = http_client_get_response_code(httpc, &resp_code);
     http_client_close(httpc);
-    if (rc)
+
+    if (rc != 0)
         return -1;
 
     if (resp_code != HttpStatus_OK)
@@ -97,13 +97,16 @@ error_exit:
     return -1;
 }
 
-static int ipfs_rest_get_uid_info(const char *node_ip, uint16_t node_port,
-                                  const char *uid, char **resp)
+static int ipfs_get_uid_info(const char *node_ip, uint16_t node_port,
+                             const char *uid, char **resp)
 {
-    char url[MAXPATHLEN + 1];
+    char url[MAXPATHLEN + 1] = {0};
     http_client_t *httpc;
     long resp_code = 0;
+    char *p;
     int rc;
+
+    assert(resp && *resp);
 
     rc = snprintf(url, sizeof(url), "http://%s:%d/api/v0/uid/info",
                   node_ip, node_port);
@@ -118,67 +121,14 @@ static int ipfs_rest_get_uid_info(const char *node_ip, uint16_t node_port,
     http_client_set_query(httpc, "uid", uid);
     http_client_set_method(httpc, HTTP_METHOD_POST);
     http_client_set_request_body_instant(httpc, NULL, 0);
-    if (resp)
-        http_client_enable_response_body(httpc);
-
-    rc = http_client_request(httpc);
-    if (rc)
-        goto error_exit;
-
-    rc = http_client_get_response_code(httpc, &resp_code);
-    if (rc)
-        goto error_exit;
-
-    if (resp_code != HttpStatus_OK)
-        goto error_exit;
-
-    if (resp) {
-        char *p;
-
-        p = http_client_move_response_body(httpc, NULL);
-        if (!p)
-            goto error_exit;
-
-        *resp = p;
-    }
-
-    http_client_close(httpc);
-    return 0;
-
-error_exit:
-    http_client_close(httpc);
-    return -1;
-}
-
-static int ipfs_rest_resolve(const char *node_ip, uint16_t node_port,
-                             const char *peerid, char **resp)
-{
-    char url[MAXPATHLEN + 1];
-    http_client_t *httpc;
-    long resp_code = 0;
-    char *p;
-    int rc;
-
-    rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/name/resolve",
-                  node_ip, (unsigned)node_port);
-    if (rc < 0 || rc >= sizeof(url))
-        return -1;
-
-    httpc = http_client_new();
-    if (!httpc)
-        return -1;
-
-    http_client_set_url(httpc, url);
-    http_client_set_query(httpc, "arg", peerid);
-    http_client_set_method(httpc, HTTP_METHOD_GET);
     http_client_enable_response_body(httpc);
 
     rc = http_client_request(httpc);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     rc = http_client_get_response_code(httpc, &resp_code);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     if (resp_code != HttpStatus_OK)
@@ -198,10 +148,60 @@ error_exit:
     return -1;
 }
 
-static int ipfs_rest_login(const char *node_ip, uint16_t node_port,
-                           const char *uid, const char *root_hash)
+static int ipfs_resolve(const char *node_ip, uint16_t node_port,
+                        const char *peerid, char **resp)
 {
-    char url[MAXPATHLEN + 1];
+    char url[MAXPATHLEN + 1] = {0};
+    http_client_t *httpc;
+    long resp_code = 0;
+    char *p;
+    int rc;
+
+    assert(resp && *resp);
+
+    rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/name/resolve",
+                  node_ip, (unsigned)node_port);
+    if (rc < 0 || rc >= sizeof(url))
+        return -1;
+
+    httpc = http_client_new();
+    if (!httpc)
+        return -1;
+
+    http_client_set_url(httpc, url);
+    http_client_set_query(httpc, "arg", peerid);
+    http_client_set_method(httpc, HTTP_METHOD_GET);
+    http_client_enable_response_body(httpc);
+
+    rc = http_client_request(httpc);
+    if (rc != 0)
+        goto error_exit;
+
+    rc = http_client_get_response_code(httpc, &resp_code);
+    if (rc != 0)
+        goto error_exit;
+
+    if (resp_code != HttpStatus_OK)
+        goto error_exit;
+
+    p = http_client_move_response_body(httpc, NULL);
+    http_client_close(httpc);
+
+    if (!p)
+        return -1;
+
+    *resp = p;
+    return 0;
+
+error_exit:
+    http_client_close(httpc);
+    return -1;
+}
+
+static int ipfs_login(const char *node_ip, uint16_t node_port,
+                      const char *uid, const char *root_hash)
+{
+    char url[MAXPATHLEN + 1] = {0};
     http_client_t *httpc;
     long resp_code = 0;
     int rc;
@@ -222,13 +222,13 @@ static int ipfs_rest_login(const char *node_ip, uint16_t node_port,
     http_client_set_request_body_instant(httpc, NULL, 0);
 
     rc = http_client_request(httpc);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     rc = http_client_get_response_code(httpc, &resp_code);
     http_client_close(httpc);
 
-    if (rc)
+    if (rc != 0)
         return -1;
 
     if (resp_code != HttpStatus_OK)
@@ -241,14 +241,16 @@ error_exit:
     return -1;
 }
 
-static int ipfs_rest_list_files(const char *node_ip, uint16_t node_port,
-                                const char *uid, const char *path, char **resp)
+static int ipfs_list_files(const char *node_ip, uint16_t node_port,
+                           const char *uid, const char *path, char **resp)
 {
-    char url[MAXPATHLEN + 1];
+    char url[MAXPATHLEN + 1] = {0};
     http_client_t *httpc;
     long resp_code;
     char *p;
     int rc;
+
+    assert(resp && *resp);
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/files/ls",
                   node_ip, (unsigned)node_port);
@@ -267,11 +269,11 @@ static int ipfs_rest_list_files(const char *node_ip, uint16_t node_port,
     http_client_enable_response_body(httpc);
 
     rc = http_client_request(httpc);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     rc = http_client_get_response_code(httpc, &resp_code);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     if (resp_code != HttpStatus_OK)
@@ -291,14 +293,16 @@ error_exit:
     return -1;
 }
 
-static int ipfs_rest_file_stat(const char *node_ip, uint16_t node_port,
-                               const char *uid, const char *path, char **resp)
+static int ipfs_file_stat(const char *node_ip, uint16_t node_port,
+                          const char *uid, const char *path, char **resp)
 {
     char url[MAXPATHLEN + 1];
     http_client_t *httpc;
     long resp_code = 0;
     char *p;
     int rc;
+
+    assert(resp && *resp);
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/files/stat",
                   node_ip, (unsigned)node_port);
@@ -317,11 +321,11 @@ static int ipfs_rest_file_stat(const char *node_ip, uint16_t node_port,
     http_client_enable_response_body(httpc);
 
     rc = http_client_request(httpc);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     rc = http_client_get_response_code(httpc, &resp_code);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     if (resp_code != HttpStatus_OK)
@@ -358,11 +362,11 @@ static size_t read_response_body_cb(char *buffer,
     return total_sz;
 }
 
-static ssize_t ipfs_rest_file_read(const char *node_ip, uint16_t node_port,
-                                   const char *uid, const char *path, size_t offset,
-                                   void *buf, size_t len)
+static ssize_t ipfs_file_read(const char *node_ip, uint16_t node_port,
+                              const char *uid, const char *path, size_t offset,
+                              void *buf, size_t len)
 {
-    char url[MAXPATHLEN + 1];
+    char url[MAXPATHLEN + 1] = {0};
     char header[128];
     http_client_t *httpc;
     long resp_code = 0;
@@ -391,12 +395,13 @@ static ssize_t ipfs_rest_file_read(const char *node_ip, uint16_t node_port,
     http_client_set_response_body(httpc, read_response_body_cb, user_data);
 
     rc = http_client_request(httpc);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     rc = http_client_get_response_code(httpc, &resp_code);
     http_client_close(httpc);
-    if (rc)
+
+    if (rc != 0)
         return -1;
 
     if (resp_code != HttpStatus_OK)
@@ -409,10 +414,10 @@ error_exit:
     return -1;
 }
 
-static int ipfs_rest_mkdir(const char *node_ip, uint16_t node_port,
-                           const char *uid, const char *path)
+static int ipfs_mkdir(const char *node_ip, uint16_t node_port,
+                      const char *uid, const char *path)
 {
-    char url[MAXPATHLEN + 1];
+    char url[MAXPATHLEN + 1] = {0};
     http_client_t *httpc;
     long resp_code;
     int rc;
@@ -434,12 +439,13 @@ static int ipfs_rest_mkdir(const char *node_ip, uint16_t node_port,
     http_client_set_request_body_instant(httpc, NULL, 0);
 
     rc = http_client_request(httpc);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     rc = http_client_get_response_code(httpc, &resp_code);
     http_client_close(httpc);
-    if (rc)
+
+    if (rc != 0)
         return -1;
 
     if (resp_code != HttpStatus_OK)
@@ -452,10 +458,10 @@ error_exit:
     return -1;
 }
 
-static int ipfs_rest_publish(const char *node_ip, uint16_t node_port,
-                             const char *uid, const char *hash)
+static int ipfs_publish(const char *node_ip, uint16_t node_port,
+                        const char *uid, const char *hash)
 {
-    char url[MAXPATHLEN + 1];
+    char url[MAXPATHLEN + 1] = {0};
     http_client_t *httpc;
     long resp_code = 0;
     int rc;
@@ -476,12 +482,13 @@ static int ipfs_rest_publish(const char *node_ip, uint16_t node_port,
     http_client_set_request_body_instant(httpc, NULL, 0);
 
     rc = http_client_request(httpc);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     rc = http_client_get_response_code(httpc, &resp_code);
     http_client_close(httpc);
-    if (rc)
+
+    if (rc != 0)
         return -1;
 
     if (resp_code != HttpStatus_OK)
@@ -494,12 +501,12 @@ error_exit:
     return -1;
 }
 
-static ssize_t ipfs_rest_file_write(const char *node_ip, uint16_t node_port,
-                                    const char *uid, const char *path, size_t offset,
-                                    const uint8_t *value, size_t len)
+static ssize_t ipfs_file_write(const char *node_ip, uint16_t node_port,
+                               const char *uid, const char *path, size_t offset,
+                               const uint8_t *value, size_t len)
 {
-    char url[MAXPATHLEN + 1];
-    char header[128];
+    char url[MAXPATHLEN + 1] = {0};
+    char header[128] = {0};
     http_client_t *httpc;
     long resp_code = 0;
     int rc;
@@ -525,30 +532,31 @@ static ssize_t ipfs_rest_file_write(const char *node_ip, uint16_t node_port,
     http_client_set_method(httpc, HTTP_METHOD_POST);
 
     rc = http_client_request(httpc);
-    if (rc)
+    if (rc != 0)
         goto error_exit;
 
     rc = http_client_get_response_code(httpc, &resp_code);
     http_client_close(httpc);
-    if (rc)
+
+    if (rc != 0)
         return -1;
 
     if (resp_code != HttpStatus_OK)
         return -1;
 
-    return len;
+    return 0;
 
 error_exit:
     http_client_close(httpc);
     return -1;
 }
 
-static int ipfs_rest_rm(const char *node_ip, uint16_t node_port,
-                        const char *uid, const char *path)
+static int ipfs_file_remove(const char *node_ip, uint16_t node_port,
+                            const char *uid, const char *path)
 {
-    char url[MAXPATHLEN + 1];
+    char url[MAXPATHLEN + 1] = {0};
     http_client_t *httpc;
-    long resp_code;
+    long resp_code = 0;
     int rc;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/files/rm",
@@ -573,7 +581,8 @@ static int ipfs_rest_rm(const char *node_ip, uint16_t node_port,
 
     rc = http_client_get_response_code(httpc, &resp_code);
     http_client_close(httpc);
-    if (rc)
+
+    if (rc != 0)
         return -1;
 
     if (resp_code != HttpStatus_OK)
@@ -586,43 +595,48 @@ error_exit:
     return -1;
 }
 
-static int select_bootstrap(DStore *ds)
+static int choose_working_node(DStore *dstore)
 {
-    rpc_node_t *rpc_nodes = ds->rpc_nodes;
+    rpc_node_t *rpc_nodes = dstore->rpc_nodes;
+    bool found = false;
     size_t base;
     size_t i;
     int rc;
 
     srand((unsigned)time(NULL));
-    base = (size_t)rand() % ds->rpc_nodes_count;
+    base = (size_t)rand() % dstore->rpc_nodes_count;
     i = base;
 
     do {
-        if (rpc_nodes[i].ipv4[0]) {
-            rc = ipfs_rest_get_node_version(rpc_nodes[i].ipv4, rpc_nodes[i].port);
+        rpc_node_t *rpc_node = rpc_nodes + i;
+
+        if (*rpc_node->ipv4) {
+            rc = ipfs_get_node_version(rpc_node->ipv4, rpc_node->port);
             if (!rc) {
-                strcpy(ds->current_node_ip, rpc_nodes[i].ipv4);
-                ds->current_node_port = rpc_nodes[i].port;
-                return 0;
+                strcpy(dstore->current_node_ip, rpc_node->ipv4);
+                dstore->current_node_port = rpc_node->port;
+                found = true;
+                break;
             }
         }
 
-        if (rpc_nodes[i].ipv6[0]) {
-            rc = ipfs_rest_get_node_version(rpc_nodes[i].ipv6, rpc_nodes[i].port);
+        if (*rpc_node->ipv6) {
+            rc = ipfs_get_node_version(rpc_node->ipv6, rpc_node->port);
             if (!rc) {
-                strcpy(ds->current_node_ip, rpc_nodes[i].ipv6);
-                ds->current_node_port = rpc_nodes[i].port;
-                return 0;
+                strcpy(dstore->current_node_ip, rpc_node->ipv6);
+                dstore->current_node_port = rpc_node->port;
+                found = true;
+                break;
             }
         }
 
-        i = (i + 1) % ds->rpc_nodes_count;
+        i = (i + 1) % dstore->rpc_nodes_count;
     } while (i != base);
 
-    return -1;
+    return found ? 0 : -1;
 }
 
-static int synchronize_data_to_current_node(DStore *ds)
+static int login_working_node(DStore *dstore)
 {
     char *resp;
     cJSON *json = NULL;
@@ -630,32 +644,34 @@ static int synchronize_data_to_current_node(DStore *ds)
     cJSON *hash;
     int rc;
 
-    rc = ipfs_rest_get_uid_info(ds->current_node_ip,
-                                ds->current_node_port,
-                                DSTORE_UID, &resp);
+    rc = ipfs_get_uid_info(dstore->current_node_ip, dstore->current_node_port,
+                           DSTORE_UID, &resp);
     if (rc < 0)
         return rc;
 
     json = cJSON_Parse(resp);
     free(resp);
+
     if (!json)
         return -1;
 
     peer_id = cJSON_GetObjectItemCaseSensitive(json, "PeerID");
-    if (!cJSON_IsString(peer_id) || !peer_id->valuestring || !*peer_id->valuestring) {
+    if (!cJSON_IsString(peer_id) || !peer_id->valuestring ||
+        !*peer_id->valuestring) {
         cJSON_Delete(json);
         return -1;
     }
 
-    rc = ipfs_rest_resolve(ds->current_node_ip,
-                           ds->current_node_port,
-                           peer_id->valuestring, &resp);
+    rc = ipfs_resolve(dstore->current_node_ip, dstore->current_node_port,
+                      peer_id->valuestring, &resp);
     cJSON_Delete(json);
+
     if (rc < 0)
         return rc;
 
     json = cJSON_Parse(resp);
     free(resp);
+
     if (!json)
         return -1;
 
@@ -665,9 +681,10 @@ static int synchronize_data_to_current_node(DStore *ds)
         return -1;
     }
 
-    rc = ipfs_rest_login(ds->current_node_ip, ds->current_node_port,
-                         DSTORE_UID, hash->valuestring);
+    rc = ipfs_login(dstore->current_node_ip, dstore->current_node_port,
+                    DSTORE_UID, hash->valuestring);
     cJSON_Delete(json);
+
     if (rc < 0)
         return rc;
 
@@ -678,41 +695,39 @@ static int setup_working_node(DStore *ds)
 {
     int rc;
 
-    rc = select_bootstrap(ds);
+    rc = choose_working_node(ds);
     if (rc < 0)
         return -1;
 
-    rc = synchronize_data_to_current_node(ds);
+    rc = login_working_node(ds);
     if (rc < 0)
         return -1;
 
     return 0;
 }
 
-
-DStore *dstore_create(dstorec_node *bootstraps, size_t sz)
+DStore *dstore_create(RpcNode *rpc_nodes, size_t count)
 {
     DStore *ds;
     size_t i;
     int rc;
 
-    ds = rc_zalloc(sizeof(DStore) + sizeof(rpc_node_t) * sz, NULL);
+    ds = rc_zalloc(sizeof(DStore) + sizeof(rpc_node_t) * count, NULL);
     if (!ds)
         return NULL;
 
-    ds->rpc_nodes_count = sz;
+    ds->rpc_nodes_count = count;
 
-    for (i = 0; i < sz ; ++i) {
-        rpc_node_t *rpc = ds->rpc_nodes + i;
-        dstorec_node *nd = bootstraps + i;
+    for (i = 0; i < count ; ++i) {
+        RpcNode  *from = rpc_nodes + i;
+        rpc_node_t *to = ds->rpc_nodes + i;
 
-        if (nd->ipv4)
-            strcpy(rpc->ipv4, nd->ipv4);
+        if (from->ipv4)
+            strcpy(to->ipv4, from->ipv4);
+        if (from->ipv6)
+            strcpy(to->ipv6, from->ipv6);
 
-        if (nd->ipv6)
-            strcpy(rpc->ipv6, nd->ipv6);
-
-        rpc->port = nd->port;
+        to->port = from->port;
     }
 
     rc = setup_working_node(ds);
@@ -779,8 +794,8 @@ static int read_file(DStore *ds, const char *path, void **pdata, size_t *plen)
     void *data;
     ssize_t nrd;
 
-    rc = ipfs_rest_file_stat(ds->current_node_ip, ds->current_node_port,
-                             DSTORE_UID, path, &resp);
+    rc = ipfs_file_stat(ds->current_node_ip, ds->current_node_port,
+                        DSTORE_UID, path, &resp);
     if (rc < 0) {
         setup_working_node(ds);
         return -1;
@@ -788,6 +803,7 @@ static int read_file(DStore *ds, const char *path, void **pdata, size_t *plen)
 
     json = cJSON_Parse(resp);
     free(resp);
+
     if (!json) {
         setup_working_node(ds);
         return -1;
@@ -807,8 +823,8 @@ static int read_file(DStore *ds, const char *path, void **pdata, size_t *plen)
     if (!data)
         return -1;
 
-    nrd = ipfs_rest_file_read(ds->current_node_ip, ds->current_node_port,
-                              DSTORE_UID, path, 0, data, len);
+    nrd = ipfs_file_read(ds->current_node_ip, ds->current_node_port,
+                         DSTORE_UID, path, 0, data, len);
     if (nrd < 0)
         return -1;
 
@@ -822,7 +838,7 @@ int dstore_get_values(DStore *ds, const char *key,
                                  size_t length, void *ctx),
                       void *ctx)
 {
-    char path[MAXPATHLEN + 1];
+    char path[MAXPATHLEN + 1] = {0};
     cJSON *resp_json;
     cJSON *entries;
     cJSON *entry;
@@ -830,8 +846,8 @@ int dstore_get_values(DStore *ds, const char *key,
     int rc;
 
     sprintf(path, "%s/%s", MSG_PATH, key);
-    rc = ipfs_rest_list_files(ds->current_node_ip, ds->current_node_port,
-                              DSTORE_UID, path, &resp);
+    rc = ipfs_list_files(ds->current_node_ip, ds->current_node_port,
+                         DSTORE_UID, path, &resp);
     if (rc < 0) {
         setup_working_node(ds);
         return -1;
@@ -882,8 +898,8 @@ static int get_root_hash(DStore *ds, char *buf, size_t bufsz)
     cJSON *json;
     cJSON *hash;
 
-    rc = ipfs_rest_file_stat(ds->current_node_ip, ds->current_node_port,
-                             DSTORE_UID, "/", &resp);
+    rc = ipfs_file_stat(ds->current_node_ip, ds->current_node_port,
+                        DSTORE_UID, "/", &resp);
     if (rc < 0) {
         setup_working_node(ds);
         return -1;
@@ -920,8 +936,8 @@ static int publish_root_hash(DStore *ds)
     if (rc < 0)
         return -1;
 
-    rc = ipfs_rest_publish(ds->current_node_ip, ds->current_node_port,
-                           DSTORE_UID, hash);
+    rc = ipfs_publish(ds->current_node_ip, ds->current_node_port,
+                      DSTORE_UID, hash);
     if (rc < 0) {
         setup_working_node(ds);
         return -1;
@@ -937,14 +953,14 @@ int dstore_add_value(DStore *ds, const char *key, const uint8_t *value, size_t l
     ssize_t nwr;
 
     sprintf(path, "%s/%s", MSG_PATH, key);
-    rc = ipfs_rest_mkdir(ds->current_node_ip, ds->current_node_port, DSTORE_UID, path);
+    rc = ipfs_mkdir(ds->current_node_ip, ds->current_node_port, DSTORE_UID, path);
     if (rc < 0) {
         setup_working_node(ds);
         return -1;
     }
 
     sprintf(path + strlen(path), "/%llu", (unsigned long long)time(NULL));
-    nwr = ipfs_rest_file_write(ds->current_node_ip, ds->current_node_port, DSTORE_UID,
+    nwr = ipfs_file_write(ds->current_node_ip, ds->current_node_port, DSTORE_UID,
                                path, 0, value, len);
     if (nwr < 0) {
         setup_working_node(ds);
@@ -958,20 +974,21 @@ int dstore_add_value(DStore *ds, const char *key, const uint8_t *value, size_t l
     return 0;
 }
 
-int dstore_remove_values(DStore *ds, const char *key)
+int dstore_remove_values(DStore *dstore, const char *key)
 {
     char path[MAXPATHLEN + 1];
     int rc;
     ssize_t nwr;
 
     sprintf(path, "%s/%s", MSG_PATH, key);
-    rc = ipfs_rest_rm(ds->current_node_ip, ds->current_node_port, DSTORE_UID, path);
+    rc = ipfs_file_remove(dstore->current_node_ip, dstore->current_node_port,
+                          DSTORE_UID, path);
     if (rc < 0) {
-        setup_working_node(ds);
+        setup_working_node(dstore);
         return -1;
     }
 
-    rc = publish_root_hash(ds);
+    rc = publish_root_hash(dstore);
     if (rc < 0)
         return -1;
 

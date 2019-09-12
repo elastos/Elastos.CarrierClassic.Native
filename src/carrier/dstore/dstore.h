@@ -26,18 +26,18 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
-typedef struct dstorec_node {
+typedef struct RpcNode {
     char *ipv4;
     char *ipv6;
     uint16_t port;
-} dstorec_node;
+} RpcNode;
 
-typedef struct dstore DStore;
+typedef struct DStore DStore;
 
-DStore *dstore_create(dstorec_node *bootstraps, size_t sz);
+DStore *dstore_create(RpcNode *rpc_nodes, size_t count);
 void dstore_destroy(DStore *dstore);
+
 int dstore_get_values(DStore *dstore, const char *key,
                       bool (*cb)(const char *key, const uint8_t *value,
                                  size_t length, void *ctx),

@@ -264,12 +264,12 @@ static void *dstore_msgs_dispatch(void *arg)
     ElaCarrier *w = ctx->carrier;
     char conf_path[PATH_MAX];
     DStoreMsg *msg;
-    dstorec_node *nodes;
+    RpcNode *nodes;
     int rc;
     int i;
 
-    nodes = alloca(sizeof(dstorec_node) * w->pref.hive_bootstraps_size);
-    memset(nodes, 0, sizeof(dstorec_node) * w->pref.hive_bootstraps_size);
+    nodes = alloca(sizeof(RpcNode) * w->pref.hive_bootstraps_size);
+    memset(nodes, 0, sizeof(RpcNode) * w->pref.hive_bootstraps_size);
     for (i = 0; i < w->pref.hive_bootstraps_size; ++i) {
         nodes[i].ipv4 = w->pref.hive_bootstraps[i].ipv4;
         nodes[i].ipv6 = w->pref.hive_bootstraps[i].ipv6;
