@@ -118,7 +118,7 @@ static int ipfs_get_uid_info(DStore *dstore, const char *uid, char **resp)
     char *p;
     int rc;
 
-    assert(resp && *resp);
+    assert(resp);
 
     if (!is_working_node_configured(dstore) &&
         configure_working_node(dstore) < 0)
@@ -174,7 +174,7 @@ static int ipfs_resolve(DStore *dstore, const char *peerid, char **resp)
     char *p;
     int rc;
 
-    assert(resp && *resp);
+    assert(resp);
 
     if (!is_working_node_configured(dstore) &&
         configure_working_node(dstore) < 0)
@@ -278,7 +278,7 @@ static int ipfs_list_files(DStore *dstore, const char *uid,
     char *p;
     int rc;
 
-    assert(resp && *resp);
+    assert(resp);
 
     if (!is_working_node_configured(dstore) &&
         configure_working_node(dstore) < 0)
@@ -336,7 +336,7 @@ static int ipfs_file_stat(DStore *dstore, const char *uid,
     char *p;
     int rc;
 
-    assert(resp && *resp);
+    assert(resp);
 
     if (!is_working_node_configured(dstore) &&
         configure_working_node(dstore) < 0)
