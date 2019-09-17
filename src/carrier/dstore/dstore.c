@@ -57,14 +57,14 @@ struct DStore {
     rpc_node_t rpc_nodes[0];
 };
 
-static inline bool is_working_node_configured(DStore *dstore)
+static inline bool has_working_node(DStore *dstore)
 {
     return *dstore->current_node_ip ? true : false;
 }
 
-static inline void unset_working_node(DStore *dstore)
+static inline void clear_working_node(DStore *dstore)
 {
-    dstore->current_node_ip[0] = '\0';
+    memset(dstore->current_node_ip, 0, sizeof(dstore->current_node_ip));
 }
 
 static int configure_working_node(DStore *dstore);
@@ -120,8 +120,7 @@ static int ipfs_get_uid_info(DStore *dstore, const char *uid, char **resp)
 
     assert(resp);
 
-    if (!is_working_node_configured(dstore) &&
-        configure_working_node(dstore) < 0)
+    if (!has_working_node(dstore) && configure_working_node(dstore) < 0)
         return -1;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/uid/info",
@@ -141,7 +140,7 @@ static int ipfs_get_uid_info(DStore *dstore, const char *uid, char **resp)
 
     rc = http_client_request(httpc);
     if (rc != 0) {
-        unset_working_node(dstore);
+        clear_working_node(dstore);
         goto error_exit;
     }
 
@@ -176,8 +175,7 @@ static int ipfs_resolve(DStore *dstore, const char *peerid, char **resp)
 
     assert(resp);
 
-    if (!is_working_node_configured(dstore) &&
-        configure_working_node(dstore) < 0)
+    if (!has_working_node(dstore) && configure_working_node(dstore) < 0)
         return -1;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/name/resolve",
@@ -196,7 +194,7 @@ static int ipfs_resolve(DStore *dstore, const char *peerid, char **resp)
 
     rc = http_client_request(httpc);
     if (rc != 0) {
-        unset_working_node(dstore);
+        clear_working_node(dstore);
         goto error_exit;
     }
 
@@ -228,8 +226,7 @@ static int ipfs_login(DStore *dstore, const char *uid, const char *root_hash)
     long resp_code = 0;
     int rc;
 
-    if (!is_working_node_configured(dstore) &&
-        configure_working_node(dstore) < 0)
+    if (!has_working_node(dstore) && configure_working_node(dstore) < 0)
         return -1;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/uid/login",
@@ -249,7 +246,7 @@ static int ipfs_login(DStore *dstore, const char *uid, const char *root_hash)
 
     rc = http_client_request(httpc);
     if (rc != 0) {
-        unset_working_node(dstore);
+        clear_working_node(dstore);
         goto error_exit;
     }
 
@@ -280,8 +277,7 @@ static int ipfs_list_files(DStore *dstore, const char *uid,
 
     assert(resp);
 
-    if (!is_working_node_configured(dstore) &&
-        configure_working_node(dstore) < 0)
+    if (!has_working_node(dstore) && configure_working_node(dstore) < 0)
         return -1;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/files/ls",
@@ -302,7 +298,7 @@ static int ipfs_list_files(DStore *dstore, const char *uid,
 
     rc = http_client_request(httpc);
     if (rc != 0) {
-        unset_working_node(dstore);
+        clear_working_node(dstore);
         goto error_exit;
     }
 
@@ -338,8 +334,7 @@ static int ipfs_file_stat(DStore *dstore, const char *uid,
 
     assert(resp);
 
-    if (!is_working_node_configured(dstore) &&
-        configure_working_node(dstore) < 0)
+    if (!has_working_node(dstore) && configure_working_node(dstore) < 0)
         return -1;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/files/stat",
@@ -360,7 +355,7 @@ static int ipfs_file_stat(DStore *dstore, const char *uid,
 
     rc = http_client_request(httpc);
     if (rc != 0) {
-        unset_working_node(dstore);
+        clear_working_node(dstore);
         goto error_exit;
     }
 
@@ -414,8 +409,7 @@ static ssize_t ipfs_file_read(DStore *dstore, const char *uid,
     void *user_data[] = {buf, &len, &nrd};
     int rc;
 
-    if (!is_working_node_configured(dstore) &&
-        configure_working_node(dstore) < 0)
+    if (!has_working_node(dstore) && configure_working_node(dstore) < 0)
         return -1;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/files/read",
@@ -440,7 +434,7 @@ static ssize_t ipfs_file_read(DStore *dstore, const char *uid,
 
     rc = http_client_request(httpc);
     if (rc != 0) {
-        unset_working_node(dstore);
+        clear_working_node(dstore);
         goto error_exit;
     }
 
@@ -467,8 +461,7 @@ static int ipfs_mkdir(DStore *dstore, const char *uid, const char *path)
     long resp_code;
     int rc;
 
-    if (!is_working_node_configured(dstore) &&
-        configure_working_node(dstore) < 0)
+    if (!has_working_node(dstore) && configure_working_node(dstore) < 0)
         return -1;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/files/mkdir",
@@ -489,7 +482,7 @@ static int ipfs_mkdir(DStore *dstore, const char *uid, const char *path)
 
     rc = http_client_request(httpc);
     if (rc != 0) {
-        unset_working_node(dstore);
+        clear_working_node(dstore);
         goto error_exit;
     }
 
@@ -516,8 +509,7 @@ static int ipfs_publish(DStore *dstore, const char *uid, const char *hash)
     long resp_code = 0;
     int rc;
 
-    if (!is_working_node_configured(dstore) &&
-        configure_working_node(dstore) < 0)
+    if (!has_working_node(dstore) && configure_working_node(dstore) < 0)
         return -1;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/name/publish",
@@ -537,7 +529,7 @@ static int ipfs_publish(DStore *dstore, const char *uid, const char *hash)
 
     rc = http_client_request(httpc);
     if (rc != 0) {
-        unset_working_node(dstore);
+        clear_working_node(dstore);
         goto error_exit;
     }
 
@@ -567,8 +559,7 @@ static ssize_t ipfs_file_write(DStore *dstore, const char *uid,
     long resp_code = 0;
     int rc;
 
-    if (!is_working_node_configured(dstore) &&
-        configure_working_node(dstore) < 0)
+    if (!has_working_node(dstore) && configure_working_node(dstore) < 0)
         return -1;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/files/write",
@@ -593,7 +584,7 @@ static ssize_t ipfs_file_write(DStore *dstore, const char *uid,
 
     rc = http_client_request(httpc);
     if (rc != 0) {
-        unset_working_node(dstore);
+        clear_working_node(dstore);
         goto error_exit;
     }
 
@@ -620,8 +611,7 @@ static int ipfs_file_remove(DStore *dstore, const char *uid, const char *path)
     long resp_code = 0;
     int rc;
 
-    if (!is_working_node_configured(dstore) &&
-        configure_working_node(dstore) < 0)
+    if (!has_working_node(dstore) && configure_working_node(dstore) < 0)
         return -1;
 
     rc = snprintf(url, sizeof(url), "http://%s:%u/api/v0/files/rm",
@@ -642,7 +632,7 @@ static int ipfs_file_remove(DStore *dstore, const char *uid, const char *path)
 
     rc = http_client_request(httpc);
     if (rc) {
-        unset_working_node(dstore);
+        clear_working_node(dstore);
         goto error_exit;
     }
 
@@ -871,13 +861,15 @@ static int read_file(DStore *dstore, const char *path, void **pdata, size_t *ple
     len = (size_t)size->valuedouble;
     cJSON_Delete(json);
 
-    data = malloc(len);
+    data = calloc(1, len);
     if (!data)
         return -1;
 
     nrd = ipfs_file_read(dstore, DSTORE_UID, path, 0, data, len);
-    if (nrd < 0)
+    if (nrd < 0) {
+        free(data);
         return -1;
+    }
 
     *pdata = data;
     *plen = nrd;
@@ -903,6 +895,7 @@ int dstore_get_values(DStore *dstore, const char *key,
 
     resp_json = parse_list_files_response(resp);
     free(resp);
+
     if (!resp_json)
         return -1;
 
@@ -926,6 +919,7 @@ int dstore_get_values(DStore *dstore, const char *key,
 
             resume = cb(key, data, len, ctx);
             free(data);
+
             if (!resume) {
                 cJSON_Delete(resp_json);
                 return 0;
@@ -949,6 +943,7 @@ static int get_root_hash(DStore *dstore, char *buf, size_t bufsz)
 
     json = cJSON_Parse(resp);
     free(resp);
+
     if (!json)
         return -1;
 
@@ -960,6 +955,7 @@ static int get_root_hash(DStore *dstore, char *buf, size_t bufsz)
 
     rc = snprintf(buf, bufsz, "/ipfs/%s", hash->valuestring);
     cJSON_Delete(json);
+
     if (rc < 0 || rc >= bufsz)
         return -1;
 
@@ -968,8 +964,8 @@ static int get_root_hash(DStore *dstore, char *buf, size_t bufsz)
 
 static int publish_root_hash(DStore *dstore)
 {
+    char hash[1024] = {0};
     int rc;
-    char hash[1024];
 
     rc = get_root_hash(dstore, hash, sizeof(hash));
     if (rc < 0)
@@ -984,7 +980,7 @@ static int publish_root_hash(DStore *dstore)
 
 int dstore_add_value(DStore *dstore, const char *key, const uint8_t *value, size_t len)
 {
-    char path[MAXPATHLEN + 1];
+    char path[MAXPATHLEN + 1] = {0};
     int rc;
     ssize_t nwr;
 
@@ -1007,7 +1003,7 @@ int dstore_add_value(DStore *dstore, const char *key, const uint8_t *value, size
 
 int dstore_remove_values(DStore *dstore, const char *key)
 {
-    char path[MAXPATHLEN + 1];
+    char path[MAXPATHLEN + 1] = {0};
     int rc;
     ssize_t nwr;
 
