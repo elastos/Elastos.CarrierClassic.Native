@@ -1,3 +1,12 @@
+09/19/2019 Li Fenxiang lifenxiang@elastos.org
+
+**version 5.4.1**, main changes to previous version:
+
+```markdown
+- Offline messaging change to use Solo dstore implementation other than to use Hive SDK.
+- Fix typo in root CMakeLists.txt of toxcore.
+```
+
 08/19/2019 Li Fenxiang lifenxiang@elastos.org
 
 **version 5.4.0**, main changes to previous version:
