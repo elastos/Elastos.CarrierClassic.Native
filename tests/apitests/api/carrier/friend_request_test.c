@@ -266,11 +266,47 @@ static void test_add_self_be_friend(void)
     CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
 }
 
+static void test_send_friend_request(void)
+{
+    CarrierContext *wctxt = test_context.carrier;
+    int rc;
+
+    test_context.context_reset(&test_context);
+
+    rc = remove_friend_anyway(&test_context, robotid);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+
+    rc = ela_add_friend(wctxt->carrier, robotaddr, "hello");
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+
+    // wait until robot having received "fadd” request.
+    char buf[2][32];
+    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    CU_ASSERT_EQUAL_FATAL(rc, 2);
+    CU_ASSERT_STRING_EQUAL_FATAL(buf[0], "hello");
+    CU_ASSERT_STRING_EQUAL_FATAL(buf[1], "hello");
+
+    rc = ela_add_friend(wctxt->carrier, robotaddr, "hello1");
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+
+    // wait until robot having received "fadd” request.
+    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    CU_ASSERT_EQUAL_FATAL(rc, 2);
+    CU_ASSERT_STRING_EQUAL_FATAL(buf[0], "hello");
+    CU_ASSERT_STRING_EQUAL_FATAL(buf[1], "hello1");
+
+    rc = add_friend_anyway(&test_context, robotid, robotaddr);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+}
+
 static CU_TestInfo cases[] = {
     { "test_add_friend",           test_add_friend           },
     { "test_accept_friend",        test_accept_friend        },
     { "test_add_friend_be_friend", test_add_friend_be_friend },
     { "test_add_self_be_friend",   test_add_self_be_friend   },
+    { "test_send_friend_request",  test_send_friend_request  },
     { NULL, NULL }
 };
 
