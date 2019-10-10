@@ -62,6 +62,7 @@ static CarrierContextExtra extra = {
     .expected_offmsg_count = 0,
     .test_offmsg_expires = {0},
     .offmsg_header = {0},
+    .restarting = false,
     .gcookie = {0},
     .gcookie_len = 0,
     .gfrom  = {0},
@@ -124,6 +125,8 @@ static void connection_status_cb(ElaCarrier *w, ElaConnectionStatus status,
 
 static void ready_cb(ElaCarrier *w, void *context)
 {
+    CarrierContext *wctx = ((TestContext*)context)->carrier;
+    CarrierContextExtra *extra = wctx->extra;
     char address[ELA_MAX_ADDRESS_LEN + 1];
     char robotid[ELA_MAX_ID_LEN + 1];
 
@@ -132,6 +135,11 @@ static void ready_cb(ElaCarrier *w, void *context)
 
     vlogI("Robot is ready");
     write_ack("ready %s %s\n", robotid, address);
+
+    if (extra->restarting) {
+        extra->restarting = false;
+        cond_signal(wctx->cond);
+    }
 }
 
 static
