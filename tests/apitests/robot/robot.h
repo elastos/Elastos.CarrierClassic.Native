@@ -27,8 +27,6 @@
 extern "C" {
 #endif
 
-#include <stdbool.h>
-
 #include "ela_carrier.h"
 #include "ela_session.h"
 #include "test_context.h"
@@ -51,7 +49,6 @@ struct CarrierContextExtra {
     int expected_offmsg_count;
     struct timeval test_offmsg_expires;
     char offmsg_header[32];
-    bool restarting;
     char gcookie[128];
     int gcookie_len;
     char gfrom[ELA_MAX_ID_LEN + 1];

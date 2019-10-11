@@ -533,11 +533,7 @@ static void restartnode(TestContext *context, int argc, char *argv[])
     vlogI("Robot will be reborn.");
 
     if (argc == 1) {
-        extra->restarting = true;
-
         pthread_create(&extra->tid, 0, &carrier_run_entry, NULL);
-        // wait until carrier ready
-        cond_wait(wctx->cond);
         // wait until joining persistent group
         if (extra->groupid[0])
             cond_wait(wctx->group_cond);
