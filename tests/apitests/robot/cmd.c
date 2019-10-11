@@ -1260,6 +1260,7 @@ static void gleave(TestContext *context, int argc, char *argv[])
         write_ack("gleave failed\n");
         return;
     }
+    wextra->groupid[0] = '\0';
     write_ack("gleave succeeded\n");
 }
 
