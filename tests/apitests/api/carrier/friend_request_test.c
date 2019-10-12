@@ -248,8 +248,7 @@ static void test_add_friend_be_friend(void)
     CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
 
     rc = ela_add_friend(wctxt->carrier, robotaddr, "hello");
-    CU_ASSERT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_ALREADY_EXIST));
+    CU_ASSERT_EQUAL(rc, 0);
 }
 
 static void test_add_self_be_friend(void)
