@@ -1,6 +1,6 @@
 diff -ruN c-toxcore-0.2.10/CMakeLists.txt c-toxcore-0.2.10-mod/CMakeLists.txt
 --- c-toxcore-0.2.10/CMakeLists.txt	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/CMakeLists.txt	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/CMakeLists.txt	2019-10-15 17:01:54.000000000 +0800
 @@ -14,8 +14,8 @@
  #
  ################################################################################
@@ -94,7 +94,7 @@ diff -ruN c-toxcore-0.2.10/CMakeLists.txt c-toxcore-0.2.10-mod/CMakeLists.txt
  
 diff -ruN c-toxcore-0.2.10/cmake/Dependencies.cmake c-toxcore-0.2.10-mod/cmake/Dependencies.cmake
 --- c-toxcore-0.2.10/cmake/Dependencies.cmake	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/cmake/Dependencies.cmake	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/cmake/Dependencies.cmake	2019-10-15 17:01:54.000000000 +0800
 @@ -13,17 +13,17 @@
  find_library(SOCKET_LIBRARIES       socket       )
  
@@ -160,7 +160,7 @@ diff -ruN c-toxcore-0.2.10/cmake/Dependencies.cmake c-toxcore-0.2.10-mod/cmake/D
  endif()
 diff -ruN c-toxcore-0.2.10/other/bootstrap_daemon/src/config.c c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/config.c
 --- c-toxcore-0.2.10/other/bootstrap_daemon/src/config.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/config.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/config.c	2019-10-15 17:01:54.000000000 +0800
 @@ -294,6 +294,123 @@
      return 1;
  }
@@ -459,7 +459,7 @@ diff -ruN c-toxcore-0.2.10/other/bootstrap_daemon/src/config.c c-toxcore-0.2.10-
 +#endif
 diff -ruN c-toxcore-0.2.10/other/bootstrap_daemon/src/config.h c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/config.h
 --- c-toxcore-0.2.10/other/bootstrap_daemon/src/config.h	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/config.h	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/config.h	2019-10-15 17:01:54.000000000 +0800
 @@ -49,4 +49,21 @@
   */
  int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6);
@@ -484,7 +484,7 @@ diff -ruN c-toxcore-0.2.10/other/bootstrap_daemon/src/config.h c-toxcore-0.2.10-
  #endif // C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_CONFIG_H
 diff -ruN c-toxcore-0.2.10/other/bootstrap_daemon/src/global.h c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/global.h
 --- c-toxcore-0.2.10/other/bootstrap_daemon/src/global.h	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/global.h	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/global.h	2019-10-15 17:01:54.000000000 +0800
 @@ -27,8 +27,7 @@
  
  #include "../../../toxcore/tox.h"
@@ -497,7 +497,7 @@ diff -ruN c-toxcore-0.2.10/other/bootstrap_daemon/src/global.h c-toxcore-0.2.10-
  #define DAEMON_VERSION_PATCH TOX_VERSION_PATCH
 diff -ruN c-toxcore-0.2.10/other/bootstrap_daemon/src/tox-bootstrapd.c c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/tox-bootstrapd.c
 --- c-toxcore-0.2.10/other/bootstrap_daemon/src/tox-bootstrapd.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/tox-bootstrapd.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/other/bootstrap_daemon/src/tox-bootstrapd.c	2019-10-15 17:01:54.000000000 +0800
 @@ -31,6 +31,7 @@
  #include <sys/stat.h>
  #include <signal.h> // system header, rather than C, because we need it for POSIX sigaction(2)
@@ -664,7 +664,7 @@ diff -ruN c-toxcore-0.2.10/other/bootstrap_daemon/src/tox-bootstrapd.c c-toxcore
  }
 diff -ruN c-toxcore-0.2.10/other/bootstrap_node_packets.c c-toxcore-0.2.10-mod/other/bootstrap_node_packets.c
 --- c-toxcore-0.2.10/other/bootstrap_node_packets.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/other/bootstrap_node_packets.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/other/bootstrap_node_packets.c	2019-10-15 17:01:54.000000000 +0800
 @@ -44,7 +44,7 @@
  
      Networking_Core *nc = (Networking_Core *)object;
@@ -676,7 +676,7 @@ diff -ruN c-toxcore-0.2.10/other/bootstrap_node_packets.c c-toxcore-0.2.10-mod/o
      uint16_t len = 1 + sizeof(bootstrap_version) + bootstrap_motd_length;
 diff -ruN c-toxcore-0.2.10/toxcore/DHT.c c-toxcore-0.2.10-mod/toxcore/DHT.c
 --- c-toxcore-0.2.10/toxcore/DHT.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/DHT.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/DHT.c	2019-10-15 17:01:54.000000000 +0800
 @@ -1336,7 +1336,7 @@
      }
  
@@ -739,7 +739,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/DHT.c c-toxcore-0.2.10-mod/toxcore/DHT.c
      memcpy(data + 1, queried_client_id, CRYPTO_PUBLIC_KEY_SIZE);
 diff -ruN c-toxcore-0.2.10/toxcore/LAN_discovery.c c-toxcore-0.2.10-mod/toxcore/LAN_discovery.c
 --- c-toxcore-0.2.10/toxcore/LAN_discovery.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/LAN_discovery.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/LAN_discovery.c	2019-10-15 17:01:54.000000000 +0800
 @@ -383,7 +383,7 @@
  
  int lan_discovery_send(uint16_t port, DHT *dht)
@@ -751,7 +751,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/LAN_discovery.c c-toxcore-0.2.10-mod/toxcore/
  
 diff -ruN c-toxcore-0.2.10/toxcore/Messenger.c c-toxcore-0.2.10-mod/toxcore/Messenger.c
 --- c-toxcore-0.2.10/toxcore/Messenger.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/Messenger.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/Messenger.c	2019-10-15 17:01:54.000000000 +0800
 @@ -275,11 +275,19 @@
          uint32_t nospam;
          memcpy(&nospam, address + CRYPTO_PUBLIC_KEY_SIZE, sizeof(nospam));
@@ -910,7 +910,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/Messenger.c c-toxcore-0.2.10-mod/toxcore/Mess
 +
 diff -ruN c-toxcore-0.2.10/toxcore/Messenger.h c-toxcore-0.2.10-mod/toxcore/Messenger.h
 --- c-toxcore-0.2.10/toxcore/Messenger.h	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/Messenger.h	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/Messenger.h	2019-10-15 17:01:54.000000000 +0800
 @@ -817,4 +817,8 @@
   * of out_list will be truncated to list_size. */
  uint32_t copy_friendlist(const Messenger *m, uint32_t *out_list, uint32_t list_size);
@@ -922,7 +922,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/Messenger.h c-toxcore-0.2.10-mod/toxcore/Mess
  #endif
 diff -ruN c-toxcore-0.2.10/toxcore/TCP_client.c c-toxcore-0.2.10-mod/toxcore/TCP_client.c
 --- c-toxcore-0.2.10/toxcore/TCP_client.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/TCP_client.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/TCP_client.c	2019-10-15 17:01:54.000000000 +0800
 @@ -27,6 +27,10 @@
  
  #include "TCP_client.h"
@@ -993,7 +993,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/TCP_client.c c-toxcore-0.2.10-mod/toxcore/TCP
  }
 diff -ruN c-toxcore-0.2.10/toxcore/TCP_connection.c c-toxcore-0.2.10-mod/toxcore/TCP_connection.c
 --- c-toxcore-0.2.10/toxcore/TCP_connection.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/TCP_connection.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/TCP_connection.c	2019-10-15 17:01:54.000000000 +0800
 @@ -1518,3 +1518,58 @@
      free(tcp_c->connections);
      free(tcp_c);
@@ -1055,7 +1055,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/TCP_connection.c c-toxcore-0.2.10-mod/toxcore
 +
 diff -ruN c-toxcore-0.2.10/toxcore/TCP_connection.h c-toxcore-0.2.10-mod/toxcore/TCP_connection.h
 --- c-toxcore-0.2.10/toxcore/TCP_connection.h	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/TCP_connection.h	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/TCP_connection.h	2019-10-15 17:01:54.000000000 +0800
 @@ -224,5 +224,9 @@
  void do_tcp_connections(TCP_Connections *tcp_c, void *userdata);
  void kill_tcp_connections(TCP_Connections *tcp_c);
@@ -1068,7 +1068,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/TCP_connection.h c-toxcore-0.2.10-mod/toxcore
  
 diff -ruN c-toxcore-0.2.10/toxcore/TCP_server.c c-toxcore-0.2.10-mod/toxcore/TCP_server.c
 --- c-toxcore-0.2.10/toxcore/TCP_server.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/TCP_server.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/TCP_server.c	2019-10-15 17:01:54.000000000 +0800
 @@ -27,6 +27,13 @@
  
  #include "TCP_server.h"
@@ -1165,13 +1165,20 @@ diff -ruN c-toxcore-0.2.10/toxcore/TCP_server.c c-toxcore-0.2.10-mod/toxcore/TCP
  }
 diff -ruN c-toxcore-0.2.10/toxcore/friend_requests.c c-toxcore-0.2.10-mod/toxcore/friend_requests.c
 --- c-toxcore-0.2.10/toxcore/friend_requests.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/friend_requests.c	2019-10-08 16:26:23.000000000 +0800
-@@ -39,6 +39,10 @@
++++ c-toxcore-0.2.10-mod/toxcore/friend_requests.c	2019-10-15 17:01:54.000000000 +0800
+@@ -31,6 +31,7 @@
+ #include <string.h>
+ 
+ #include "util.h"
++#include "crypto_core.h"
+ 
+ /* NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.
+  * TODO(irungentoo): Make this better (This will most likely tie in with the way we will handle spam.)
+@@ -39,6 +40,9 @@
  
  struct Received_Requests {
      uint8_t requests[MAX_RECEIVED_STORED][CRYPTO_PUBLIC_KEY_SIZE];
-+    uint8_t msg[MAX_RECEIVED_STORED][MAX_FRIEND_REQUEST_DATA_SIZE];
-+    uint32_t msglen[MAX_RECEIVED_STORED];
++    uint8_t msg_sha256[MAX_RECEIVED_STORED][CRYPTO_SHA256_SIZE];
 +    uint64_t last_accept_at[MAX_RECEIVED_STORED];
 +    uint32_t accept_count[MAX_RECEIVED_STORED];
      uint16_t requests_index;
@@ -1186,64 +1193,61 @@ diff -ruN c-toxcore-0.2.10/toxcore/friend_requests.c c-toxcore-0.2.10-mod/toxcor
  };
  
  /* Set and get the nospam variable used to prevent one type of friend request spam. */
-@@ -82,30 +88,52 @@
+@@ -82,13 +88,17 @@
  }
  
  /* Add to list of received friend requests. */
 -static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
 +static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk,
-+                               const uint8_t *msg, uint32_t msglen)
++                               const uint8_t *msg_sha256)
  {
      if (fr->received.requests_index >= MAX_RECEIVED_STORED) {
          fr->received.requests_index = 0;
      }
  
      id_copy(fr->received.requests[fr->received.requests_index], real_pk);
-+    memcpy(fr->received.msg[fr->received.requests_index], msg, msglen);
-+    fr->received.msglen[fr->received.requests_index] = msglen;
++    memcpy(fr->received.msg_sha256[fr->received.requests_index], msg_sha256, CRYPTO_SHA256_SIZE);
 +    fr->received.last_accept_at[fr->received.requests_index] = mono_time_get(fr->mono_time);
 +    fr->received.accept_count[fr->received.requests_index] = 1;
      ++fr->received.requests_index;
  }
  
--/* Check if a friend request was already received.
-+/* Check if a friend request is accepted.
-  *
+@@ -97,14 +107,32 @@
   *  return false if it did not.
   *  return true if it did.
   */
 -static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
 +#define get_blocking_time(accept_cnt) (1U << ((accept_cnt) > 16 ? 16 : (accept_cnt)))
-+static bool accept_request(Friend_Requests *fr, const uint8_t *real_pk,
-+                           const uint8_t *msg, uint32_t msglen)
++static bool request_received(Friend_Requests *fr, const uint8_t *real_pk,
++                           const uint8_t *msg_sha256, bool *exist)
  {
      for (uint32_t i = 0; i < MAX_RECEIVED_STORED; ++i) {
          if (id_equal(fr->received.requests[i], real_pk)) {
-+            if (fr->received.msglen[i] == msglen &&
-+                !memcmp(fr->received.msg[i], msg, msglen))
-+                return false;
+-            return true;
++            *exist = true;
 +
++            if (!memcmp(fr->received.msg_sha256[i], msg_sha256, CRYPTO_SHA256_SIZE))
++                return true;
++
++            /* friend requests are not reported during blocking time */
 +            if (fr->received.accept_count[i] >= 3 &&
 +                !mono_time_is_timeout(fr->mono_time,
-+                                     fr->received.last_accept_at[i],
-+                                     get_blocking_time(fr->received.accept_count[i])))
-+                return false;
++                                      fr->received.last_accept_at[i],
++                                      get_blocking_time(fr->received.accept_count[i])))
++                return true;
 +
-+            memcpy(fr->received.msg[i], msg, msglen);
-+            fr->received.msglen[i] = msglen;
++            memcpy(fr->received.msg_sha256[i], msg_sha256, CRYPTO_SHA256_SIZE);
 +            fr->received.last_accept_at[i] = mono_time_get(fr->mono_time);
 +            ++fr->received.accept_count[i];
-             return true;
++            return false;
          }
      }
  
--    return false;
-+    addto_receivedlist(fr, real_pk, msg, msglen);
-+    return true;
++    *exist = false;
+     return false;
  }
  
- /* Remove real pk from received.requests list.
-@@ -125,7 +153,6 @@
+@@ -125,11 +153,12 @@
      return -1;
  }
  
@@ -1251,32 +1255,38 @@ diff -ruN c-toxcore-0.2.10/toxcore/friend_requests.c c-toxcore-0.2.10-mod/toxcor
  static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *packet, uint16_t length,
                                    void *userdata)
  {
-@@ -142,11 +169,13 @@
+     Friend_Requests *const fr = (Friend_Requests *)object;
++    uint8_t msg_sha256[CRYPTO_SHA256_SIZE];
++    bool exist;
+ 
+     if (length <= 1 + sizeof(fr->nospam) || length > ONION_CLIENT_MAX_DATA_SIZE) {
+         return 1;
+@@ -138,11 +167,13 @@
+     ++packet;
+     --length;
+ 
++    crypto_sha256(msg_sha256, packet + sizeof(fr->nospam), length - sizeof(fr->nospam));
++
+     if (fr->handle_friendrequest_isset == 0) {
          return 1;
      }
  
 -    if (request_received(fr, source_pubkey)) {
-+    if (memcmp(packet, &fr->nospam, sizeof(fr->nospam)) != 0) {
++    if (request_received(fr, source_pubkey, msg_sha256, &exist)) {
          return 1;
      }
  
--    if (memcmp(packet, &fr->nospam, sizeof(fr->nospam)) != 0) {
-+    if (!accept_request(fr, source_pubkey,
-+                        packet + sizeof(fr->nospam),
-+                        length - sizeof(fr->nospam))) {
-         return 1;
-     }
- 
-@@ -156,8 +185,6 @@
+@@ -156,7 +187,8 @@
          }
      }
  
 -    addto_receivedlist(fr, source_pubkey);
--
++    if (!exist)
++        addto_receivedlist(fr, source_pubkey, msg_sha256);
+ 
      const uint32_t message_len = length - sizeof(fr->nospam);
      VLA(uint8_t, message, message_len + 1);
-     memcpy(message, packet + sizeof(fr->nospam), message_len);
-@@ -172,9 +199,16 @@
+@@ -172,9 +204,16 @@
      set_friend_request_callback(fr_c, &friendreq_handlepacket, fr);
  }
  
@@ -1297,7 +1307,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/friend_requests.c c-toxcore-0.2.10-mod/toxcor
  void friendreq_kill(Friend_Requests *fr)
 diff -ruN c-toxcore-0.2.10/toxcore/friend_requests.h c-toxcore-0.2.10-mod/toxcore/friend_requests.h
 --- c-toxcore-0.2.10/toxcore/friend_requests.h	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/friend_requests.h	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/friend_requests.h	2019-10-15 17:01:54.000000000 +0800
 @@ -25,6 +25,7 @@
  #define C_TOXCORE_TOXCORE_FRIEND_REQUESTS_H
  
@@ -1317,7 +1327,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/friend_requests.h c-toxcore-0.2.10-mod/toxcor
  #endif
 diff -ruN c-toxcore-0.2.10/toxcore/net_crypto.c c-toxcore-0.2.10-mod/toxcore/net_crypto.c
 --- c-toxcore-0.2.10/toxcore/net_crypto.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/net_crypto.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/net_crypto.c	2019-10-15 17:01:54.000000000 +0800
 @@ -367,13 +367,13 @@
          return 1;
      }
@@ -1398,7 +1408,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/net_crypto.c c-toxcore-0.2.10-mod/toxcore/net
 +
 diff -ruN c-toxcore-0.2.10/toxcore/net_crypto.h c-toxcore-0.2.10-mod/toxcore/net_crypto.h
 --- c-toxcore-0.2.10/toxcore/net_crypto.h	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/net_crypto.h	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/net_crypto.h	2019-10-15 17:01:54.000000000 +0800
 @@ -356,6 +356,8 @@
  
  void kill_net_crypto(Net_Crypto *c);
@@ -1411,7 +1421,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/net_crypto.h c-toxcore-0.2.10-mod/toxcore/net
  #endif
 diff -ruN c-toxcore-0.2.10/toxcore/network.c c-toxcore-0.2.10-mod/toxcore/network.c
 --- c-toxcore-0.2.10/toxcore/network.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/network.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/network.c	2019-10-15 17:01:54.000000000 +0800
 @@ -481,14 +481,18 @@
  int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
  {
@@ -1590,7 +1600,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/network.c c-toxcore-0.2.10-mod/toxcore/networ
  }
 diff -ruN c-toxcore-0.2.10/toxcore/network.h c-toxcore-0.2.10-mod/toxcore/network.h
 --- c-toxcore-0.2.10/toxcore/network.h	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/network.h	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/network.h	2019-10-15 17:01:54.000000000 +0800
 @@ -34,10 +34,106 @@
  extern "C" {
  #endif
@@ -1700,7 +1710,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/network.h c-toxcore-0.2.10-mod/toxcore/networ
  bool net_family_is_ipv6(Family family);
 diff -ruN c-toxcore-0.2.10/toxcore/onion.c c-toxcore-0.2.10-mod/toxcore/onion.c
 --- c-toxcore-0.2.10/toxcore/onion.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/onion.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/onion.c	2019-10-15 17:01:54.000000000 +0800
 @@ -289,8 +289,8 @@
   */
  int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *data, uint16_t length)
@@ -1792,7 +1802,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/onion.c c-toxcore-0.2.10-mod/toxcore/onion.c
  
 diff -ruN c-toxcore-0.2.10/toxcore/onion_announce.c c-toxcore-0.2.10-mod/toxcore/onion_announce.c
 --- c-toxcore-0.2.10/toxcore/onion_announce.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/onion_announce.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/onion_announce.c	2019-10-15 17:01:54.000000000 +0800
 @@ -182,8 +182,8 @@
          return -1;
      }
@@ -1817,7 +1827,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/onion_announce.c c-toxcore-0.2.10-mod/toxcore
          return -1;
 diff -ruN c-toxcore-0.2.10/toxcore/onion_client.c c-toxcore-0.2.10-mod/toxcore/onion_client.c
 --- c-toxcore-0.2.10/toxcore/onion_client.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/onion_client.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/onion_client.c	2019-10-15 17:01:54.000000000 +0800
 @@ -477,8 +477,8 @@
                                       const uint8_t *data, uint16_t length)
  {
@@ -1840,7 +1850,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/onion_client.c c-toxcore-0.2.10-mod/toxcore/o
  
 diff -ruN c-toxcore-0.2.10/toxcore/ping.c c-toxcore-0.2.10-mod/toxcore/ping.c
 --- c-toxcore-0.2.10/toxcore/ping.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/ping.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/ping.c	2019-10-15 17:01:54.000000000 +0800
 @@ -63,7 +63,7 @@
  
  int32_t ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
@@ -1877,7 +1887,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/ping.c c-toxcore-0.2.10-mod/toxcore/ping.c
  static int handle_ping_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 diff -ruN c-toxcore-0.2.10/toxcore/tox.c c-toxcore-0.2.10-mod/toxcore/tox.c
 --- c-toxcore-0.2.10/toxcore/tox.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/tox.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/tox.c	2019-10-15 17:01:54.000000000 +0800
 @@ -2127,3 +2127,23 @@
      SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
      return 0;
@@ -1904,7 +1914,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/tox.c c-toxcore-0.2.10-mod/toxcore/tox.c
 +
 diff -ruN c-toxcore-0.2.10/toxcore/tox.h c-toxcore-0.2.10-mod/toxcore/tox.h
 --- c-toxcore-0.2.10/toxcore/tox.h	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/tox.h	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/tox.h	2019-10-15 17:01:54.000000000 +0800
 @@ -3188,6 +3188,18 @@
   */
  uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
@@ -1926,7 +1936,7 @@ diff -ruN c-toxcore-0.2.10/toxcore/tox.h c-toxcore-0.2.10-mod/toxcore/tox.h
  #endif
 diff -ruN c-toxcore-0.2.10/toxcore/util.c c-toxcore-0.2.10-mod/toxcore/util.c
 --- c-toxcore-0.2.10/toxcore/util.c	2019-05-30 21:36:12.000000000 +0800
-+++ c-toxcore-0.2.10-mod/toxcore/util.c	2019-10-08 16:26:23.000000000 +0800
++++ c-toxcore-0.2.10-mod/toxcore/util.c	2019-10-15 17:01:54.000000000 +0800
 @@ -27,6 +27,10 @@
  #include "config.h"
  #endif
