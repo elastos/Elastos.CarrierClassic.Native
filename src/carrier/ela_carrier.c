@@ -2779,9 +2779,10 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
         return -1;
     }
 
-    if (rc == 0) {
+    if (rc == 0) { // friend already exist.
         rc = dht_friend_add(&w->dht, addr, data, data_len, &friend_number);
         free(data);
+
         if (rc < 0) {
             ela_set_error(rc);
             return -1;
@@ -2789,6 +2790,7 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
         return 0;
     }
 
+    // this is the first time send friend request.
     fi = (FriendInfo *)rc_zalloc(sizeof(FriendInfo), NULL);
     if (!fi) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
