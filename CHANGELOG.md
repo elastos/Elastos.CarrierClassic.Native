@@ -1,3 +1,12 @@
+10/22/2019 Li Fenxiang lifenxiang@elastos.org
+
+**version 5.4.2**, main changes to previous version:
+
+```markdown
+- Introduce persistent group. Messages generated during offline time are not delivered once online again.
+- Add to support notification of friend request with different greeting message.
+```
+
 09/19/2019 Li Fenxiang lifenxiang@elastos.org
 
 **version 5.4.1**, main changes to previous version:
