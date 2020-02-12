@@ -31,3 +31,13 @@ if (NOT WIN32)
         DIRECTORY speedtest
         DEPENDS ${DEPEND_MODULES})
 endif()
+
+if((${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux" OR
+    ${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin") AND
+    NOT CMAKE_CROSSCOMPILING)
+    add_subdirectory(feeds)
+    add_dependencies(service_feeds
+        cJSON libconfig libcrystal ela-carrier sqlite)
+    add_dependencies(feeds_cli
+        cJSON libconfig libcrystal ela-carrier)
+endif()
