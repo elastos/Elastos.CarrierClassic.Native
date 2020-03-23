@@ -233,8 +233,10 @@ void friend_add(int argc, char *argv[])
         console("Invalid address.");
 
     rc = feeds_client_friend_add(fc, argv[1], argv[2]);
-    if (rc < 0)
+    if (rc < 0) {
         console("Failed to add friend.");
+        return;
+    }
 
     ela_get_id_by_address(argv[1], node_id, sizeof(node_id));
     console("Friend %s online.", node_id);
