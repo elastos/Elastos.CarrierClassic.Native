@@ -1,3 +1,14 @@
+03/23/2019 Li Fenxiang lifenxiang@trinity-tech.io
+
+**version 5.5.0**, main changes to previous version:
+
+```markdown
+- Correct default port value for IPFS node service.
+- Fix cmake typo.
+- Update cygwin.
+- Allow ela_get_groups() to be called in the whole lifecycle of carrier due to introduction of persistent group.
+```
+
 10/22/2019 Li Fenxiang lifenxiang@elastos.org
 
 **version 5.4.2**, main changes to previous version:
