@@ -137,6 +137,7 @@ char *read_cmd(void)
     static int  cmd_len = 0;
     static char cmd_line[1024];
 
+    usleep(20000);
 getchar:
     ch = fgetc(stdin);
     if (ch == EOF) {
