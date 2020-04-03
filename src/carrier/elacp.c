@@ -63,6 +63,13 @@ struct ElaCPFriendMsg {
     const uint8_t *msg;
 };
 
+struct ElaCPFriendLMsg {
+    ElaCP headr;
+    size_t len;
+    size_t seg_len;
+    const uint8_t *seg;
+};
+
 struct ElaCPInviteReq {
     ElaCP header;
     int64_t tid;
@@ -90,12 +97,14 @@ struct ElaCPInviteRsp {
 #define pktfmsg pkt.u.pkt_fmsg
 #define pktireq pkt.u.pkt_ireq
 #define pktirsp pkt.u.pkt_irsp
+#define pktflmsg pkt.u.pkt_flmsg
 
 #define tblinfo tbl.u.tbl_info
 #define tblfreq tbl.u.tbl_freq
 #define tblfmsg tbl.u.tbl_fmsg
 #define tblireq tbl.u.tbl_ireq
 #define tblirsp tbl.u.tbl_irsp
+#define tblflmsg tbl.u.tbl_flmsg
 
 struct elacp_packet_t {
     union {
@@ -105,6 +114,7 @@ struct elacp_packet_t {
         struct ElaCPFriendMsg *pkt_fmsg;
         struct ElaCPInviteReq *pkt_ireq;
         struct ElaCPInviteRsp *pkt_irsp;
+        struct ElaCPFriendLMsg *pkt_flmsg;
     } u;
 };
 
@@ -115,6 +125,7 @@ struct elacp_table_t {
         elacp_friendmsg_table_t tbl_fmsg;
         elacp_invitereq_table_t tbl_ireq;
         elacp_invitersp_table_t tbl_irsp;
+        elacp_friendlmsg_table_t tbl_flmsg;
     } u;
 };
 
@@ -138,6 +149,9 @@ ElaCP *elacp_create(uint8_t type, const char *ext_name)
         break;
     case ELACP_TYPE_INVITE_RESPONSE:
         len = sizeof(struct ElaCPInviteRsp);
+        break;
+    case ELACP_TYPE_LARGE_MESSAGE:
+        len = sizeof(struct ElaCPFriendLMsg);
         break;
     default:
         assert(0);
@@ -424,6 +438,9 @@ const void *elacp_get_raw_data(ElaCP *cp)
     case ELACP_TYPE_INVITE_RESPONSE:
         data = pktirsp->data;
         break;
+    case ELACP_TYPE_LARGE_MESSAGE:
+        data = pktflmsg->seg;
+        break;
     default:
         assert(0);
         break;
@@ -450,12 +467,35 @@ size_t elacp_get_raw_data_length(ElaCP *cp)
     case ELACP_TYPE_INVITE_RESPONSE:
         len = pktirsp->len;
         break;
+    case ELACP_TYPE_LARGE_MESSAGE:
+        len = pktflmsg->len;
+        break;
     default:
         assert(0);
         break;
     }
 
     return len;
+}
+
+size_t elacp_get_seg_length(ElaCP *cp)
+{
+    struct elacp_packet_t pkt;
+    size_t seg_len;
+
+    assert(cp);
+    pkt.u.cp = cp;
+
+    switch(cp->type) {
+    case ELACP_TYPE_LARGE_MESSAGE:
+        seg_len = pktflmsg->seg_len;
+        break;
+    default:
+        assert(0);
+        break;
+    }
+
+    return seg_len;
 }
 
 const char *elacp_get_bundle(ElaCP *cp)
@@ -740,6 +780,10 @@ void elacp_set_raw_data(ElaCP *cp, const void *data, size_t len)
         pktirsp->data = data;
         pktirsp->len = len;
         break;
+    case ELACP_TYPE_LARGE_MESSAGE:
+        pktflmsg->seg = data;
+        pktflmsg->len = len;
+        break;
     default:
         assert(0);
         break;
@@ -764,6 +808,24 @@ void elacp_set_bundle(ElaCP *cp, const char *bundle)
          assert(0);
          break;
      }
+}
+
+void elacp_set_seg_length(ElaCP *cp, size_t len)
+{
+    struct elacp_packet_t pkt;
+
+    assert(len);
+
+    pkt.u.cp = cp;
+
+    switch(cp->type) {
+    case ELACP_TYPE_LARGE_MESSAGE:
+        pktflmsg->seg_len = len;
+        break;
+    default:
+        assert(0);
+        break;
+    }
 }
 
 void elacp_set_reason(ElaCP *cp, const char *reason)
@@ -846,6 +908,14 @@ uint8_t *elacp_encode(ElaCP *cp, size_t *encoded_len)
         ref = elacp_friendmsg_end(&builder);
         break;
 
+    case ELACP_TYPE_LARGE_MESSAGE:
+        elacp_friendlmsg_start(&builder);
+        elacp_friendlmsg_totalsz_add(&builder, pktflmsg->len);
+        vec = flatbuffers_uint8_vec_create(&builder, pktflmsg->seg, pktflmsg->seg_len);
+        elacp_friendlmsg_seg_add(&builder, vec);
+        ref = elacp_friendlmsg_end(&builder);
+        break;
+
     case ELACP_TYPE_INVITE_REQUEST:
         elacp_invitereq_start(&builder);
         if (cp->ext) {
@@ -913,6 +983,9 @@ uint8_t *elacp_encode(ElaCP *cp, size_t *encoded_len)
     case ELACP_TYPE_INVITE_RESPONSE:
         body = elacp_anybody_as_invitersp(ref);
         break;
+    case ELACP_TYPE_LARGE_MESSAGE:
+        body = elacp_anybody_as_friendlmsg(ref);
+        break;
     default:
         assert(0);
         return NULL;
@@ -952,6 +1025,7 @@ ElaCP *elacp_decode(const uint8_t *data, size_t len)
     case ELACP_TYPE_MESSAGE:
     case ELACP_TYPE_INVITE_REQUEST:
     case ELACP_TYPE_INVITE_RESPONSE:
+    case ELACP_TYPE_LARGE_MESSAGE:
         break;
     default:
         //TODO: clean resource for 'packet'; (how ?)
@@ -996,6 +1070,13 @@ ElaCP *elacp_decode(const uint8_t *data, size_t len)
         pktfmsg->len = flatbuffers_uint8_vec_len(vec);
         if (elacp_friendmsg_ext_is_present(tblfmsg))
             cp->ext = elacp_friendmsg_ext(tblfmsg);
+        break;
+
+    case ELACP_TYPE_LARGE_MESSAGE:
+        tblflmsg = elacp_packet_body(packet);
+        pktflmsg->seg = vec = elacp_friendlmsg_seg(tblflmsg);
+        pktflmsg->seg_len = flatbuffers_uint8_vec_len(vec);
+        pktflmsg->len = elacp_friendlmsg_totalsz(tblflmsg);
         break;
 
     case ELACP_TYPE_INVITE_REQUEST:

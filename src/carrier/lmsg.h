@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Elastos Foundation
+ * Copyright (c) 2020 Elastos Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,66 +20,27 @@
  * SOFTWARE.
  */
 
-namespace elacp;
+#ifndef __LMSG_H__
+#define __LMSG_H__
 
-table userinfo {
-    avatar : bool = false;
-    name   : string;
-    descr  : string;
-    phone  : string;
-    gender : string;
-    email  : string;
-    region : string;
-}
+#include "elacp.h"
 
-table friendreq {
-    name   : string;
-    descr  : string;
-    hello  : string;
-}
+typedef struct LMsgManager LMsgManager;
 
-table friendmsg {
-    ext    : string;
-    msg    : [ubyte];
-}
+LMsgManager *lmsg_mgr_create(ElaCarrier *c,
+                              void (*on_msg)(ElaCarrier *w,
+                                                const char *from,
+                                                const void *msg,
+                                                size_t len,
+                                                void *context),
+                              void *context);
 
-table friendlmsg {
-    totalsz: uint32;
-    seg    : [ubyte];
-}
+int send_lmsg(LMsgManager *mgr, uint32_t to, const void *msg, size_t len);
 
-table invitereq {
-    ext    : string;
-    tid    : long;
-    bundle : string;
-    totalsz: uint;
-    data   : [uint8];
-}
+void feed_lmsg_seg(LMsgManager *mgr, const char *from, ElaCP *cp);
 
-table invitersp {
-    ext    : string;
-    tid    : long;
-    bundle : string;
-    totalsz: uint;
-    status : int;
-    reason : string;
-    data   : [uint8];
-}
+void notify_lmsg_mgr_disconnection(LMsgManager *mgr, const char *friendid);
 
-union anybody {
-    userinfo,
-    friendreq,
-    friendmsg,
-    invitereq,
-    invitersp,
-    friendlmsg
-}
+void lmsg_mgr_delete(LMsgManager *mgr);
 
-table packet
-{
-    type   : uint8;
-    body   : anybody;
-}
-
-root_type packet;
-
+#endif // __LMSG_H__

@@ -217,11 +217,50 @@ static void test_send_message_to_self(void)
     CU_ASSERT_EQUAL_FATAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
 }
 
+static void test_send_large_message_to_friend(void)
+{
+    CarrierContext *wctxt = test_context.carrier;
+    bool is_offline;
+    int rc;
+
+    test_context.context_reset(&test_context);
+
+    rc = add_friend_anyway(&test_context, robotid, robotaddr);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+
+    static char out[(ELA_MAX_APP_MESSAGE_LEN << 1) + 1];
+    size_t outsz = sizeof(out) / sizeof(out[0]);
+    char outchar = 'l';
+    memset(out, outchar, outsz - 1);
+    out[outsz - 1] = '\0';
+
+    rc = ela_send_friend_large_message(wctxt->carrier, robotid, out, strlen(out));
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+
+    int sz;
+    char inchar;
+    rc = read_ack("%d %c", &sz, &inchar);
+    CU_ASSERT_EQUAL(rc, 2);
+    CU_ASSERT_EQUAL(sz, strlen(out));
+    CU_ASSERT_EQUAL(inchar, outchar);
+
+    rc = ela_send_friend_large_message(wctxt->carrier, robotid, out,
+                                       ELA_MAX_APP_MESSAGE_LEN - 1);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+
+    rc = read_ack("%d %c", &sz, &inchar);
+    CU_ASSERT_EQUAL(rc, 2);
+    CU_ASSERT_EQUAL(sz, ELA_MAX_APP_MESSAGE_LEN - 1);
+    CU_ASSERT_EQUAL(inchar, outchar);
+}
+
 static CU_TestInfo cases[] = {
     { "test_send_message_to_friend",   test_send_message_to_friend },
     { "test_send_message_from_friend", test_send_message_from_friend },
     { "test_send_message_to_stranger", test_send_message_to_stranger },
     { "test_send_message_to_self",     test_send_message_to_self },
+    { "test_send_large_message_to_friend", test_send_large_message_to_friend },
     {NULL, NULL }
 };
 

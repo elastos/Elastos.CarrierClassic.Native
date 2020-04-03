@@ -33,6 +33,7 @@
 #include "dht.h"
 
 #include "dstore_wrapper.h"
+#include "lmsg.h"
 
 #define DHT_BOOTSTRAP_DEFAULT_PORT 33445
 #define HIVE_BOOTSTRAP_DEFAULT_PORT 9095
@@ -114,6 +115,7 @@ struct ElaCarrier {
     hashtable_t *friends;
 
     DStoreWrapper *dstorectx;
+    LMsgManager *lmsg_mgr;
 
     hashtable_t *tcallbacks;
     hashtable_t *thistory;

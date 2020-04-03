@@ -73,6 +73,7 @@
 #include "dht.h"
 #include "tassemblies.h"
 #include "dstore_wrapper.h"
+#include "lmsg.h"
 
 #define TURN_SERVER_PORT                ((uint16_t)3478)
 #define TURN_SERVER_USER_SUFFIX         "auth.tox"
@@ -1043,6 +1044,9 @@ static void ela_destroy(void *argv)
     if (w->dstorectx)
         deref(w->dstorectx);
 
+    if (w->lmsg_mgr)
+        lmsg_mgr_delete(w->lmsg_mgr);
+
     pthread_mutex_destroy(&w->ext_mutex);
 
     dht_kill(&w->dht);
@@ -1303,6 +1307,14 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         return NULL;
     }
 
+    w->lmsg_mgr = lmsg_mgr_create(w, callbacks->friend_large_message, context);
+    if (!w->lmsg_mgr) {
+        free_persistence_data(&data);
+        deref(w);
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        return NULL;
+    }
+
     rc = dht_get_self_info(&w->dht, get_self_info_cb, w);
     if (rc < 0) {
         free_persistence_data(&data);
@@ -1507,6 +1519,7 @@ void notify_friend_connection_cb(uint32_t friend_number, bool connected,
         fi->info.status = status;
         strcpy(tmpid, fi->info.user_info.userid);
 
+        notify_lmsg_mgr_disconnection(w->lmsg_mgr, fi->info.user_info.userid);
         notify_friend_connection(w, tmpid, status);
     }
 
@@ -1796,6 +1809,30 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
 }
 
 static
+void handle_friend_large_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
+{
+    FriendInfo *fi;
+    char friendid[ELA_MAX_ID_LEN + 1];
+
+    assert(w);
+    assert(friend_number != UINT32_MAX);
+    assert(cp);
+    assert(elacp_get_type(cp) == ELACP_TYPE_LARGE_MESSAGE);
+
+    fi = friends_get(w->friends, friend_number);
+    if (!fi) {
+        vlogE("Carrier: Unknown friend number %u, friend message dropped.",
+              friend_number);
+        return;
+    }
+
+    strcpy(friendid, fi->info.user_info.userid);
+    deref(fi);
+
+    feed_lmsg_seg(w->lmsg_mgr, friendid, cp);
+}
+
+static
 void handle_invite_request(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
 {
     FriendInfo *fi;
@@ -2073,6 +2110,9 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
         break;
     case ELACP_TYPE_INVITE_RESPONSE:
         handle_invite_response(w, friend_number, cp);
+        break;
+    case ELACP_TYPE_LARGE_MESSAGE:
+        handle_friend_large_message(w, friend_number, cp);
         break;
     default:
         vlogE("Carrier: Unknown DHT message, dropped.");
@@ -3047,6 +3087,63 @@ int ela_send_friend_message(ElaCarrier *w, const char *to,
 
     if (is_offline)
         *is_offline = true;
+
+    return 0;
+}
+
+int ela_send_friend_large_message(ElaCarrier *carrier, const char *to,
+                                  const void *msg, size_t len)
+{
+    FriendInfo *fi;
+    uint32_t friend_number;
+    bool friend_online = false;
+    int rc;
+
+    if (!carrier || !to || !msg || !len) {
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        return -1;
+    }
+
+    if (!is_valid_key(to)) {
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        return -1;
+    }
+
+    if (strcmp(to, carrier->me.userid) == 0) {
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        vlogE("Carrier: Send message to myself not allowed.");
+        return -1;
+    }
+
+    if (!carrier->is_ready) {
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        return -1;
+    }
+
+    rc = get_friend_number(carrier, to, &friend_number);
+    if (rc < 0) {
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        return -1;
+    }
+
+    fi = friends_get(carrier->friends, friend_number);
+    if (!fi) {
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        return -1;
+    }
+
+    friend_online = (fi->info.status == ElaConnectionStatus_Connected);
+    deref(fi);
+    if (!friend_online) {
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_FRIEND_OFFLINE));
+        return -1;
+    }
+
+    rc = send_lmsg(carrier->lmsg_mgr, friend_number, msg, len);
+    if (rc < 0) {
+        ela_set_error(rc);
+        return -1;
+    }
 
     return 0;
 }

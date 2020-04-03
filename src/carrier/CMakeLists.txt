@@ -66,7 +66,8 @@ set(SRC
     elacp.c
     ela_carrier.c
     ela_error.c
-    dstore_wrapper.c)
+    dstore_wrapper.c
+    lmsg.c)
 
 set(HEADERS
     ela_carrier.h)
