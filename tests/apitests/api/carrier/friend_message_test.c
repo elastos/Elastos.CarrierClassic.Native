@@ -217,7 +217,7 @@ static void test_send_message_to_self(void)
     CU_ASSERT_EQUAL_FATAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
 }
 
-static void test_send_large_message_to_friend(void)
+static void test_send_big_message_to_friend(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     bool is_offline;
@@ -235,7 +235,7 @@ static void test_send_large_message_to_friend(void)
     memset(out, outchar, outsz - 1);
     out[outsz - 1] = '\0';
 
-    rc = ela_send_friend_large_message(wctxt->carrier, robotid, out, strlen(out));
+    rc = ela_send_friend_big_message(wctxt->carrier, robotid, out, strlen(out));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     int sz;
@@ -245,8 +245,8 @@ static void test_send_large_message_to_friend(void)
     CU_ASSERT_EQUAL(sz, strlen(out));
     CU_ASSERT_EQUAL(inchar, outchar);
 
-    rc = ela_send_friend_large_message(wctxt->carrier, robotid, out,
-                                       ELA_MAX_APP_MESSAGE_LEN - 1);
+    rc = ela_send_friend_big_message(wctxt->carrier, robotid, out,
+                                     ELA_MAX_APP_MESSAGE_LEN - 1);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     rc = read_ack("%d %c", &sz, &inchar);
@@ -256,11 +256,11 @@ static void test_send_large_message_to_friend(void)
 }
 
 static CU_TestInfo cases[] = {
-    { "test_send_message_to_friend",   test_send_message_to_friend },
-    { "test_send_message_from_friend", test_send_message_from_friend },
-    { "test_send_message_to_stranger", test_send_message_to_stranger },
-    { "test_send_message_to_self",     test_send_message_to_self },
-    { "test_send_large_message_to_friend", test_send_large_message_to_friend },
+    { "test_send_message_to_friend",     test_send_message_to_friend },
+    { "test_send_message_from_friend",   test_send_message_from_friend },
+    { "test_send_message_to_stranger",   test_send_message_to_stranger },
+    { "test_send_message_to_self",       test_send_message_to_self },
+    { "test_send_big_message_to_friend", test_send_big_message_to_friend },
     {NULL, NULL }
 };
 

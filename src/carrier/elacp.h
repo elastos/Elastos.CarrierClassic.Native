@@ -82,7 +82,7 @@ const char *elacp_get_bundle(ElaCP *cp);
 
 const char *elacp_get_reason(ElaCP *cp);
 
-size_t elacp_get_seg_length(ElaCP *cp);
+size_t elacp_get_total_size(ElaCP *cp);
 
 void elacp_set_name(ElaCP *cp, const char *name);
 
@@ -108,7 +108,7 @@ void elacp_set_status(ElaCP *cp, int status);
 
 void elacp_set_raw_data(ElaCP *cp, const void *data, size_t len);
 
-void elacp_set_seg_length(ElaCP *cp, size_t len);
+void elacp_set_total_size(ElaCP *cp, size_t len);
 
 void elacp_set_bundle(ElaCP *cp, const char *bundle);
 

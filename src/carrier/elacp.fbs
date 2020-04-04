@@ -43,9 +43,10 @@ table friendmsg {
     msg    : [ubyte];
 }
 
-table friendlmsg {
-    totalsz: uint32;
-    seg    : [ubyte];
+table friendbigmsg {
+    ext    : string;
+    totalsz: uint;
+    data   : [ubyte];
 }
 
 table invitereq {
@@ -72,7 +73,7 @@ union anybody {
     friendmsg,
     invitereq,
     invitersp,
-    friendlmsg
+    friendbigmsg
 }
 
 table packet

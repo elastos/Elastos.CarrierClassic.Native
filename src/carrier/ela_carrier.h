@@ -800,7 +800,7 @@ typedef struct ElaCallbacks {
 
     /**
      * \~English
-     * An application-defined function that process the friend large messages.
+     * An application-defined function that process the friend big messages.
      *
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
@@ -813,8 +813,8 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*friend_large_message)(ElaCarrier *carrier, const char *from,
-                                 const void *msg, size_t len, void *context);
+    void (*friend_big_message)(ElaCarrier *carrier, const char *from,
+                               const void *msg, size_t len, void *context);
 
     /**
      * \~English
@@ -1385,8 +1385,8 @@ int ela_send_friend_message(ElaCarrier *carrier, const char *to,
  *      retrieved by calling ela_get_error().
  */
 CARRIER_API
-int ela_send_friend_large_message(ElaCarrier *carrier, const char *to,
-                                  const void *msg, size_t len);
+int ela_send_friend_big_message(ElaCarrier *carrier, const char *to,
+                                const void *msg, size_t len);
 
 /**
  * \~English
