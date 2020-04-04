@@ -3179,7 +3179,7 @@ int ela_send_friend_big_message(ElaCarrier *w, const char *to,
     size_t nleft = len;
     int rc;
 
-    if (!w || !to || !msg || !len) {
+    if (!w || !to || !msg || !len || len > ELA_MAX_APP_BIG_MESSAGE_LEN) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
         return -1;
     }

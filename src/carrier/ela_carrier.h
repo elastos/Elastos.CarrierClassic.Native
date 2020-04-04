@@ -125,6 +125,12 @@ extern "C" {
 
 /**
  * \~English
+ * Carrier App big message max length.
+ */
+#define ELA_MAX_APP_BIG_MESSAGE_LEN     (1024 * 1024)
+
+/**
+ * \~English
  * System reserved reply reason.
  */
 #define ELA_STATUS_TIMEOUT              1
@@ -1366,8 +1372,9 @@ int ela_send_friend_message(ElaCarrier *carrier, const char *to,
  * \~English
  * Send a message to a friend.
  *
- * The message length is restricted to maximum number that can be represented in 4 bytes
- * unsigned integer.
+ * The message length may not exceed ELA_MAX_APP_BIG_MESSAGE_LEN. Larger messages
+ * must be split by application and sent as separate fragments. Other carrier
+ * nodes can reassemble the fragments.
  *
  * Message may not be empty or NULL.
  * @param
