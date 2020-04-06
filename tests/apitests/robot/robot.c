@@ -280,15 +280,6 @@ static void friend_message_cb(ElaCarrier *w, const char *from,
     pthread_mutex_unlock(&extra->mutex);
 }
 
-static void friend_large_message_cb(ElaCarrier *w, const char *from,
-                                    const void *msg, size_t len, void *context)
-{
-    vlogD("Received message from %s", from);
-    vlogD(" msg: %.*s", len, (const char *)msg);
-
-    write_ack("%d %c\n", len, ((const char *)msg)[0]);
-}
-
 static void friend_invite_cb(ElaCarrier *w, const char *from, const char *bundle,
                              const void *data, size_t len, void *context)
 {
@@ -374,7 +365,6 @@ static ElaCallbacks callbacks = {
     .friend_added    = friend_added_cb,
     .friend_removed  = friend_removed_cb,
     .friend_message  = friend_message_cb,
-    .friend_big_message  = friend_large_message_cb,
     .friend_invite   = friend_invite_cb,
     .group_invite    = group_invite_cb,
     .group_callbacks = {

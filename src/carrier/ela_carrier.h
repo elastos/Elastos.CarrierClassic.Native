@@ -806,24 +806,6 @@ typedef struct ElaCallbacks {
 
     /**
      * \~English
-     * An application-defined function that process the friend big messages.
-     *
-     * @param
-     *      carrier     [in] A handle to the Carrier node instance.
-     * @param
-     *      from        [in] The user id from who send the message.
-     * @param
-     *      msg         [in] The message content.
-     * @param
-     *      len         [in] The message length in bytes.
-     * @param
-     *      context     [in] The application defined context data.
-     */
-    void (*friend_big_message)(ElaCarrier *carrier, const char *from,
-                               const void *msg, size_t len, void *context);
-
-    /**
-     * \~English
      * An application-defined function that process the friend invite request.
      *
      * @param
@@ -1339,7 +1321,7 @@ int ela_remove_friend(ElaCarrier *carrier, const char *userid);
  * \~English
  * Send a message to a friend.
  *
- * The message length may not exceed ELA_MAX_APP_MESSAGE_LEN. Larger messages
+ * The message length may not exceed ELA_MAX_APP_BIG_MESSAGE_LEN. Larger messages
  * must be split by application and sent as separate fragments. Other carrier
  * nodes can reassemble the fragments.
  *
@@ -1367,33 +1349,6 @@ int ela_remove_friend(ElaCarrier *carrier, const char *userid);
 CARRIER_API
 int ela_send_friend_message(ElaCarrier *carrier, const char *to,
                             const void *msg, size_t len, bool *offline);
-
-/**
- * \~English
- * Send a message to a friend.
- *
- * The message length may not exceed ELA_MAX_APP_BIG_MESSAGE_LEN. Larger messages
- * must be split by application and sent as separate fragments. Other carrier
- * nodes can reassemble the fragments.
- *
- * Message may not be empty or NULL.
- * @param
- *      carrier     [in] A handle to the Carrier node instance.
- * @param
- *      to          [in] The target userid.
- * @param
- *      msg         [in] The message content defined by application.
- * @param
- *      len         [in] The message length in bytes.
- *
- * @return
- *      0 if the text message successfully sent.
- *      Otherwise, return -1, and a specific error code can be
- *      retrieved by calling ela_get_error().
- */
-CARRIER_API
-int ela_send_friend_big_message(ElaCarrier *carrier, const char *to,
-                                const void *msg, size_t len);
 
 /**
  * \~English

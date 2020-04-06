@@ -360,30 +360,6 @@ static void fmsg(TestContext *context, int argc, char *argv[])
 }
 
 /*
- * command format: fbigmsg userid character repeat
- */
-static void fbigmsg(TestContext *context, int argc, char *argv[])
-{
-    ElaCarrier *w = context->carrier->carrier;
-    int rc;
-    long repeat;
-    char *buf;
-
-    CHK_ARGS(argc == 4);
-    char *p;
-    repeat = strtol(argv[3], &p, 10);
-    buf = alloca(repeat);
-    memset(buf, argv[2][0], repeat);
-
-    rc = ela_send_friend_big_message(w, argv[1], buf, repeat);
-    if (rc < 0)
-        vlogE("Send big message to friend %s error (0x%x)",
-              argv[1], ela_get_error());
-    else
-        vlogD("Send big message to friend %s success", argv[1]);
-}
-
-/*
  * command format: fremove userid
  */
 static void fremove(TestContext *context, int argc, char *argv[])
@@ -1602,7 +1578,6 @@ static struct command {
     { "fadd",         fadd         },
     { "faccept",      faccept      },
     { "fmsg",         fmsg         },
-    { "fbigmsg",      fbigmsg      },
     { "fremove",      fremove      },
     { "finvite",      finvite      },
     { "freplyinvite", freplyinvite },
@@ -1820,7 +1795,7 @@ void do_cmd(TestContext *context, char *line)
 int write_ack(const char *what, ...)
 {
     va_list ap;
-    char ack[1024];
+    char ack[4096];
 
     assert(cmd_sock != INVALID_SOCKET);
     assert(what);

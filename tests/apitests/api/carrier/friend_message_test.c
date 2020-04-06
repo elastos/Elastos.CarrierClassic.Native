@@ -220,7 +220,6 @@ static void test_send_message_to_self(void)
 static void test_send_big_message_to_friend(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    bool is_offline;
     int rc;
 
     test_context.context_reset(&test_context);
@@ -235,24 +234,23 @@ static void test_send_big_message_to_friend(void)
     memset(out, outchar, outsz - 1);
     out[outsz - 1] = '\0';
 
-    rc = ela_send_friend_big_message(wctxt->carrier, robotid, out, strlen(out));
+    rc = ela_send_friend_message(wctxt->carrier, robotid, out, strlen(out), NULL);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    int sz;
-    char inchar;
-    rc = read_ack("%d %c", &sz, &inchar);
-    CU_ASSERT_EQUAL(rc, 2);
-    CU_ASSERT_EQUAL(sz, strlen(out));
-    CU_ASSERT_EQUAL(inchar, outchar);
+    char in[(ELA_MAX_APP_MESSAGE_LEN << 1) + 1];
+    size_t insz = sizeof(in) / sizeof(in[0]);
+    rc = read_ack("%2049s", in);
+    CU_ASSERT_EQUAL(rc, 1);
+    CU_ASSERT_TRUE(!memcmp(out, in, insz - 1));
 
-    rc = ela_send_friend_big_message(wctxt->carrier, robotid, out,
-                                     ELA_MAX_APP_MESSAGE_LEN - 1);
+    rc = ela_send_friend_message(wctxt->carrier, robotid, out,
+                                 ELA_MAX_APP_MESSAGE_LEN - 1, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    rc = read_ack("%d %c", &sz, &inchar);
-    CU_ASSERT_EQUAL(rc, 2);
-    CU_ASSERT_EQUAL(sz, ELA_MAX_APP_MESSAGE_LEN - 1);
-    CU_ASSERT_EQUAL(inchar, outchar);
+    memset(in, 0, sizeof(in));
+    rc = read_ack("%1024s", in);
+    CU_ASSERT_EQUAL(rc, 1);
+    CU_ASSERT_TRUE(!memcmp(out, in, ELA_MAX_APP_MESSAGE_LEN - 1));
 }
 
 static CU_TestInfo cases[] = {

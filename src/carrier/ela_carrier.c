@@ -1823,9 +1823,6 @@ void handle_friend_big_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     assert(cp);
     assert(elacp_get_type(cp) == ELACP_TYPE_BIG_MESSAGE);
 
-    if (!w->callbacks.friend_big_message)
-        return;
-
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
         vlogE("Carrier: Unknown friend number %u, friend message dropped.",
@@ -1864,8 +1861,8 @@ void handle_friend_big_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
             return;
         }
 
-        w->callbacks.friend_big_message(w, friendid, msg->buf, msg->total_len,
-                                        w->context);
+        w->callbacks.friend_message(w, friendid, msg->buf, msg->total_len,
+                                    false, w->context);
         msg->state = IDLE;
         msg->total_len = 0;
         msg->asm_len = 0;
@@ -1875,7 +1872,7 @@ void handle_friend_big_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     }
 
     if (seg_len == msg_len) {
-        w->callbacks.friend_big_message(w, friendid, seg, seg_len, w->context);
+        w->callbacks.friend_message(w, friendid, seg, seg_len, false, w->context);
         deref(msg);
         return;
     }
@@ -3069,6 +3066,46 @@ static void parse_address(const char *addr, char **uid, char **ext)
     }
 }
 
+static
+int send_big_message(ElaCarrier *w, uint32_t friend_number,
+                     const void *msg, size_t len, const char * ext)
+{
+    const char *pending = msg;
+    size_t nleft = len;
+    int rc;
+
+    while (nleft) {
+        size_t seg_len = nleft < ELA_MAX_APP_MESSAGE_LEN ?
+                         nleft : ELA_MAX_APP_MESSAGE_LEN;
+        ElaCP *cp;
+        uint8_t *data;
+        size_t data_len;
+
+        cp = elacp_create(ELACP_TYPE_BIG_MESSAGE, ext);
+        if (!cp)
+            return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+
+        elacp_set_raw_data(cp, pending, seg_len);
+        elacp_set_total_size(cp, len);
+
+        data = elacp_encode(cp, &data_len);
+        elacp_free(cp);
+
+        if (!data)
+            return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+
+        rc = dht_friend_message(&w->dht, friend_number, data, data_len);
+        free(data);
+        if (rc < 0)
+            return rc;
+
+        pending += seg_len;
+        nleft -= seg_len;
+    }
+
+    return 0;
+}
+
 int ela_send_friend_message(ElaCarrier *w, const char *to,
                             const void *msg, size_t len, bool *is_offline)
 {
@@ -3081,7 +3118,7 @@ int ela_send_friend_message(ElaCarrier *w, const char *to,
     uint8_t *data;
     size_t data_len;
 
-    if (!w || !to || !msg || !len || len > ELA_MAX_APP_MESSAGE_LEN) {
+    if (!w || !to || !msg || !len || len > ELA_MAX_APP_BIG_MESSAGE_LEN) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
         return -1;
     }
@@ -3143,7 +3180,9 @@ int ela_send_friend_message(ElaCarrier *w, const char *to,
     }
 
     if (friend_online) {
-        rc = dht_friend_message(&w->dht, friend_number, data, data_len);
+        rc = len <= ELA_MAX_APP_MESSAGE_LEN ?
+             dht_friend_message(&w->dht, friend_number, data, data_len) :
+             send_big_message(w, friend_number, msg, len, ext_name);
         if (!rc) {
             free(data);
             if (is_offline)
@@ -3166,83 +3205,6 @@ int ela_send_friend_message(ElaCarrier *w, const char *to,
 
     if (is_offline)
         *is_offline = true;
-
-    return 0;
-}
-
-int ela_send_friend_big_message(ElaCarrier *w, const char *to,
-                                const void *msg, size_t len)
-{
-    char *addr, *userid, *ext_name;
-    uint32_t friend_number;
-    const char *pending = msg;
-    size_t nleft = len;
-    int rc;
-
-    if (!w || !to || !msg || !len || len > ELA_MAX_APP_BIG_MESSAGE_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-        return -1;
-    }
-
-    addr = alloca(strlen(to) + 1);
-    strcpy(addr, to);
-    parse_address(addr, &userid, &ext_name);
-
-    if (!is_valid_key(userid)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-        return -1;
-    }
-
-    if (ext_name && strlen(ext_name) > ELA_MAX_USER_NAME_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-        return -1;
-    }
-
-    if (strcmp(userid, w->me.userid) == 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-        vlogE("Carrier: Send message to myself not allowed.");
-        return -1;
-    }
-
-    if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
-        return -1;
-    }
-
-    rc = get_friend_number(w, userid, &friend_number);
-    if (rc < 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
-        return -1;
-    }
-
-    while (nleft) {
-        size_t seg_len = nleft < ELA_MAX_APP_MESSAGE_LEN ?
-                         nleft : ELA_MAX_APP_MESSAGE_LEN;
-        ElaCP *cp;
-        uint8_t *data;
-        size_t data_len;
-
-        cp = elacp_create(ELACP_TYPE_BIG_MESSAGE, ext_name);
-        if (!cp)
-            return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
-
-        elacp_set_raw_data(cp, pending, seg_len);
-        elacp_set_total_size(cp, len);
-
-        data = elacp_encode(cp, &data_len);
-        elacp_free(cp);
-
-        if (!data)
-            return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
-
-        rc = dht_friend_message(&w->dht, friend_number, data, data_len);
-        free(data);
-        if (rc < 0)
-            return rc;
-
-        pending += seg_len;
-        nleft -= seg_len;
-    }
 
     return 0;
 }
