@@ -40,7 +40,7 @@ typedef struct ElaCP ElaCP;
 #define ELACP_TYPE_MESSAGE                    33
 #define ELACP_TYPE_INVITE_REQUEST             34
 #define ELACP_TYPE_INVITE_RESPONSE            35
-#define ELACP_TYPE_LARGE_MESSAGE              36
+#define ELACP_TYPE_BIG_MESSAGE                36
 
 #define ELACP_TYPE_MAX                        95
 

@@ -150,7 +150,7 @@ ElaCP *elacp_create(uint8_t type, const char *ext_name)
     case ELACP_TYPE_INVITE_RESPONSE:
         len = sizeof(struct ElaCPInviteRsp);
         break;
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         len = sizeof(struct ElaCPFriendBigMsg);
         break;
     default:
@@ -438,7 +438,7 @@ const void *elacp_get_raw_data(ElaCP *cp)
     case ELACP_TYPE_INVITE_RESPONSE:
         data = pktirsp->data;
         break;
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         data = pktfbigmsg->data;
         break;
     default:
@@ -467,7 +467,7 @@ size_t elacp_get_raw_data_length(ElaCP *cp)
     case ELACP_TYPE_INVITE_RESPONSE:
         len = pktirsp->len;
         break;
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         len = pktfbigmsg->len;
         break;
     default:
@@ -487,7 +487,7 @@ size_t elacp_get_total_size(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         totalsz = pktfbigmsg->totalsz;
         break;
     default:
@@ -780,7 +780,7 @@ void elacp_set_raw_data(ElaCP *cp, const void *data, size_t len)
         pktirsp->data = data;
         pktirsp->len = len;
         break;
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         pktfbigmsg->data = data;
         pktfbigmsg->len = len;
         break;
@@ -819,7 +819,7 @@ void elacp_set_total_size(ElaCP *cp, size_t totalsz)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         pktfbigmsg->totalsz = totalsz;
         break;
     default:
@@ -908,7 +908,7 @@ uint8_t *elacp_encode(ElaCP *cp, size_t *encoded_len)
         ref = elacp_friendmsg_end(&builder);
         break;
 
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         elacp_friendbigmsg_start(&builder);
         elacp_friendbigmsg_totalsz_add(&builder, pktfbigmsg->totalsz);
         vec = flatbuffers_uint8_vec_create(&builder, pktfbigmsg->data, pktfbigmsg->len);
@@ -983,7 +983,7 @@ uint8_t *elacp_encode(ElaCP *cp, size_t *encoded_len)
     case ELACP_TYPE_INVITE_RESPONSE:
         body = elacp_anybody_as_invitersp(ref);
         break;
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         body = elacp_anybody_as_friendbigmsg(ref);
         break;
     default:
@@ -1025,7 +1025,7 @@ ElaCP *elacp_decode(const uint8_t *data, size_t len)
     case ELACP_TYPE_MESSAGE:
     case ELACP_TYPE_INVITE_REQUEST:
     case ELACP_TYPE_INVITE_RESPONSE:
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         break;
     default:
         //TODO: clean resource for 'packet'; (how ?)
@@ -1072,7 +1072,7 @@ ElaCP *elacp_decode(const uint8_t *data, size_t len)
             cp->ext = elacp_friendmsg_ext(tblfmsg);
         break;
 
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         tblfbigmsg = elacp_packet_body(packet);
         pktfbigmsg->data = vec = elacp_friendbigmsg_data(tblfbigmsg);
         pktfbigmsg->len = flatbuffers_uint8_vec_len(vec);

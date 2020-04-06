@@ -1821,7 +1821,7 @@ void handle_friend_big_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     assert(w);
     assert(friend_number != UINT32_MAX);
     assert(cp);
-    assert(elacp_get_type(cp) == ELACP_TYPE_LARGE_MESSAGE);
+    assert(elacp_get_type(cp) == ELACP_TYPE_BIG_MESSAGE);
 
     if (!w->callbacks.friend_big_message)
         return;
@@ -2190,7 +2190,7 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
     case ELACP_TYPE_INVITE_RESPONSE:
         handle_invite_response(w, friend_number, cp);
         break;
-    case ELACP_TYPE_LARGE_MESSAGE:
+    case ELACP_TYPE_BIG_MESSAGE:
         handle_friend_big_message(w, friend_number, cp);
         break;
     default:
@@ -3222,7 +3222,7 @@ int ela_send_friend_big_message(ElaCarrier *w, const char *to,
         uint8_t *data;
         size_t data_len;
 
-        cp = elacp_create(ELACP_TYPE_LARGE_MESSAGE, ext_name);
+        cp = elacp_create(ELACP_TYPE_BIG_MESSAGE, ext_name);
         if (!cp)
             return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
