@@ -23,21 +23,20 @@
 #ifndef __BIG_MESSAGE_H__
 #define __BIG_MESSAGE_H__
 
+#include <time.h>
+
 #include <crystal.h>
 
 typedef struct {
     hash_entry_t he;
     uint32_t friend_number;
-    enum {
-        IDLE = 0,
-        ASSEMBLING,
-        ERRORED,
-    } state;
+    struct timeval expire_time;
     uint32_t total_len;
     uint32_t asm_len;
-    uint32_t buf_len;
-    void *buf;
+    char buf[0];
 } BigMessage;
+
+#define BIGMSG_TIMEOUT               (60) //60s.
 
 static inline
 BigMessage *big_message_get(hashtable_t *pool, uint32_t friend_number)
@@ -71,29 +70,16 @@ BigMessage *big_message_remove(hashtable_t *pool, uint32_t friend_number)
 }
 
 static inline
-void big_message_destructor(void *obj)
-{
-    BigMessage *msg = (BigMessage *)obj;
-    deref(msg->buf);
-}
-
-static inline
-BigMessage *big_message_create(uint32_t friend_number, uint32_t buf_len)
+BigMessage *big_message_create(uint32_t friend_number, uint32_t total_len)
 {
     BigMessage *msg;
 
-    msg = rc_zalloc(sizeof(BigMessage), big_message_destructor);
+    msg = rc_zalloc(sizeof(BigMessage) + total_len, NULL);
     if (!msg)
         return NULL;
 
-    msg->buf = rc_zalloc(buf_len, NULL);
-    if (!msg->buf) {
-        deref(msg);
-        return NULL;
-    }
-
     msg->friend_number = friend_number;
-    msg->buf_len = buf_len;
+    msg->total_len = total_len;
 
     return msg;
 }
@@ -113,6 +99,35 @@ hashtable_t *big_message_pool_create(int capacity)
 {
     return hashtable_create(capacity, 1, NULL,
                             big_message_pool_key_compare);
+}
+
+static inline
+hashtable_iterator_t *big_message_pool_iterate(hashtable_t *pool,
+                                               hashtable_iterator_t *iterator)
+{
+    assert(pool && iterator);
+    return hashtable_iterate(pool, iterator);
+}
+
+static inline
+int big_message_pool_iterator_next(hashtable_iterator_t *iterator, BigMessage **item)
+{
+    assert(iterator && item);
+    return hashtable_iterator_next(iterator, NULL, NULL, (void **)item);
+}
+
+static inline
+int big_message_pool_iterator_has_next(hashtable_iterator_t *iterator)
+{
+    assert(iterator);
+    return hashtable_iterator_has_next(iterator);
+}
+
+static inline
+int big_message_pool_iterator_remove(hashtable_iterator_t *iterator)
+{
+    assert(iterator);
+    return hashtable_iterator_remove(iterator);
 }
 
 #endif // __BIG_MESSAGE_H__
