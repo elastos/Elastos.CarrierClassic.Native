@@ -73,6 +73,7 @@
 #include "dht.h"
 #include "tassemblies.h"
 #include "dstore_wrapper.h"
+#include "big_message.h"
 
 #define TURN_SERVER_PORT                ((uint16_t)3478)
 #define TURN_SERVER_USER_SUFFIX         "auth.tox"
@@ -1043,6 +1044,9 @@ static void ela_destroy(void *argv)
     if (w->dstorectx)
         deref(w->dstorectx);
 
+    if (w->big_message_pool)
+        deref(w->big_message_pool);
+
     pthread_mutex_destroy(&w->ext_mutex);
 
     dht_kill(&w->dht);
@@ -1303,6 +1307,14 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         return NULL;
     }
 
+    w->big_message_pool = big_message_pool_create(8);
+    if (!w->big_message_pool) {
+        free_persistence_data(&data);
+        deref(w);
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        return NULL;
+    }
+
     rc = dht_get_self_info(&w->dht, get_self_info_cb, w);
     if (rc < 0) {
         free_persistence_data(&data);
@@ -1507,6 +1519,7 @@ void notify_friend_connection_cb(uint32_t friend_number, bool connected,
         fi->info.status = status;
         strcpy(tmpid, fi->info.user_info.userid);
 
+        deref(big_message_remove(w->big_message_pool, friend_number));
         notify_friend_connection(w, tmpid, status);
     }
 
@@ -1796,6 +1809,106 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
 }
 
 static
+void handle_friend_big_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
+{
+    FriendInfo *fi;
+    char friendid[ELA_MAX_ID_LEN + 1];
+    BigMessage *msg;
+    const void *seg;
+    size_t seg_len;
+    size_t msg_len;
+
+    assert(w);
+    assert(friend_number != UINT32_MAX);
+    assert(cp);
+    assert(elacp_get_type(cp) == ELACP_TYPE_BIG_MESSAGE);
+
+    fi = friends_get(w->friends, friend_number);
+    if (!fi) {
+        vlogE("Carrier: Unknown friend number %u, friend message dropped.",
+              friend_number);
+        return;
+    }
+
+    strcpy(friendid, fi->info.user_info.userid);
+    deref(fi);
+
+    seg  = elacp_get_raw_data(cp);
+    seg_len = elacp_get_raw_data_length(cp);
+    msg_len = elacp_get_total_size(cp);
+
+    msg = big_message_get(w->big_message_pool, friend_number);
+    if (msg && msg->state == ERRORED) {
+        deref(msg);
+        return;
+    }
+
+    if (msg && msg->state == ASSEMBLING) {
+        if (seg_len > msg->total_len - msg->asm_len) {
+            deref(msg->buf);
+            msg->buf = NULL;
+            msg->buf_len = 0;
+            msg->state = ERRORED;
+            deref(msg);
+            return;
+        }
+
+        memcpy((char *)msg->buf + msg->asm_len, seg, seg_len);
+        msg->asm_len += seg_len;
+
+        if (msg->total_len != msg->asm_len) {
+            deref(msg);
+            return;
+        }
+
+        w->callbacks.friend_message(w, friendid, msg->buf, msg->total_len,
+                                    false, w->context);
+        msg->state = IDLE;
+        msg->total_len = 0;
+        msg->asm_len = 0;
+        deref(msg);
+
+        return;
+    }
+
+    if (seg_len == msg_len) {
+        w->callbacks.friend_message(w, friendid, seg, seg_len, false, w->context);
+        deref(msg);
+        return;
+    }
+
+    if (!msg) {
+        msg = big_message_create(friend_number, msg_len);
+        if (!msg)
+            return;
+        big_message_put(w->big_message_pool, msg);
+    }
+
+    if (msg->buf_len < msg_len) {
+        void *buf;
+
+        buf = rc_realloc(msg->buf, msg_len);
+        if (!buf) {
+            deref(msg->buf);
+            msg->buf = NULL;
+            msg->buf_len = 0;
+            msg->state = ERRORED;
+            deref(msg);
+            return;
+        }
+
+        msg->buf = buf;
+        msg->buf_len = msg_len;
+    }
+
+    msg->total_len = msg_len;
+    msg->asm_len = seg_len;
+    memcpy(msg->buf, seg, seg_len);
+    msg->state = ASSEMBLING;
+    deref(msg);
+}
+
+static
 void handle_invite_request(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
 {
     FriendInfo *fi;
@@ -2073,6 +2186,9 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
         break;
     case ELACP_TYPE_INVITE_RESPONSE:
         handle_invite_response(w, friend_number, cp);
+        break;
+    case ELACP_TYPE_BIG_MESSAGE:
+        handle_friend_big_message(w, friend_number, cp);
         break;
     default:
         vlogE("Carrier: Unknown DHT message, dropped.");
@@ -2950,6 +3066,46 @@ static void parse_address(const char *addr, char **uid, char **ext)
     }
 }
 
+static
+int send_big_message(ElaCarrier *w, uint32_t friend_number,
+                     const void *msg, size_t len, const char * ext)
+{
+    const char *pending = msg;
+    size_t nleft = len;
+    int rc;
+
+    while (nleft) {
+        size_t seg_len = nleft < ELA_MAX_APP_MESSAGE_LEN ?
+                         nleft : ELA_MAX_APP_MESSAGE_LEN;
+        ElaCP *cp;
+        uint8_t *data;
+        size_t data_len;
+
+        cp = elacp_create(ELACP_TYPE_BIG_MESSAGE, ext);
+        if (!cp)
+            return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+
+        elacp_set_raw_data(cp, pending, seg_len);
+        elacp_set_total_size(cp, len);
+
+        data = elacp_encode(cp, &data_len);
+        elacp_free(cp);
+
+        if (!data)
+            return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+
+        rc = dht_friend_message(&w->dht, friend_number, data, data_len);
+        free(data);
+        if (rc < 0)
+            return rc;
+
+        pending += seg_len;
+        nleft -= seg_len;
+    }
+
+    return 0;
+}
+
 int ela_send_friend_message(ElaCarrier *w, const char *to,
                             const void *msg, size_t len, bool *is_offline)
 {
@@ -2962,7 +3118,7 @@ int ela_send_friend_message(ElaCarrier *w, const char *to,
     uint8_t *data;
     size_t data_len;
 
-    if (!w || !to || !msg || !len || len > ELA_MAX_APP_MESSAGE_LEN) {
+    if (!w || !to || !msg || !len || len > ELA_MAX_APP_BIG_MESSAGE_LEN) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
         return -1;
     }
@@ -3024,7 +3180,9 @@ int ela_send_friend_message(ElaCarrier *w, const char *to,
     }
 
     if (friend_online) {
-        rc = dht_friend_message(&w->dht, friend_number, data, data_len);
+        rc = len <= ELA_MAX_APP_MESSAGE_LEN ?
+             dht_friend_message(&w->dht, friend_number, data, data_len) :
+             send_big_message(w, friend_number, msg, len, ext_name);
         if (!rc) {
             free(data);
             if (is_offline)
