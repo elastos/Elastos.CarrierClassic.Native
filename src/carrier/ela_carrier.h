@@ -127,7 +127,7 @@ extern "C" {
  * \~English
  * Carrier App big message max length.
  */
-#define ELA_MAX_APP_BIG_MESSAGE_LEN     (1024 * 1024)
+#define ELA_MAX_APP_BIG_MESSAGE_LEN     (5 * 1024 * 1024)
 
 /**
  * \~English

@@ -3132,8 +3132,11 @@ int send_big_message(ElaCarrier *w, uint32_t friend_number, const char *user_id,
 
         rc = dht_friend_message(&w->dht, friend_number, data, data_len);
         free(data);
-        if (rc < 0)
-            goto send_offline_msg;
+        if (rc < 0) {
+            if (rc == ELA_DHT_ERROR(ELAERR_FRIEND_OFFLINE))
+                goto send_offline_msg;
+            return rc;
+        }
 
         pending += seg_len;
         nleft -= seg_len;
