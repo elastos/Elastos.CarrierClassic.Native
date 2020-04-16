@@ -210,12 +210,18 @@ To generate the required Makefile in the current directory, please make sure to 
 * x86
 * x86_64
 
+-DCMAKE_ANDROID_ARCH_HEADER_TRIPLE accepts the following target architecture options:
+* arm-linux-androideabi when -DANDROID_ABI=armeabi-v7a
+* aarch64-linux-android when -DANDROID_ABI=arm64-v8a
+* i686-linux-android when -DANDROID_ABI=x86
+* x86_64-linux-android when -DANDROID_ABI=x86_64
+
 Replace 'YOUR-ANDROID-NDK-HOME' with the path to the extracted NDK folder.
 
 Run the command with the correct options described above:
 
 ```shell
-$ cmake -DANDROID_ABI=YOUR-TARGET-ARCHITECTURE -DANDROID_NDK_HOME=YOUR-ANDROID-NDK-HOME -DCMAKE_TOOLCHAIN_FILE=../../cmake/AndroidToolchain.cmake ../..
+$ cmake -DANDROID_ABI=YOUR-TARGET-ARCHITECTURE -DCMAKE_ANDROID_ARCH_HEADER_TRIPLE=YOUR-HOST -DANDROID_NDK_HOME=YOUR-ANDROID-NDK-HOME -DCMAKE_TOOLCHAIN_FILE=../../cmake/AndroidToolchain.cmake ../..
 
 ```
 
