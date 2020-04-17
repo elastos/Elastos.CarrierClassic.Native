@@ -3452,6 +3452,8 @@ int ela_new_group(ElaCarrier *w, char *groupid, size_t length)
         return -1;
     }
 
+    store_persistence_data(w);
+
     vlogD("Carrier: Group %s created.", groupid);
 
     return 0;
@@ -3508,6 +3510,8 @@ int ela_leave_group(ElaCarrier *w, const char *groupid)
         return -1;
     }
 
+    store_persistence_data(w);
+
     vlogD("Carrier: Leaved from Group %s", groupid);
 
     return 0;
@@ -3546,6 +3550,8 @@ int ela_group_invite(ElaCarrier *w, const char *groupid, const char *friendid)
         ela_set_error(rc);
         return -1;
     }
+
+    store_persistence_data(w);
 
     vlogD("Carrier: Invite friend %s into group %s success", friendid,
           groupid);
@@ -3590,6 +3596,8 @@ int ela_group_join(ElaCarrier *w, const char *friendid, const void *cookie,
         ela_set_error(rc);
         return -1;
     }
+
+    store_persistence_data(w);
 
     vlogD("Carrier: Friend %s joined group %s success", friendid, groupid);
 
@@ -3698,6 +3706,8 @@ int ela_group_set_title(ElaCarrier *w, const char *groupid, const char *title)
         ela_set_error(rc);
         return -1;
     }
+
+    store_persistence_data(w);
 
     return 0;
 }
