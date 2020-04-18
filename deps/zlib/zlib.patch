@@ -1,6 +1,6 @@
 diff -ru zlib-1.2.8/CMakeLists.txt zlib-1.2.8-mod/CMakeLists.txt
 --- zlib-1.2.8/CMakeLists.txt	2013-04-29 08:23:49.000000000 +0800
-+++ zlib-1.2.8-mod/CMakeLists.txt	2018-06-01 15:07:55.000000000 +0800
++++ zlib-1.2.8-mod/CMakeLists.txt	2020-04-18 22:23:21.000000000 +0800
 @@ -60,7 +60,7 @@
  check_include_file(unistd.h Z_HAVE_UNISTD_H)
  
@@ -58,9 +58,11 @@ diff -ru zlib-1.2.8/CMakeLists.txt zlib-1.2.8-mod/CMakeLists.txt
          RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
          ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
          LIBRARY DESTINATION "${INSTALL_LIB_DIR}" )
-@@ -231,19 +235,19 @@
+@@ -230,20 +234,22 @@
+ # Example binaries
  #============================================================================
  
++if (SAMPLES)
  add_executable(example test/example.c)
 -target_link_libraries(example zlib)
 +target_link_libraries(example zlibstatic)
@@ -82,3 +84,4 @@ diff -ru zlib-1.2.8/CMakeLists.txt zlib-1.2.8-mod/CMakeLists.txt
 +    target_link_libraries(minigzip64 zlibstatic)
      set_target_properties(minigzip64 PROPERTIES COMPILE_FLAGS "-D_FILE_OFFSET_BITS=64")
  endif()
++endif()

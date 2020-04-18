@@ -18,6 +18,7 @@ ExternalProject_Add(
         -DENABLE_LOCALES=Off
         -DBUILD_SHARED_LIBS=Off
         -DENABLE_HIDDEN_SYMBOLS=On
+        -DENABLE_CJSON_TEST=OFF
         ${CMAKE_ARGS_INIT}
 )
 
