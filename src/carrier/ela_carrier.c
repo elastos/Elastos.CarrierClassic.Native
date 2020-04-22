@@ -2230,6 +2230,8 @@ void notify_group_title_cb(uint32_t group_number, uint32_t peer_number,
                                                 length ?
                                                 (const char *)title : "",
                                                 w->context);
+
+    store_persistence_data(w);
 }
 
 static
@@ -2261,6 +2263,8 @@ void notify_group_peer_name_cb(uint32_t group_number, uint32_t peer_number,
         w->callbacks.group_callbacks.peer_name(w, groupid, peerid,
                                                length ? (char *)name : "",
                                                w->context);
+
+    store_persistence_data(w);
 }
 
 static
@@ -2279,6 +2283,8 @@ void notify_group_peer_list_changed_cb(uint32_t group_number, void *user_data)
 
     if (w->callbacks.group_callbacks.peer_list_changed)
         w->callbacks.group_callbacks.peer_list_changed(w, groupid, w->context);
+
+    store_persistence_data(w);
 }
 
 static void connect_to_bootstraps(ElaCarrier *w)
