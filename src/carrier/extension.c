@@ -23,7 +23,10 @@
 #include "extension.h"
 #include "ela_carrier_impl.h"
 
-#ifdef HAVE_ALLOCA_H
+#if defined(_WIN32)
+#include <malloc.h>
+#define alloca _alloca
+#else
 #include <alloca.h>
 #endif
 
@@ -152,7 +155,7 @@ int extension_invite_friend(ElaCarrier *carrier, const char *to,
     callback_ctx[0] = callback;
     callback_ctx[1] = context;
 
-    ext_to = (char *)alloca((size_t)ELA_MAX_ID_LEN + strlen(carrier_extension_name) + 2);
+    ext_to = (char *)alloca(ELA_MAX_ID_LEN + strlen(carrier_extension_name) + 2);
     strcpy(ext_to, to);
     strcat(ext_to, ":");
     strcat(ext_to, carrier_extension_name);
@@ -197,7 +200,7 @@ int extension_reply_friend_invite(ElaCarrier *carrier, const char *to,
         return -1;
     }
 
-    ext_to = (char *)alloca((size_t)ELA_MAX_ID_LEN + strlen(carrier_extension_name) + 2);
+    ext_to = (char *)alloca(ELA_MAX_ID_LEN + strlen(carrier_extension_name) + 2);
     strcpy(ext_to, to);
     strcat(ext_to, ":");
     strcat(ext_to, carrier_extension_name);
