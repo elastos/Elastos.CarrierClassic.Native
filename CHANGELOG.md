@@ -1,3 +1,18 @@
+04/26/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
+
+**version 5.5.1**, main changes to previous version:
+
+```markdown
+- Support with carrier extension especially used for webrtc
+- Improve implementation of bulk message sending/receiving
+- Support feature of sending/receiving big data block (1K~5M)
+- Turn off to run elatets in travis CI and circle CI
+- fix group info store issue when killed by system.
+- Update reference location of dependency CUnit release package
+- This is a combination of 2 commits.
+- Try to leave all groups before start to test ela_get_groups APIs because of group persistence
+```
+
 03/23/2019 Li Fenxiang lifenxiang@trinity-tech.io
 
 **version 5.5.0**, main changes to previous version:
