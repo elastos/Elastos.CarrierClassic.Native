@@ -33,6 +33,7 @@
 #include "dht.h"
 
 #include "dstore_wrapper.h"
+#include "carrier_ext.h"
 
 #define DHT_BOOTSTRAP_DEFAULT_PORT 33445
 #define HIVE_BOOTSTRAP_DEFAULT_PORT 9095
@@ -87,11 +88,6 @@ typedef struct OfflineMsgEvent {
 } OfflineMsgEvent;
 
 struct ElaCarrier {
-    pthread_mutex_t ext_mutex;
-    void *session;          //reserved for session extension.
-    void *filetransfer;     //reserved for filetransfer extension.
-    void *carrier_extesion; //reserved for carrier extension.
-
     DHT dht;
 
     Preferences pref;
@@ -114,8 +110,6 @@ struct ElaCarrier {
     list_t *friend_events; // for friend_added/removed.
     hashtable_t *friends;
 
-    DStoreWrapper *dstorectx;
-
     hashtable_t *tcallbacks;
     hashtable_t *thistory;
 
@@ -124,33 +118,22 @@ struct ElaCarrier {
 
     hashtable_t *bulkmsgs;
 
+    hashtable_t *exts;
     pthread_t main_thread;
+
+    DStoreWrapper *dstorectx;
 
     int running;
     int quit;
 };
 
-typedef void (*friend_invite_callback)(ElaCarrier *, const char *,
-                                       const char *, const void *, size_t, void *);
-typedef struct SessionExtension {
-    ElaCarrier              *carrier;
-
-    friend_invite_callback  friend_invite_cb;
-    void                    *friend_invite_context;
-
-    uint8_t                 reserved[1];
-} SessionExtension;
-
-static const char *carrier_extension_name = "carrier";
-typedef struct CarrierExtension {
-    ElaCarrier              *carrier;
-
-    friend_invite_callback  friend_invite_cb;
-    void                    *friend_invite_context;
-
-    void                    *user_callback;
-    void                    *user_context;
-} CarrierExtension;
+typedef struct ExtensionHolder {
+    char name[CARRIER_MAX_EXTENSION_NAME_LEN+1];
+    ElaCallbacks callbacks;
+    ExtensionAPIs apis;
+    CarrierExtension *ext;
+    hash_entry_t he;
+} ExtensionHolder;
 
 CARRIER_API
 void ela_set_error(int error);

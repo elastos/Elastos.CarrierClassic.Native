@@ -65,7 +65,7 @@
 #include "version.h"
 #include "ela_carrier.h"
 #include "ela_carrier_impl.h"
-#include "ela_turnserver.h"
+#include "carrier_turnserver.h"
 #include "friends.h"
 #include "tcallbacks.h"
 #include "thistory.h"
@@ -74,6 +74,8 @@
 #include "tassemblies.h"
 #include "bulkmsgs.h"
 #include "dstore_wrapper.h"
+#include "extensions.h"
+#include "carrier_ext.h"
 
 #define TURN_SERVER_PORT                ((uint16_t)3478)
 #define TURN_SERVER_USER_SUFFIX         "auth.tox"
@@ -1047,8 +1049,6 @@ static void ela_destroy(void *argv)
     if (w->dstorectx)
         deref(w->dstorectx);
 
-    pthread_mutex_destroy(&w->ext_mutex);
-
     dht_kill(&w->dht);
 }
 
@@ -1328,14 +1328,6 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         free_persistence_data(&data);
         deref(w);
         ela_set_error(rc);
-        return NULL;
-    }
-
-    rc = pthread_mutex_init(&w->ext_mutex, NULL);
-    if (rc) {
-        free_persistence_data(&data);
-        deref(w);
-        ela_set_error(ELA_SYS_ERROR(rc));
         return NULL;
     }
 
@@ -1826,8 +1818,19 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     msg  = elacp_get_raw_data(cp);
     len  = elacp_get_raw_data_length(cp);
 
-    if (w->callbacks.friend_message && !name)
-        w->callbacks.friend_message(w, friendid, msg, len, false, w->context);
+    if (name) {
+        ExtensionHolder *ext;
+
+        ext = extensions_get(w->exts, name);
+        if (ext) {
+            if (ext->callbacks.friend_message)
+                ext->callbacks.friend_message(w, friendid, msg, len, false, ext->ext);
+            deref(ext);
+        }
+    } else {
+        if (w->callbacks.friend_message)
+            w->callbacks.friend_message(w, friendid, msg, len, false, w->context);
+    }
 }
 
 static
@@ -1906,8 +1909,19 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     msg->data_off += len;
 
     if (msg->data_off == msg->data_len) {
-        if (w->callbacks.friend_message && !name)
-            w->callbacks.friend_message(w, friendid, msg->data, msg->data_len, false, w->context);
+        if (name) {
+            ExtensionHolder *ext;
+
+            ext = extensions_get(w->exts, name);
+            if (ext) {
+                if (ext->callbacks.friend_message)
+                    ext->callbacks.friend_message(w, friendid, msg, len, false, ext->ext);
+                deref(ext);
+            }
+        } else {
+            if (w->callbacks.friend_message)
+                w->callbacks.friend_message(w, friendid, msg, len, false, w->context);
+        }
 
         if (!need_add)
             bulkmsgs_remove(w->bulkmsgs, &tid);
@@ -2016,21 +2030,21 @@ void handle_invite_request(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
         transaction_history_put_invite(w->thistory, from, tid);
 
         if (name) {
-            if (strcmp(name, "session") == 0) {
-                SessionExtension *ext = (SessionExtension *)w->session;
-                if (ext && ext->friend_invite_cb)
-                    ext->friend_invite_cb(w, friendid, ireq->bundle, (const void*)ireq->data,
-                                          ireq->data_len, ext);
-            } else if (strcmp(name, carrier_extension_name) == 0) {
-                CarrierExtension *ext = (CarrierExtension *)w->carrier_extesion;
-                if (ext && ext->friend_invite_cb)
-                    ext->friend_invite_cb(w, friendid, ireq->bundle, (const void*)ireq->data,
-                                          ireq->data_len, ext);
+            ExtensionHolder *ext;
+
+            ext = extensions_get(w->exts, name);
+            if (ext) {
+                if (ext->callbacks.friend_invite)
+                    ext->callbacks.friend_invite(w, friendid, ireq->bundle,
+                                                (const void *)ireq->data,
+                                                ireq->data_len, ext);
+                deref(ext);
             }
         } else {
             if (w->callbacks.friend_invite)
-                w->callbacks.friend_invite(w, friendid, ireq->bundle, ireq->data, ireq->data_len,
-                                           w->context);
+                w->callbacks.friend_invite(w, friendid, ireq->bundle,
+                                           (const void *)ireq->data,
+                                           ireq->data_len, w->context);
         }
 
         if (!need_add)
@@ -3588,7 +3602,7 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
     return 0;
 }
 
-int ela_get_turn_server(ElaCarrier *w, ElaTurnServer *turn_server)
+int carrier_get_turn_server(ElaCarrier *w, CarrierTurnServer *turn_server)
 {
     uint8_t secret_key[PUBLIC_KEY_BYTES];
     uint8_t public_key[PUBLIC_KEY_BYTES];
