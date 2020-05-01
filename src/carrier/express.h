@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Elastos Foundation
+ * Copyright (c) 2018 Elastos Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,31 +19,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#ifndef __EXPRESS_CONNECTOR__
+#define __EXPRESS_CONNECTOR__
 
-#ifndef __DSTORE_H__
-#define __DSTORE_H__
-
-#include <stdlib.h>
-#include <stddef.h>
 #include <stdint.h>
+#include <unistd.h>
 
-typedef struct RpcNode {
-    char *ipv4;
-    char *ipv6;
-    uint16_t port;
-} RpcNode;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-typedef struct DStore DStore;
+typedef struct ElaCarrier           ElaCarrier;
+typedef struct ExpressConnector     ExpressConnector;
 
-DStore *dstore_create(RpcNode *rpc_nodes, size_t count);
-void dstore_destroy(DStore *dstore);
+typedef void (*ExpressOnRecvCallback)(ElaCarrier *carrier,
+                                     const char *from,
+                                     const uint8_t *message, size_t len);
 
-int dstore_get_values(DStore *dstore, const char *key,
-                      bool (*cb)(const char *key, const uint8_t *value,
-                                 size_t length, void *ctx),
-                      void *ctx);
-int dstore_add_value(DStore *dstore, const char *key,
-                     const uint8_t *value, size_t len);
-int dstore_remove_values(DStore *dstore, const char *key);
+ExpressConnector *express_connector_create(ElaCarrier *w, ExpressOnRecvCallback on_msg_cb, ExpressOnRecvCallback on_req_cb);
 
-#endif // __DSTORE_H__
+void express_connector_kill(ExpressConnector *);
+
+int express_enqueue_pull_messages(ExpressConnector *);
+
+int express_enqueue_friend_message(ExpressConnector *, const char *friendid, const void *, size_t);
+
+int express_enqueue_friend_request(ExpressConnector *, const char *address, const void *, size_t);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //__EXPRESS_CONNECTOR__

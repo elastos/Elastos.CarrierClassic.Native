@@ -32,7 +32,7 @@
 #include "dht_callbacks.h"
 #include "dht.h"
 
-#include "dstore_wrapper.h"
+#include "express.h"
 
 #define DHT_BOOTSTRAP_DEFAULT_PORT 33445
 #define HIVE_BOOTSTRAP_DEFAULT_PORT 9095
@@ -114,7 +114,7 @@ struct ElaCarrier {
     list_t *friend_events; // for friend_added/removed.
     hashtable_t *friends;
 
-    DStoreWrapper *dstorectx;
+    ExpressConnector *connector;
 
     hashtable_t *tcallbacks;
     hashtable_t *thistory;
