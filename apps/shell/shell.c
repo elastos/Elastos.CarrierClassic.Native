@@ -915,6 +915,29 @@ static void send_bulk_message(ElaCarrier *w, int argc, char *argv[])
     output("  failed: %d\n", failed_count);
 }
 
+static void receipt_message_callback(int64_t msgid,  ElaMessageState state, void *context)
+{
+    output("Messages receipted. msgid:%llx, state:%d\n", msgid, state);
+}
+
+static void send_receipt_message(ElaCarrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 3) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    int64_t msgid;
+    rc = ela_send_message_with_receipt(w, argv[1], argv[2], strlen(argv[2]) + 1,
+                                       receipt_message_callback, NULL, &msgid);
+    if (rc == 0)
+        output("Send receipt message success. msgid:%llx\n", msgid);
+    else
+        output("Send message failed(0x%x).\n", ela_get_error());
+}
+
 static void bigmsg_benchmark_initialize(ElaCarrier *w, int argc, char *argv[])
 {
     size_t totalsz;
@@ -2077,6 +2100,7 @@ struct command {
     { "label",      label_friend,           "label [User ID] [Name] - Add label to friend." },
     { "msg",        send_message,           "msg [User ID] [Message] - Send message to a friend." },
     { "bulkmsg",    send_bulk_message,      "bulkmsg [User ID] [Count] [Message] - Send numerous messages to a friend." },
+    { "receiptmsg", send_receipt_message,   "receiptmsg [User ID] [Count] [Message] - Send numerous messages to a friend." },
     { "bigmsgbenchmarkinit", bigmsg_benchmark_initialize, "bigmsgbenchmarkinit [User ID] [Count] - Initialize a big message benchmark to send [count]MB big message to a friend." },
     { "bigmsgbenchmarkacpt", bigmsg_benchmark_accept, "bigmsgbenchmarkacpt - Accept a big message benchmark initialized by a friend." },
     { "bigmsgbenchmarkrej",  bigmsg_benchmark_reject, "bigmsgbenchmarkrej - Reject a big message benchmark initialized by a friend." },

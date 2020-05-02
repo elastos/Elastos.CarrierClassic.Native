@@ -50,6 +50,7 @@ struct ExpressConnector {
     ElaCarrier *carrier;
     ExpressOnRecvCallback on_msg_cb;
     ExpressOnRecvCallback on_req_cb;
+    ExpressOnStatCallback on_stat_cb;
     http_client_t *http_client;
 
     list_t *tasklets;
@@ -71,6 +72,7 @@ typedef struct Tasklet {
 
 typedef struct SendTasklet {
     Tasklet base;
+    int64_t msgid;
     char to[ELA_MAX_ADDRESS_LEN + 1];
     size_t length;
     uint8_t data[0];
@@ -173,7 +175,7 @@ static int express_http_do(ExpressConnector *connector,
 
 
     http_client_enable_response_body(http_client);
-    http_client_set_timeout(connector->http_client, 15000);
+    http_client_set_timeout(connector->http_client, 30000);
     rc = http_client_request(http_client);
     if(rc != 0) {
         vlogE("Express: Failed to perform http request.(CURLE: %d)", rc);
@@ -379,6 +381,7 @@ static int parse_messages(Tasklet *task, uint8_t *data, uint64_t *timestamp)
 static void express_send_msg(Tasklet *base)
 {
     SendTasklet *task = (SendTasklet *)base;
+    ExpressConnector *connector = task->base.connector;
     char path[URL_MAX_SIZE] = {0};
     uint8_t *encrypted;
     ssize_t  encrypted_sz;
@@ -390,13 +393,16 @@ static void express_send_msg(Tasklet *base)
 #endif
 
     encrypted = (uint8_t *)calloc(1, task->length + NONCE_BYTES + ZERO_BYTES);
-    if (!encrypted)
+    if (!encrypted) {
+        connector->on_stat_cb(connector->carrier, task->to, task->msgid, false);
         return;
+    }
 
     encrypted_sz = encrypt_data(get_shared_key(base), task->data, task->length, encrypted);
     if(encrypted_sz < 0) {
         vlogE("Express: Encrypt data error");
         free(encrypted);
+        connector->on_stat_cb(connector->carrier, task->to, task->msgid, false);
         return;
     }
 
@@ -408,10 +414,12 @@ static void express_send_msg(Tasklet *base)
 
     if(rc < 0) {
         vlogE("Express: Failed to send message.(%d)", rc);
+        connector->on_stat_cb(connector->carrier, task->to, task->msgid, false);
         return;
     }
 
     vlogI("Express: Success to offline message to %s.", task->to);
+    connector->on_stat_cb(connector->carrier, task->to, task->msgid, true);
 }
 
 static void express_pull_msgs(Tasklet *base)
@@ -460,7 +468,7 @@ static void express_pull_msgs(Tasklet *base)
 }
 
 static int enqueue_send_tasklet(ExpressConnector *connector, const char *to,
-                                const void *data, size_t length)
+                                const void *data, size_t length, int64_t msgid)
 {
     SendTasklet *task;
 
@@ -472,6 +480,7 @@ static int enqueue_send_tasklet(ExpressConnector *connector, const char *to,
     task->base.connector = connector;
     task->base.handle_cb = express_send_msg;
 
+    task->msgid = msgid;
     strcpy(task->to, to);
     memcpy(task->data, data, length);
     task->length = length;
@@ -486,18 +495,27 @@ static int enqueue_send_tasklet(ExpressConnector *connector, const char *to,
     return 0;
 }
 
+
+
 int express_enqueue_friend_message(ExpressConnector *connector,
                                   const char *friendid,
                                   const void *data, size_t length)
 {
-    return enqueue_send_tasklet(connector, friendid, data, length);
+    return enqueue_send_tasklet(connector, friendid, data, length, 0);
 }
 
 int express_enqueue_friend_request(ExpressConnector *connector,
                                   const char *address,
                                   const void *hello, size_t length)
 {
-    return enqueue_send_tasklet(connector, address, hello, length);
+    return enqueue_send_tasklet(connector, address, hello, length, 0);
+}
+
+int express_enqueue_friend_message_with_receipt(ExpressConnector *connector, const char *friendid,
+                                                const void *data, size_t length,
+                                                int64_t msgid)
+{
+    return enqueue_send_tasklet(connector, friendid, data, length, msgid);
 }
 
 int express_enqueue_pull_messages(ExpressConnector *connector)
@@ -586,7 +604,8 @@ static void express_connector_destroy(void *arg)
 
 ExpressConnector *express_connector_create(ElaCarrier *w,
                                            ExpressOnRecvCallback on_msg_cb,
-                                           ExpressOnRecvCallback on_req_cb)
+                                           ExpressOnRecvCallback on_req_cb,
+                                           ExpressOnStatCallback on_stat_cb)
 {
     ExpressConnector *connector;
     pthread_t tid;
@@ -620,6 +639,7 @@ ExpressConnector *express_connector_create(ElaCarrier *w,
 
     connector->on_msg_cb = on_msg_cb;
     connector->on_req_cb = on_req_cb;
+    connector->on_stat_cb = on_stat_cb;
 
     if (w->pref.express_bootstraps_size < 0) {
         deref(connector);

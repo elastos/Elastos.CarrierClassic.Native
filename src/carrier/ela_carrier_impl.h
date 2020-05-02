@@ -81,9 +81,16 @@ typedef struct FriendEvent {
     ElaFriendInfo fi;
 } FriendEvent;
 
+typedef struct MsgReceiptEvent {
+    EventBase base;
+    int64_t msgid;
+    ElaFriendMessageReceiptCallback *callback;
+    void *context;
+} MsgReceiptEvent;
+
 typedef struct OfflineMsgEvent {
     EventBase base;
-    char from[ELA_MAX_ID_LEN + 1];
+    char friendid[ELA_MAX_ID_LEN + 1];
     size_t len;
     uint8_t content[0];
 } OfflineMsgEvent;
@@ -114,9 +121,11 @@ struct ElaCarrier {
     DHTCallbacks dht_callbacks;
 
     list_t *friend_events; // for friend_added/removed.
+    list_t *friend_msgs;
     hashtable_t *friends;
 
     ExpressConnector *connector;
+    uint32_t msgid_counter;
 
     hashtable_t *tcallbacks;
     hashtable_t *thistory;

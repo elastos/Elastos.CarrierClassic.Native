@@ -35,8 +35,14 @@ typedef struct ExpressConnector     ExpressConnector;
 typedef void (*ExpressOnRecvCallback)(ElaCarrier *carrier,
                                      const char *from,
                                      const uint8_t *message, size_t len);
+typedef void (*ExpressOnStatCallback)(ElaCarrier *carrier,
+                                      const char *from,
+                                      int64_t msgid, bool succeed);
 
-ExpressConnector *express_connector_create(ElaCarrier *w, ExpressOnRecvCallback on_msg_cb, ExpressOnRecvCallback on_req_cb);
+ExpressConnector *express_connector_create(ElaCarrier *w,
+                                           ExpressOnRecvCallback on_msg_cb,
+                                           ExpressOnRecvCallback on_req_cb,
+                                           ExpressOnStatCallback on_stat_cb);
 
 void express_connector_kill(ExpressConnector *);
 
@@ -45,6 +51,8 @@ int express_enqueue_pull_messages(ExpressConnector *);
 int express_enqueue_friend_message(ExpressConnector *, const char *friendid, const void *, size_t);
 
 int express_enqueue_friend_request(ExpressConnector *, const char *address, const void *, size_t);
+
+int express_enqueue_friend_message_with_receipt(ExpressConnector *, const char *friendid, const void *, size_t, int64_t);
 
 #ifdef __cplusplus
 }

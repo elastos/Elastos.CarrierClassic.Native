@@ -1364,6 +1364,20 @@ CARRIER_API
 int ela_send_friend_message(ElaCarrier *carrier, const char *to,
                             const void *msg, size_t len, bool *offline);
 
+
+typedef enum {
+      ElaMessage_Receipted,
+      ElaMessage_OfflineSent,
+      ElaMessage_Error,
+} ElaMessageState;
+typedef void ElaFriendMessageReceiptCallback(int64_t msgid,  ElaMessageState state, void *context);
+
+CARRIER_API
+int ela_send_message_with_receipt(ElaCarrier *carrier, const char *to,
+                                  const void *msg, size_t len,
+                                  ElaFriendMessageReceiptCallback *cb, void *context,
+                                  int64_t *msgid);
+
 /**
  * \~English
  * An application-defined function that process the friend invite response.
