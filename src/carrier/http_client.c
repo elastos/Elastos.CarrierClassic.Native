@@ -503,9 +503,15 @@ int http_client_set_timeout(http_client_t *client, int timeout)
     assert(client);
     assert(timeout > 0);
 
-    code = curl_easy_setopt(client->curl, CURLOPT_TIMEOUT, timeout);
+    code = curl_easy_setopt(client->curl, CURLOPT_TIMEOUT_MS, timeout);
+    if (code != CURLE_OK)
+        return code;
 
-    return code;
+    code = curl_easy_setopt(client->curl, CURLOPT_CONNECTTIMEOUT_MS, timeout);
+    if (code != CURLE_OK)
+        return code;
+
+    return 0;
 }
 
 int http_client_set_version(http_client_t *client, http_version_t version)

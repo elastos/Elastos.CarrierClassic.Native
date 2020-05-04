@@ -179,7 +179,9 @@ static int express_http_do(ExpressConnector *connector,
         }
     }
 
+
     http_client_enable_response_body(http_client);
+    http_client_set_timeout(connector->http_client, 15000);
     rc = http_client_request(http_client);
     if(rc != 0) {
         vlogE("Express: Failed to perform http request.(CURLE: %d)", rc);
@@ -603,7 +605,6 @@ ExpressConnector *express_connector_create(ElaCarrier *w,
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return NULL;
     }
-    http_client_set_timeout(connector->http_client, 5);
 
     rc = compute_sharedkey(w, connector->shared_key);
     if (rc < 0) {
