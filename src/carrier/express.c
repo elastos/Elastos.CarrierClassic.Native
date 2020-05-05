@@ -211,6 +211,7 @@ static int express_http_do(ExpressConnector *connector,
 
 static int express_del_msgs(http_client_t *httpc, Tasklet *task, uint64_t last_msg_time)
 {
+    return 0;
     if(last_msg_time <= 0)
         return 0;
 

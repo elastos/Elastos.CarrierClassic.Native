@@ -81,8 +81,17 @@ typedef struct FriendEvent {
     ElaFriendInfo fi;
 } FriendEvent;
 
+typedef enum MsgCh {
+    MSGCH_DHT = 0,
+    MSGCH_EXPRESS = 1,
+} MsgCh;
+
 typedef struct MsgReceiptEvent {
     EventBase base;
+    char to[ELA_MAX_ID_LEN + 1];
+    uint8_t *msg;
+    size_t msglen;
+    MsgCh msgch;
     int64_t msgid;
     ElaFriendMessageReceiptCallback *callback;
     void *context;
