@@ -1057,6 +1057,7 @@ static void handle_offline_msg(EventBase *event, ElaCarrier *w)
     OfflineMsgEvent *ev = (OfflineMsgEvent *)event;
 
     ElaCP *cp;
+    const char* name;
 
     cp = elacp_decode(ev->content, ev->len);
     if (!cp) {
@@ -1069,7 +1070,8 @@ static void handle_offline_msg(EventBase *event, ElaCarrier *w)
         return;
     }
 
-    if (!elacp_get_extension(cp) && ela_is_friend(w, ev->from) &&
+    name = elacp_get_extension(cp);
+    if ((!name || strlen(name) == 0) && ela_is_friend(w, ev->from) &&
         w->callbacks.friend_message)
         w->callbacks.friend_message(w, ev->from, elacp_get_raw_data(cp),
                                     elacp_get_raw_data_length(cp), true,
@@ -1129,6 +1131,59 @@ static void notify_offline_req(ElaCarrier *w, const char *from,
         list_push_tail(w->friend_events, &event->base.le);
         deref(event);
     }
+}
+
+int make_express_pref(const ElaOptions *opts, Preferences* pref)
+{
+    int express_bootstraps_size = opts->express_bootstraps_size;
+    pref->express_bootstraps = (DhtBootstrapNodeBuf *)calloc(1, sizeof(DhtBootstrapNodeBuf)
+                         * express_bootstraps_size);
+    if (!pref->express_bootstraps) {
+        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+    }
+
+    for (int i = 0; i < express_bootstraps_size; i++) {
+        BootstrapNode *b = &opts->express_bootstraps[i];
+        DhtBootstrapNodeBuf *bi = &pref->express_bootstraps[i];
+        char *endptr = "";
+        ssize_t len;
+
+        if (b->ipv4 && strlen(b->ipv4) > MAX_IPV4_ADDRESS_LEN) {
+            vlogE("Carrier: DHT bootstrap ipv4 address (%s) too long", b->ipv4);
+            return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        }
+
+        if (b->ipv6 && strlen(b->ipv6) > MAX_IPV6_ADDRESS_LEN) {
+            vlogE("Carrier: DHT bootstrap ipv4 address (%s) too long", b->ipv6);
+            return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        }
+
+        if (!b->ipv4 && !b->ipv6) {
+            vlogE("Carrier: DHT bootstrap ipv4 and ipv6 address both empty");
+            return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        }
+
+        if (b->ipv4)
+            strcpy(bi->ipv4, b->ipv4);
+        if (b->ipv6)
+            strcpy(bi->ipv6, b->ipv6);
+
+        bi->port = b->port ? (int)strtol(b->port, &endptr, 10) : DHT_BOOTSTRAP_DEFAULT_PORT;
+        if (bi->port < 1 || bi->port > 65535 || *endptr) {
+            vlogE("Carrier: Invalid DHT bootstrap port value (%s)", b->port);
+            return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        }
+
+        len = base58_decode(b->public_key, strlen(b->public_key), bi->public_key,
+                            sizeof(bi->public_key));
+        if (len != DHT_PUBLIC_KEY_SIZE) {
+            vlogE("Carrier: Invalid DHT bootstrap public key (%s)", b->public_key);
+            return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        }
+    }
+    pref->express_bootstraps_size = express_bootstraps_size;
+
+    return express_bootstraps_size;
 }
 
 ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
@@ -1270,6 +1325,14 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
             return NULL;
         }
+    }
+
+    rc = make_express_pref(opts, &w->pref);
+    if (rc < 0) {
+        vlogE("Carrier: Express bootstrap failed.");
+        deref(w);
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        return NULL;
     }
 
     memset(&data, 0, sizeof(data));
@@ -1857,7 +1920,7 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     msg  = elacp_get_raw_data(cp);
     len  = elacp_get_raw_data_length(cp);
 
-    if (w->callbacks.friend_message && !name)
+    if (w->callbacks.friend_message && (!name || strlen(name) == 0))
         w->callbacks.friend_message(w, friendid, msg, len, false, w->context);
 }
 
@@ -1937,7 +2000,7 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     msg->data_off += len;
 
     if (msg->data_off == msg->data_len) {
-        if (w->callbacks.friend_message && !name)
+        if (w->callbacks.friend_message && (!name || strlen(name) == 0))
             w->callbacks.friend_message(w, friendid, msg->data, msg->data_len, false, w->context);
 
         if (!need_add)

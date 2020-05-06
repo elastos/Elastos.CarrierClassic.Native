@@ -152,7 +152,7 @@ int trace_func(CURL *handle, curl_infotype type, char *data, size_t size,
 
     switch (type) {
     case CURLINFO_TEXT:
-        vlogD("== Info: %s", data);
+        vlogV("== Info: %s", data);
     default: /* in case a new one is introduced to shock us */
         return 0;
 

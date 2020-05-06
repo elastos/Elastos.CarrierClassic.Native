@@ -356,6 +356,20 @@ typedef struct ElaOptions {
      * The array of Hive bootstrap nodes.
      */
     HiveBootstrapNode *hive_bootstraps;
+
+    /**
+     * \~English
+     * The total number of Express bootstrap nodes to connect.
+     * There must have at least one bootstrap node for the very first time
+     * to create carrier instance.
+     */
+    size_t express_bootstraps_size;
+
+    /**
+     * \~English
+     * The array of Express bootstrap nodes.
+     */
+    BootstrapNode *express_bootstraps;
 } ElaOptions;
 
 /**

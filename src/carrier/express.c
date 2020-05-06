@@ -58,6 +58,7 @@ struct ExpressConnector {
     pthread_cond_t cond;
     int stopped;
 
+    const char* base_url;
     uint8_t shared_key[SYMMETRIC_KEY_BYTES];
 };
 
@@ -94,21 +95,12 @@ static inline char *get_my_userid(Tasklet *task)
     return task->connector->carrier->me.userid;
 }
 
-static const char *EXPRESS_BASE_URL = "http://149.28.249.233:5000";
-static const char *EXPRESS_PUBLIC_KEY = "FyTt6cgnoN1eAMfmTRJCaX2UoN6ojAgCimQEbv1bruy9";
 static const int  URL_MAX_SIZE = 1024;
 
-static int compute_sharedkey(ElaCarrier *w, uint8_t *shared_key)
+static int compute_sharedkey(ElaCarrier *w, uint8_t *pk, uint8_t *shared_key)
 {
-    uint8_t pk[PUBLIC_KEY_BYTES];
     uint8_t sk[SECRET_KEY_BYTES];
     ssize_t rc;
-
-    rc = base58_decode(EXPRESS_PUBLIC_KEY, strlen(EXPRESS_PUBLIC_KEY), pk, sizeof(pk));
-    if (rc != (ssize_t) sizeof(pk)) {
-        vlogE("Express: Base58 decode express public error.");
-        return ELA_GENERAL_ERROR(ELAERR_ENCRYPT);
-    }
 
     dht_self_get_secret_key(&w->dht, sk);
     crypto_compute_symmetric_key(pk, sk, shared_key);
@@ -149,7 +141,7 @@ static int express_http_do(ExpressConnector *connector,
 {
     http_client_reset(http_client);
     char url[URL_MAX_SIZE];
-    snprintf(url, sizeof(url), "%s/%s", EXPRESS_BASE_URL, path);
+    snprintf(url, sizeof(url), "%s/%s", connector->base_url, path);
 
     const char* dowhat = (method == HTTP_METHOD_POST ? "pushing"
                        : (method == HTTP_METHOD_GET ? "pulling"
@@ -197,7 +189,7 @@ static int express_http_do(ExpressConnector *connector,
     if((method == HTTP_METHOD_POST && http_client_rescode != 201)
     || (method == HTTP_METHOD_GET && http_client_rescode != 200)
     || (method == HTTP_METHOD_DELETE && http_client_rescode != 205)) {
-        vlogE("Express: Failed to %s message from server.(CURLE: %d)", dowhat, rc);
+        vlogE("Express: Failed to %s message from server rescode=%d.(CURLE: %d)", dowhat, http_client_rescode, rc);
         return -1; // TODO: workaround
     }
 
@@ -348,6 +340,8 @@ static int parse_messages(Tasklet *task, uint8_t *data, uint64_t *timestamp)
     int rc = 0;
     int sz;
     int i;
+
+    *timestamp = 0;
 
     root = cJSON_Parse((char *)data);
     if (!root) {
@@ -581,6 +575,11 @@ static void express_connector_destroy(void *arg)
     if (connector->carrier)
         connector->carrier = NULL;
 
+    if (connector->base_url) {
+        free((void*)connector->base_url);
+        connector->base_url = NULL;
+    }
+
     pthread_mutex_destroy(&connector->lock);
     pthread_cond_destroy (&connector->cond);
 }
@@ -606,13 +605,6 @@ ExpressConnector *express_connector_create(ElaCarrier *w,
         return NULL;
     }
 
-    rc = compute_sharedkey(w, connector->shared_key);
-    if (rc < 0) {
-        deref(connector);
-        ela_set_error(rc);
-        return NULL;
-    }
-
     pthread_mutex_init(&connector->lock, NULL);
     pthread_cond_init (&connector->cond, NULL);
 
@@ -628,6 +620,26 @@ ExpressConnector *express_connector_create(ElaCarrier *w,
 
     connector->on_msg_cb = on_msg_cb;
     connector->on_req_cb = on_req_cb;
+
+    if (w->pref.express_bootstraps_size < 0) {
+        deref(connector);
+        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        return NULL;
+    }
+
+    DhtBootstrapNodeBuf *express_bootstrap_0 = &w->pref.express_bootstraps[0];
+    char base_url[URL_MAX_SIZE];
+    snprintf(base_url, sizeof(base_url), "http://%s:%d",
+             strlen(express_bootstrap_0->ipv4) != 0 ? express_bootstrap_0->ipv4 : express_bootstrap_0->ipv6,
+             express_bootstrap_0->port);
+    connector->base_url = strdup(base_url);
+
+    rc = compute_sharedkey(w, express_bootstrap_0->public_key, connector->shared_key);
+    if (rc < 0) {
+        deref(connector);
+        ela_set_error(rc);
+        return NULL;
+    }
 
     ref(w);
     ref(connector);

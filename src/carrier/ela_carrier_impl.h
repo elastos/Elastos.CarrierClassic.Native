@@ -66,6 +66,8 @@ typedef struct Preferences {
     DhtBootstrapNodeBuf *dht_bootstraps;
     int hive_bootstraps_size;
     HiveBootstrapNodeBuf *hive_bootstraps;
+    int express_bootstraps_size;
+    DhtBootstrapNodeBuf *express_bootstraps;
 } Preferences;
 
 typedef struct EventBase EventBase;
