@@ -34,7 +34,8 @@ typedef struct ExpressConnector     ExpressConnector;
 
 typedef void (*ExpressOnRecvCallback)(ElaCarrier *carrier,
                                      const char *from,
-                                     const uint8_t *message, size_t len);
+                                     const uint8_t *message, size_t len,
+                                     int64_t timestamp);
 typedef void (*ExpressOnStatCallback)(ElaCarrier *carrier,
                                       const char *from,
                                       int64_t msgid, bool succeed);

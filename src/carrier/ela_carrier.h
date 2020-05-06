@@ -808,6 +808,8 @@ typedef struct ElaCallbacks {
      * @param
      *      len         [in] The message length in bytes.
      * @param
+     *      timestame   [in] The message send time.
+     * @param
      *      offline     [in] The value tells whether this message is received
      *                       as offline message or online message. The value of
      *                       true means this message is received as offline
@@ -816,7 +818,9 @@ typedef struct ElaCallbacks {
      *      context     [in] The application defined context data.
      */
     void (*friend_message)(ElaCarrier *carrier, const char *from,
-                           const void *msg, size_t len, bool offline, void *context);
+                           const void *msg, size_t len,
+                           int64_t timestamp, bool offline,
+                           void *context);
 
     /**
      * \~English

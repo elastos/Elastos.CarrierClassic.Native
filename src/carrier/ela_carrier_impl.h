@@ -100,6 +100,7 @@ typedef struct MsgReceiptEvent {
 typedef struct OfflineMsgEvent {
     EventBase base;
     char friendid[ELA_MAX_ID_LEN + 1];
+    int64_t timestamp;
     size_t len;
     uint8_t content[0];
 } OfflineMsgEvent;

@@ -211,7 +211,6 @@ static int express_http_do(ExpressConnector *connector,
 
 static int express_del_msgs(http_client_t *httpc, Tasklet *task, uint64_t last_msg_time)
 {
-    return 0;
     if(last_msg_time <= 0)
         return 0;
 
@@ -326,9 +325,9 @@ static int parse_message_item(Tasklet *task, cJSON *json, uint64_t *timestamp)
 #endif
 
     if (strcmp(type, "M") == 0) {
-        connector->on_msg_cb(connector->carrier, from, msg_data, msg_size);
+        connector->on_msg_cb(connector->carrier, from, msg_data, msg_size, *timestamp);
     } else if (strcmp(type, "R") == 0) {
-        connector->on_req_cb(connector->carrier, from, msg_data, msg_size);
+        connector->on_req_cb(connector->carrier, from, msg_data, msg_size, *timestamp);
     }
 
     free(msg_data);

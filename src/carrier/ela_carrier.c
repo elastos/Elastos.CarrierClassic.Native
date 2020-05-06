@@ -1056,7 +1056,6 @@ static void ela_destroy(void *argv)
 static void handle_offline_msg(EventBase *event, ElaCarrier *w)
 {
     OfflineMsgEvent *ev = (OfflineMsgEvent *)event;
-    const char *name;
 
     ElaCP *cp;
     const char* name;
@@ -1075,13 +1074,15 @@ static void handle_offline_msg(EventBase *event, ElaCarrier *w)
     name = elacp_get_extension(cp);
     if ((!name || strlen(name) == 0) && ela_is_friend(w, ev->friendid) &&
         w->callbacks.friend_message)
-        w->callbacks.friend_message(w, ev->friendid, elacp_get_raw_data(cp),
-                                    elacp_get_raw_data_length(cp), true,
+        w->callbacks.friend_message(w, ev->friendid,
+                                    elacp_get_raw_data(cp), elacp_get_raw_data_length(cp),
+                                    ev->timestamp, true,
                                     w->context);
 }
 
 static void notify_offline_msg(ElaCarrier *w, const char *from,
-                               const uint8_t *msg, size_t len)
+                               const uint8_t *msg, size_t len,
+                               int64_t timestamp)
 {
     OfflineMsgEvent *event;
 
@@ -1095,6 +1096,7 @@ static void notify_offline_msg(ElaCarrier *w, const char *from,
         strcpy(event->friendid, from);
         memcpy(event->content, msg, len);
         event->len = len;
+        event->timestamp = timestamp;
         event->base.le.data = event;
         event->base.handle = handle_offline_msg;
         list_push_tail(w->friend_events, &event->base.le);
@@ -1114,7 +1116,8 @@ static void handle_offline_req(EventBase *event, ElaCarrier *w)
 }
 
 static void notify_offline_req(ElaCarrier *w, const char *from,
-                               const uint8_t *msg, size_t len)
+                               const uint8_t *msg, size_t len,
+                               int64_t timestamp)
 {
     OfflineMsgEvent *event;
 
@@ -1128,6 +1131,7 @@ static void notify_offline_req(ElaCarrier *w, const char *from,
         strcpy(event->friendid, from);
         memcpy(event->content, msg, len);
         event->len = len;
+        event->timestamp = timestamp;
         event->base.le.data = event;
         event->base.handle = handle_offline_req;
         list_push_tail(w->friend_events, &event->base.le);
@@ -2099,8 +2103,12 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     msg  = elacp_get_raw_data(cp);
     len  = elacp_get_raw_data_length(cp);
 
-    if (w->callbacks.friend_message && (!name || strlen(name) == 0))
-        w->callbacks.friend_message(w, friendid, msg, len, false, w->context);
+    if (w->callbacks.friend_message && (!name || strlen(name) == 0)) {
+        struct timeval now;
+        gettimeofday(&now, NULL);
+        int64_t timestampe = now.tv_sec * (int64_t)1000000 + now.tv_usec;
+        w->callbacks.friend_message(w, friendid, msg, len, timestampe, false, w->context);
+    }
 }
 
 static
@@ -2179,8 +2187,12 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     msg->data_off += len;
 
     if (msg->data_off == msg->data_len) {
-        if (w->callbacks.friend_message && (!name || strlen(name) == 0))
-            w->callbacks.friend_message(w, friendid, msg->data, msg->data_len, false, w->context);
+        if (w->callbacks.friend_message && (!name || strlen(name) == 0)) {
+            struct timeval now;
+            gettimeofday(&now, NULL);
+            int64_t timestamp = now.tv_sec * (int64_t)1000000 + now.tv_usec;
+            w->callbacks.friend_message(w, friendid, msg->data, msg->data_len, timestamp, false, w->context);
+        }
 
         if (!need_add)
             bulkmsgs_remove(w->bulkmsgs, &tid);

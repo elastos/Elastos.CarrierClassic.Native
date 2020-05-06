@@ -2400,7 +2400,9 @@ static void friend_request_callback(ElaCarrier *w, const char *userid,
 }
 
 static void message_callback(ElaCarrier *w, const char *from,
-                             const void *msg, size_t len, bool is_offline, void *context)
+                             const void *msg, size_t len,
+                             int64_t timestamp, bool is_offline,
+                             void *context)
 {
     char ctlsig_type[128];
     size_t totalsz;
@@ -2409,7 +2411,7 @@ static void message_callback(ElaCarrier *w, const char *from,
     rc = sscanf(msg, "bigmsgbenchmark %128s %zu", ctlsig_type, &totalsz);
     if (rc < 1) {
         if (bigmsg_benchmark.state != ONGOING || strcmp(from, bigmsg_benchmark.peer)) {
-            output("Message(%s) from friend[%s]: %.*s\n", is_offline ? "offline" : "online", from, (int)len, (const char *)msg);
+            output("Message(%s) from friend[%s] at %lld: %.*s\n", is_offline ? "offline" : "online", from, timestamp, (int)len, (const char *)msg);
             return;
         }
 
