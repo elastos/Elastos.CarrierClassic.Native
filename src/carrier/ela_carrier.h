@@ -1748,6 +1748,7 @@ int ela_get_groups(ElaCarrier *carrier, ElaIterateGroupCallback *callback,
 #define ELAF_RESERVED2                              0x04
 #define ELAF_ICE                                    0x05
 #define ELAF_DHT                                    0x06
+#define ELAF_EXPRESS                                0x07
 
 /**
  * \~English
@@ -1955,6 +1956,12 @@ int ela_get_groups(ElaCarrier *carrier, ElaIterateGroupCallback *callback,
 
 /**
  * \~English
+ * Bad flat buffer.
+ */
+#define ELAERR_BAD_FLATBUFFER                       0x23
+
+/**
+ * \~English
  * Unknown error.
  */
 #define ELAERR_UNKNOWN                              0xFF
@@ -1966,6 +1973,7 @@ int ela_get_groups(ElaCarrier *carrier, ElaIterateGroupCallback *callback,
 #define ELA_SYS_ERROR(code)           ELA_MK_ERROR(ELAF_SYS, code)
 #define ELA_ICE_ERROR(code)           ELA_MK_ERROR(ELAF_ICE, code)
 #define ELA_DHT_ERROR(code)           ELA_MK_ERROR(ELAF_DHT, code)
+#define ELA_EXPRESS_ERROR(code)       ELA_MK_ERROR(ELAF_EXPRESS, code)
 
 /*
  * \~English

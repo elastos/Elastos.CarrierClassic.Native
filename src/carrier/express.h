@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef __EXPRESS_CONNECTOR__
-#define __EXPRESS_CONNECTOR__
+#ifndef __ELASTOS_CARRIER_EXPRESS__
+#define __ELASTOS_CARRIER_EXPRESS__
 
 #include <stdint.h>
 #include <unistd.h>
@@ -29,34 +29,39 @@
 extern "C" {
 #endif
 
-typedef struct ElaCarrier           ElaCarrier;
-typedef struct ExpressConnector     ExpressConnector;
-
+typedef struct ExpConnector     ExpressConnector;
 typedef void (*ExpressOnRecvCallback)(ElaCarrier *carrier,
-                                     const char *from,
-                                     const uint8_t *message, size_t len,
-                                     int64_t timestamp);
+                                      const char *from,
+                                      const uint8_t *data, size_t size,
+                                      int64_t timestamp);
 typedef void (*ExpressOnStatCallback)(ElaCarrier *carrier,
                                       const char *from,
-                                      int64_t msgid, bool succeed);
+                                      int64_t msgid, int errcode);
 
-ExpressConnector *express_connector_create(ElaCarrier *w,
+ExpressConnector *express_connector_create(ElaCarrier *carrier,
                                            ExpressOnRecvCallback on_msg_cb,
                                            ExpressOnRecvCallback on_req_cb,
                                            ExpressOnStatCallback on_stat_cb);
 
-void express_connector_kill(ExpressConnector *);
+void express_connector_kill(ExpressConnector *connector);
 
-int express_enqueue_pull_messages(ExpressConnector *);
+int express_enqueue_post_request(ExpressConnector *connector,
+                                 const char *address,
+                                 const void *data, size_t size);
 
-int express_enqueue_friend_message(ExpressConnector *, const char *friendid, const void *, size_t);
+int express_enqueue_post_message(ExpressConnector *connector,
+                                 const char *friendid,
+                                 const void *data, size_t size);
 
-int express_enqueue_friend_request(ExpressConnector *, const char *address, const void *, size_t);
+int express_enqueue_post_message_with_receipt(ExpressConnector *connector,
+                                              const char *friendid,
+                                              const void *data, size_t size,
+                                              int64_t msgid);
 
-int express_enqueue_friend_message_with_receipt(ExpressConnector *, const char *friendid, const void *, size_t, int64_t);
+int express_enqueue_pull_messages(ExpressConnector *connector);
 
 #ifdef __cplusplus
-}
+} // extern "C"
 #endif
 
-#endif //__EXPRESS_CONNECTOR__
+#endif //__ELASTOS_CARRIER_EXPRESS__

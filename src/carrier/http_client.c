@@ -297,7 +297,7 @@ int http_client_set_method(http_client_t *client, http_method_t method)
         code = curl_easy_setopt(client->curl, CURLOPT_HTTPGET, 1L);
         break;
     case HTTP_METHOD_POST:
-        code = curl_easy_setopt(client->curl, CURLOPT_POST, 1L);
+        code = curl_easy_setopt(client->curl, CURLOPT_HTTPPOST, 1L);
         break;
     case HTTP_METHOD_PUT:
         code = curl_easy_setopt(client->curl, CURLOPT_CUSTOMREQUEST, "PUT");

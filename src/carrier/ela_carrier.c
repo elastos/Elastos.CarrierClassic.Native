@@ -1297,7 +1297,7 @@ static void handle_offline_stat(EventBase *event, ElaCarrier *w)
 }
 
 void notify_offline_stat(ElaCarrier *w, const char *to,
-                         int64_t msgid, bool succeed)
+                         int64_t msgid, int errcode)
 {
     OfflineMsgEvent *event;
 
@@ -1308,7 +1308,7 @@ void notify_offline_stat(ElaCarrier *w, const char *to,
     if (event) {
         strcpy(event->friendid, to);
         memcpy(event->content, (uint8_t*)&msgid, sizeof(int64_t));
-        event->len = succeed;
+        event->len = errcode;
         event->base.le.data = event;
         event->base.handle = handle_offline_stat;
         list_push_tail(w->friend_events, &event->base.le);
@@ -3245,7 +3245,7 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
         w->connector = express_connector_create(w, notify_offline_msg, notify_offline_req, notify_offline_stat);
 
     if (w->connector) {
-        rc = express_enqueue_friend_request(w->connector, address, data, data_len);
+        rc = express_enqueue_post_request(w->connector, address, data, data_len);
         if (rc < 0)
             vlogW("Carrier: Enqueue offline friend request.");
     }
@@ -3437,7 +3437,7 @@ static int send_general_message(ElaCarrier *w, uint32_t friend_number,
         w->connector = express_connector_create(w, notify_offline_msg, notify_offline_req, notify_offline_stat);
 
     if (w->connector) {
-        rc = express_enqueue_friend_message(w->connector, userid, data, data_len);
+        rc = express_enqueue_post_message(w->connector, userid, data, data_len);
         if (rc < 0)
             vlogW("Carrier: Enqueue offline friend request.");
     }
@@ -3545,7 +3545,7 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
         if (!data)
             return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-        rc = express_enqueue_friend_message(w->connector, userid, data, data_len);
+        rc = express_enqueue_post_message(w->connector, userid, data, data_len);
         if (rc < 0)
             vlogW("Carrier: Enqueu offline friend message error.");
 
@@ -3762,7 +3762,7 @@ int send_message_by_express(ElaCarrier *w, const char *to,
     if (!w->connector)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-    rc = express_enqueue_friend_message_with_receipt(w->connector, to, data, data_len, msgid);
+    rc = express_enqueue_post_message_with_receipt(w->connector, to, data, data_len, msgid);
     if (rc < 0) {
         vlogW("Carrier: Enqueue offline friend request error.");
         return rc;
