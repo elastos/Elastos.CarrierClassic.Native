@@ -1368,14 +1368,78 @@ CARRIER_API
 int ela_send_friend_message(ElaCarrier *carrier, const char *to,
                             const void *msg, size_t len, bool *offline);
 
-
-typedef enum {
-      ElaMessage_Receipted,
-      ElaMessage_OfflineSent,
-      ElaMessage_Error,
+/**
+ * \~English
+ * Carrier message receipt status to Carrier network.
+ */
+typedef enum ElaMessageState {
+    /**
+     * \~English
+     * Message is receipted by carrier network.
+     */
+    ElaMessage_Receipted,
+    /**
+     * \~English
+     * Message is receipted by offline network.
+     */
+    ElaMessage_OfflineSent,
+    /**
+     * \~English
+     * Message send unsuccessfully. A specific error code can be
+     * retrieved by calling ela_get_error().
+     */
+    ElaMessage_Error,
 } ElaMessageState;
+
+/**
+ * \~English
+ * An application-defined function that notify the message receipt status.
+ *
+ * ElaFriendMessageReceiptCallback is the callback function type.
+ *
+ * @param
+ *      msgid        [in] The unique id.
+ * @param
+ *      state        [in] The message sent state.
+ * @param
+ *      context      [in] The application defined context data.
+ *
+ * @return
+ *      Return true to continue iterate next friend user info,
+ *      false to stop iterate.
+ */
 typedef void ElaFriendMessageReceiptCallback(int64_t msgid,  ElaMessageState state, void *context);
 
+/**
+ * \~English
+ * Send a message to a friend with receipt.
+ *
+ * The message length may not exceed ELA_MAX_BULK_MESSAGE_LEN. Larger messages
+ * must be split by application and sent as separate fragments. Other carrier
+ * nodes can reassemble the fragments.
+ *
+ * Message may not be empty or NULL.
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      to          [in] The target userid.
+ * @param
+ *      msg         [in] The message content defined by application.
+ * @param
+ *      len         [in] The message length in bytes.
+ * @param
+ *      cb          [in] The pointer to callback which will be called when the
+ *                        receipt is received or failed to send message.
+ * @param
+ *      content     [in] The user context in callback.
+ * @param
+ *      msgid       [out] The unique number indicate this message.
+ * 
+ * @return
+ *      0 if the text message successfully add to send task list.
+ *      Otherwise, return <0, and a specific error code can be
+ *      retrieved by calling ela_get_error().
+ */
 CARRIER_API
 int ela_send_message_with_receipt(ElaCarrier *carrier, const char *to,
                                   const void *msg, size_t len,

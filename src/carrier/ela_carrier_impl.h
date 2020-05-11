@@ -89,20 +89,35 @@ typedef enum MsgCh {
 typedef struct MsgReceiptEvent {
     EventBase base;
     char to[ELA_MAX_ID_LEN + 1];
-    uint8_t *msg;
-    size_t msglen;
     MsgCh msgch;
     int64_t msgid;
+
     ElaFriendMessageReceiptCallback *callback;
     void *context;
+
+    size_t size;
+    uint8_t data[0];
 } MsgReceiptEvent;
 
 typedef struct OfflineMsgEvent {
     EventBase base;
     char friendid[ELA_MAX_ID_LEN + 1];
-    int64_t timestamp;
-    size_t len;
-    uint8_t content[0];
+    union {
+        struct {
+            int64_t timestamp;
+            size_t len;
+            uint8_t content[0];
+        } msg;
+        struct {
+            int64_t timestamp;
+            size_t len;
+            uint8_t gretting[0];
+        } req;
+        struct {
+            int64_t msgid;
+            int errcode;
+        } stat;
+    };
 } OfflineMsgEvent;
 
 struct ElaCarrier {

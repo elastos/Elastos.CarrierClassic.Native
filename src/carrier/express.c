@@ -519,7 +519,9 @@ static int exp_enqueue_post_tasklet(ExpressConnector *connector, const char *to,
     crypted_sz = size + NONCE_BYTES + ZERO_BYTES;
     task = (ExpSendTasklet *)rc_zalloc(sizeof(ExpSendTasklet) + crypted_sz, NULL);
     if (!task) {
-        return ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY);
+        rc = ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY);
+        ela_set_error(rc);
+        return rc;
     }
 
     task->base.entry.data = task;
@@ -534,6 +536,7 @@ static int exp_enqueue_post_tasklet(ExpressConnector *connector, const char *to,
     if(rc < 0) {
         vlogE("Express: Encrypt data error");
         deref(task);
+        ela_set_error(rc);
         return rc;
     }
     crypted_sz = rc;
@@ -604,7 +607,7 @@ static void *exp_connector_laundry(void *arg)
         deref(task);
         if(rc < 0) {
             vlogW("Express: exec tasklet failed.(%x)", rc);
-            ela_set_error(rc); // is it needed?
+            ela_set_error(rc);
         }
 
         pthread_mutex_lock(&connector->lock);
