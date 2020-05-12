@@ -35,6 +35,8 @@
 #endif
 #if defined(_WIN32) || defined(_WIN64)
 #include <io.h>
+#else
+#include <sys/time.h>
 #endif
 
 #include <cjson/cJSON.h>
@@ -93,7 +95,7 @@ typedef struct {
 static const int  EXP_CURLCODE_MASK    = 0x00001000;
 static const int  EXP_HTTP_MAGICNUM    = 0xCA6EE595;
 static const int  EXP_HTTP_MAGICSIZE   = 4;
-static const int  EXP_HTTP_TIMEOUT     = 30000; // ms
+static const int  EXP_HTTP_TIMEOUT     = 30 * 1000; // ms
 static const int  EXP_HTTP_URL_MAXSIZE = 1024;
 
 static inline int exp_conv_curlcode(int curlcode) {

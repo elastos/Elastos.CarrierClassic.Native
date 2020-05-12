@@ -81,6 +81,8 @@
 #define TURN_REALM                      "elastos.org"
 
 #define TASSEMBLY_TIMEOUT               (60) //60s.
+#define EXPRESS_DEF_TIMEOUT             (5 * 60) //5min.
+#define EXPRESS_CUS_TIMEOUT             (2 * 60) //2min.
 
 // Carrier invite request/response data transmission unit length.
 #define INVITE_DATA_UNIT                (1280)
@@ -1110,13 +1112,14 @@ static bool try_make_connector(ElaCarrier *w);
 static void notify_friend_read_receipt_cb(uint32_t friend_number, uint32_t message_id,
                                           void *context);
 static void do_message_receipt_expire(ElaCarrier *w);
+static void do_express_expire(ElaCarrier *w, struct timeval *now);
 
 ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
                     void *context)
 {
     ElaCarrier *w;
     persistence_data data;
-    bool conn_maked;
+    bool conn_made;
     int rc;
     size_t i;
 
@@ -1360,8 +1363,8 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         return NULL;
     }
 
-    conn_maked = try_make_connector(w);
-    if (!conn_maked)
+    conn_made = try_make_connector(w);
+    if (!conn_made)
         vlogW("Carrier: Creating express connector error (%s)", ela_get_error());
 
     apply_extra_data(w, data.extra_savedata, data.extra_savedata_len);
@@ -1435,7 +1438,7 @@ static void notify_friends(ElaCarrier *w)
 static void notify_connection_cb(bool connected, void *context)
 {
     ElaCarrier *w = (ElaCarrier *)context;
-    bool conn_maked;
+    bool conn_made;
 
     if (!w->is_ready && connected) {
         w->is_ready = true;
@@ -1449,8 +1452,8 @@ static void notify_connection_cb(bool connected, void *context)
     if (w->callbacks.connection_status)
         w->callbacks.connection_status(w, w->connection_status, w->context);
 
-    conn_maked = try_make_connector(w);
-    if (connected && conn_maked)
+    conn_made = try_make_connector(w);
+    if (connected && conn_made)
         express_enqueue_pull_messages(w->connector);
 }
 
@@ -1529,7 +1532,8 @@ void notify_friend_connection_cb(uint32_t friend_number, bool connected,
     FriendInfo *fi;
     char tmpid[ELA_MAX_ID_LEN + 1];
     ElaConnectionStatus status;
-    bool conn_maked;
+    bool conn_made;
+    struct timeval now, subres, expire_interval;
 
     assert(friend_number != UINT32_MAX);
 
@@ -1552,9 +1556,13 @@ void notify_friend_connection_cb(uint32_t friend_number, bool connected,
 
     deref(fi);
 
-    conn_maked = try_make_connector(w);
-    if (conn_maked)
-        express_enqueue_pull_messages(w->connector);
+    gettimeofday(&now, NULL);
+    timersub(&w->express_expiretime, &now, &subres);
+    if(subres.tv_sec > EXPRESS_CUS_TIMEOUT) {
+        expire_interval.tv_sec = EXPRESS_CUS_TIMEOUT;
+        expire_interval.tv_usec = 0;
+        timeradd(&now, &expire_interval, &w->express_expiretime);
+    }
 }
 
 static void notify_friend_presence(ElaCarrier *w, const char *friendid,
@@ -2524,6 +2532,7 @@ int ela_run(ElaCarrier *w, int interval)
         struct timeval expire;
         struct timeval check;
         struct timeval tmp;
+        bool conn_made;
 
         gettimeofday(&expire, NULL);
 
@@ -2542,6 +2551,7 @@ int ela_run(ElaCarrier *w, int interval)
         do_transacted_callabcks_check(w);
         do_bulkmsgs_expire(w->bulkmsgs);
         do_message_receipt_expire(w);
+        do_express_expire(w, &expire);
 
         if (idle_interval > 0)
             notify_idle(w);
@@ -2912,7 +2922,7 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
     uint8_t *data;
     size_t data_len;
     size_t _len;
-    bool conn_maked;
+    bool conn_made;
     int rc;
 
     if (!w || !hello || !*hello || !address || !*address) {
@@ -2989,8 +2999,8 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
         return -1;
     }
 
-    conn_maked = try_make_connector(w);
-    if (conn_maked) {
+    conn_made = try_make_connector(w);
+    if (conn_made) {
         rc = express_enqueue_post_request(w->connector, address, data, data_len);
         if (rc < 0)
             vlogW("Carrier: Enqueue offline friend request.");
@@ -3151,7 +3161,7 @@ static int send_general_message(ElaCarrier *w, uint32_t friend_number,
     ElaCP *cp;
     uint8_t *data;
     size_t data_len;
-    bool conn_maked;
+    bool conn_made;
     int rc;
 
     cp = elacp_create(ELACP_TYPE_MESSAGE, ext_name);
@@ -3180,8 +3190,8 @@ static int send_general_message(ElaCarrier *w, uint32_t friend_number,
         rc = ELA_DHT_ERROR(ELAERR_FRIEND_OFFLINE);
     }
 
-    conn_maked = try_make_connector(w);
-    if (conn_maked) {
+    conn_made = try_make_connector(w);
+    if (conn_made) {
         rc = express_enqueue_post_message(w->connector, userid, data, data_len);
         if (rc < 0)
             vlogW("Carrier: Enqueue offline friend request.");
@@ -3224,7 +3234,7 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
     char *pos = (char *)msg;
     size_t left = len;
     int index = 0;
-    bool conn_maked;
+    bool conn_made;
     int rc;
 
     if (friend_online) {
@@ -3275,8 +3285,8 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
         rc = ELA_DHT_ERROR(ELAERR_FRIEND_OFFLINE);
     }
 
-    conn_maked = try_make_connector(w);
-    if (conn_maked) {
+    conn_made = try_make_connector(w);
+    if (conn_made) {
         cp = elacp_create(ELACP_TYPE_MESSAGE, ext_name);
         if (!cp)
             return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
@@ -4564,7 +4574,7 @@ int send_message_by_express(ElaCarrier *w, const char *to,
     bool friend_online;
     uint8_t *data;
     int data_len;
-    bool conn_maked;
+    bool conn_made;
     int rc;
 
     rc = check_message_sendable(w, to, msg, len, &friend_number, ext_name);
@@ -4577,8 +4587,8 @@ int send_message_by_express(ElaCarrier *w, const char *to,
      
     data_len = rc;
 
-    conn_maked = try_make_connector(w);
-    if (!conn_maked)
+    conn_made = try_make_connector(w);
+    if (!conn_made)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
     rc = express_enqueue_post_message_with_receipt(w->connector, to, data, data_len, msgid);
@@ -4688,6 +4698,29 @@ static void do_message_receipt_expire(ElaCarrier *w)
     }
 
     // vlogI("Carrier: processed expired message, remaining item: %d.", list_size(w->friend_msgs));
+}
+
+static void do_express_expire(ElaCarrier *w, struct timeval *now)
+{
+    struct timeval expire_interval;
+    bool conn_made;
+    int rc;
+
+    if (timercmp(now, &w->express_expiretime, <))
+        return;
+    
+    expire_interval.tv_sec = EXPRESS_DEF_TIMEOUT;
+    expire_interval.tv_usec = 0;
+    timeradd(now, &expire_interval, &w->express_expiretime);
+
+    conn_made = try_make_connector(w);
+    if (conn_made) {
+        rc = express_enqueue_pull_messages(w->connector);
+        if(rc < 0)
+            vlogE("Express: expire pullmsg failed.(%x)", rc);
+    }
+
+    return;
 }
 
 static void notify_friend_read_receipt_cb(uint32_t friend_number, uint32_t message_id,

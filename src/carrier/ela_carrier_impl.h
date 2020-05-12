@@ -151,6 +151,7 @@ struct ElaCarrier {
 
     ExpressConnector *connector;
     uint32_t msgid_counter;
+    struct timeval express_expiretime;
 
     hashtable_t *tcallbacks;
     hashtable_t *thistory;
