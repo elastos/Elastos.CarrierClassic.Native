@@ -4516,8 +4516,8 @@ int check_message_sendable(ElaCarrier *w, const char *to,
     return 0;
 }
 
-static int bundle_message(const void *msg, size_t len, const char *ext_name,
-                          uint8_t **data)
+static int bundle_single_message(const void *msg, size_t len, const char *ext_name,
+                                 uint8_t **data)
 {
     ElaCP *cp;
     size_t data_len;
@@ -4526,6 +4526,37 @@ static int bundle_message(const void *msg, size_t len, const char *ext_name,
     if (!cp)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
+    elacp_set_raw_data(cp, msg, len);
+
+    *data = elacp_encode(cp, &data_len);
+    elacp_free(cp);
+
+    if (!(*data))
+        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+
+    return data_len;
+}
+
+static int bundle_bulk_message(const void *msg, size_t len, const char *ext_name,
+                               int64_t tid, size_t totalsz,
+                               uint8_t **data)
+{
+    ElaCP *cp;
+    size_t data_len;
+
+
+    // if (left < ELA_MAX_APP_MESSAGE_LEN)
+    //     send_len = left;
+    // else
+    //     send_len = ELA_MAX_APP_MESSAGE_LEN;
+
+    cp = elacp_create(ELACP_TYPE_BULKMSG, ext_name);
+    if (!cp)
+        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+
+    elacp_set_tid(cp, &tid);
+
+    elacp_set_totalsz(cp, totalsz);
     elacp_set_raw_data(cp, msg, len);
 
     *data = elacp_encode(cp, &data_len);
@@ -4552,15 +4583,43 @@ int send_message_by_dht(ElaCarrier *w, const char *to,
     if (rc < 0)
         return rc;
 
-    rc = bundle_message(msg, len, ext_name, &data);
-    if (rc < 0)
-        return rc;
+    if (len <= ELA_MAX_APP_MESSAGE_LEN) {
+        rc = bundle_single_message(msg, len, ext_name, &data);
+        if (rc < 0)
+            return rc;
 
-    data_len = rc;
+        data_len = rc;
+        rc = dht_friend_message_with_msgid(&w->dht, friend_number, data,
+                                           data_len, msgid);
+        free(data);
+        if (rc < 0)
+            return rc;
+    } else {
+        int64_t tid = generate_tid();
+        size_t sent_off = 0;
 
-    rc = dht_friend_message_with_msgid(&w->dht, friend_number, data, data_len, msgid);
-    if (rc < 0)
-        return rc;
+        do {
+            int msg_len = ELA_MAX_APP_MESSAGE_LEN;
+            if(len - sent_off < ELA_MAX_APP_MESSAGE_LEN)
+                msg_len = len - sent_off;
+
+            rc = bundle_bulk_message(msg + sent_off, msg_len, ext_name,
+                                     tid, sent_off == 0 ? len : 0,
+                                     &data);
+            if (rc < 0)
+                return rc;
+
+            sent_off += msg_len;
+            data_len = rc;
+            rc = dht_friend_message_with_msgid(&w->dht, friend_number, data,
+                                               data_len, msgid);
+            free(data);
+            if (rc < 0)
+                return rc;
+
+        } while (sent_off < len);
+
+    }
 
     return 0;
 }
@@ -4581,7 +4640,7 @@ int send_message_by_express(ElaCarrier *w, const char *to,
     if (rc < 0)
         return rc;
 
-    rc = bundle_message(msg, len, ext_name, &data);
+    rc = bundle_single_message(msg, len, ext_name, &data);
     if (rc < 0)
         return rc;
      
