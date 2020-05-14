@@ -98,16 +98,16 @@ static const int  EXP_HTTP_MAGICSIZE   = 4;
 static const int  EXP_HTTP_TIMEOUT     = 30 * 1000; // ms
 static const int  EXP_HTTP_URL_MAXSIZE = 1024;
 
-static inline int exp_conv_curlcode(int curlcode) {
+static inline int conv_curlcode(int curlcode) {
     return (curlcode | EXP_CURLCODE_MASK);
 }
 
-static inline char *exp_my_userid(ExpressConnector *connector)
+static inline char *my_userid(ExpressConnector *connector)
 {
     return connector->carrier->me.userid;
 }
 
-static int exp_compute_sharedkey(ElaCarrier *carrier, uint8_t *pk, uint8_t *shared_key)
+static int compute_sharedkey(ElaCarrier *carrier, uint8_t *pk, uint8_t *shared_key)
 {
     uint8_t sk[SECRET_KEY_BYTES];
 
@@ -117,7 +117,7 @@ static int exp_compute_sharedkey(ElaCarrier *carrier, uint8_t *pk, uint8_t *shar
     return 0;
 }
 
-static ssize_t exp_encrypt_data(uint8_t *key,
+static ssize_t encrypt_data(uint8_t *key,
                                 uint8_t *plain_data, size_t plain_len,
                                 uint8_t *crypted_data)
 {
@@ -133,7 +133,7 @@ static ssize_t exp_encrypt_data(uint8_t *key,
     return rc + NONCE_BYTES;
 }
 
-static ssize_t exp_decrypt_data(uint8_t *key,
+static ssize_t decrypt_data(uint8_t *key,
                                 uint8_t *crypted_data, size_t crypted_len,
                                 uint8_t *plain_data)
 {
@@ -149,7 +149,7 @@ static ssize_t exp_decrypt_data(uint8_t *key,
     return rc;
 }
 
-int exp_find_magic(uint8_t *buf, size_t start, size_t end, uint32_t magic_num)
+int find_magic(uint8_t *buf, size_t start, size_t end, uint32_t magic_num)
 {
     uint8_t *magicnum_buf = (uint8_t*)&magic_num;
     size_t pos;
@@ -169,9 +169,9 @@ int exp_find_magic(uint8_t *buf, size_t start, size_t end, uint32_t magic_num)
     return -1;
 }
 
-static int exp_process_message(ExpressConnector *connector,
-                               uint8_t *data, size_t size,
-                               int64_t *timestamp)
+static int process_message(ExpressConnector *connector,
+                           uint8_t *data, size_t size,
+                           int64_t *timestamp)
 {
     int rc;
     ElaCPPullMsg pmsg;
@@ -185,12 +185,24 @@ static int exp_process_message(ExpressConnector *connector,
     *timestamp = pmsg.timestamp;
 
     if (pmsg.type == 'M') {
-        vlogD("Express: recieved offline message at time %llu", pmsg.timestamp);
+        vlogV("Express: recieved offline message at time %llu", pmsg.timestamp);
+        if (!ela_is_friend(connector->carrier, pmsg.from)) {
+            vlogE("Express: Friend message not frond friend, dropped.");
+            return -1;
+        }
+
         connector->on_msg_cb(connector->carrier, pmsg.from,
                              pmsg.payload, pmsg.payload_sz,
                              pmsg.timestamp);
     } else if (pmsg.type == 'R') {
-        vlogD("Express: recieved offline request at time %llu", pmsg.timestamp);
+        vlogV("Express: recieved offline request at time %llu", pmsg.timestamp);
+        char addr[ELA_MAX_ADDRESS_LEN + 1];
+        ela_get_address(connector->carrier, addr, sizeof(addr));
+        if (strcmp(pmsg.address, addr) != 0) {
+            vlogE("Express: Friend request with unmatched address, dropped.");
+            return -1;
+        }
+
         connector->on_req_cb(connector->carrier, pmsg.from,
                              pmsg.payload, pmsg.payload_sz,
                              pmsg.timestamp);
@@ -201,7 +213,7 @@ static int exp_process_message(ExpressConnector *connector,
     return 0;
 }
 
-static int exp_parse_msg(ExpressConnector *connector,
+static int parse_msg(ExpressConnector *connector,
                          uint8_t *crypted_data, size_t crypted_size,
                          int64_t *timestamp)
 {
@@ -215,7 +227,7 @@ static int exp_parse_msg(ExpressConnector *connector,
         return ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY);
     }
 
-    rc = exp_decrypt_data(connector->shared_key,
+    rc = decrypt_data(connector->shared_key,
                           crypted_data, crypted_size,
                           plain_data);
     if (rc < 0) {
@@ -225,7 +237,7 @@ static int exp_parse_msg(ExpressConnector *connector,
     }
     plain_size = rc;
 
-    rc = exp_process_message(connector, plain_data, plain_size, timestamp);
+    rc = process_message(connector, plain_data, plain_size, timestamp);
     if (rc < 0) {
         vlogW("Express: process message failed: (%x).", rc);
         free(plain_data);
@@ -236,7 +248,7 @@ static int exp_parse_msg(ExpressConnector *connector,
     return 0;
 }
 
-static int exp_parse_msg_stream(ExpressConnector *connector,
+static int parse_msg_stream(ExpressConnector *connector,
                                 uint8_t *data, size_t size,
                                 int64_t *timestamp)
 {
@@ -248,7 +260,7 @@ static int exp_parse_msg_stream(ExpressConnector *connector,
     data_off = 0;
     while(true) {
         // search magic number
-        magic_off = exp_find_magic(data, data_off, size, connector->magic_num);
+        magic_off = find_magic(data, data_off, size, connector->magic_num);
         if(magic_off < 0) { // has no magic left
             break;
         }
@@ -267,7 +279,7 @@ static int exp_parse_msg_stream(ExpressConnector *connector,
         if(msg_sz == 0) { // empty message, ignore it
             continue;
         }
-        rc = exp_parse_msg(connector, msg, msg_sz, timestamp);
+        rc = parse_msg(connector, msg, msg_sz, timestamp);
         if(rc < 0) {
             vlogW("Express: http response body parse message failed: (%x).",rc);
             continue; // skip to next message
@@ -277,7 +289,7 @@ static int exp_parse_msg_stream(ExpressConnector *connector,
     return data_off;
 }
 
-size_t exp_http_read_data(char *buffer, size_t size, size_t nitems, void *userdata)
+size_t http_read_data(char *buffer, size_t size, size_t nitems, void *userdata)
 {
     int rc;
     ExpPullTasklet *task = (ExpPullTasklet *)userdata;
@@ -293,7 +305,7 @@ size_t exp_http_read_data(char *buffer, size_t size, size_t nitems, void *userda
     memcpy(task->data + task->pos, buffer, buf_sz);
     task->pos += buf_sz;
 
-    rc = exp_parse_msg_stream(connector, task->data, task->pos, &task->last_timestamp);
+    rc = parse_msg_stream(connector, task->data, task->pos, &task->last_timestamp);
     if (rc < 0) {
         ela_set_error(rc);
     }
@@ -315,7 +327,7 @@ size_t exp_http_read_data(char *buffer, size_t size, size_t nitems, void *userda
     return buf_sz;
 }
 
-size_t exp_http_write_data(char *buffer, size_t size, size_t nitems, void *userdata)
+size_t http_write_data(char *buffer, size_t size, size_t nitems, void *userdata)
 {
     ExpSendTasklet *task = (ExpSendTasklet *)userdata;
     int buf_sz = size * nitems;
@@ -337,7 +349,7 @@ size_t exp_http_write_data(char *buffer, size_t size, size_t nitems, void *userd
     return data_sz;
 }
 
-static int exp_http_do(ExpressConnector *connector, http_client_t *http_client,
+static int http_do(ExpressConnector *connector, http_client_t *http_client,
                        const char* path, http_method_t method,
                        void *userdata)
 {
@@ -358,29 +370,29 @@ static int exp_http_do(ExpressConnector *connector, http_client_t *http_client,
     rc = http_client_set_url(http_client, url);
     if(rc != 0) {
         vlogE("Express: Failed to set http url.(CURLE: %d)", rc);
-        return ELA_EXPRESS_ERROR(exp_conv_curlcode(rc));
+        return ELA_EXPRESS_ERROR(conv_curlcode(rc));
     }
 
     rc = http_client_set_method(http_client, method);
     if(rc != 0) {
         vlogE("Express: Failed to set http method.(CURLE: %d)", rc);
-        return ELA_EXPRESS_ERROR(exp_conv_curlcode(rc));
+        return ELA_EXPRESS_ERROR(conv_curlcode(rc));
     }
 
     if (method == HTTP_METHOD_POST) {
         http_client_set_header(http_client, "Content-Type", "application/binary");
         // http_client_set_header(http_client, "messageId", "10");
 
-        rc = http_client_set_request_body(http_client, exp_http_write_data, userdata);
+        rc = http_client_set_request_body(http_client, http_write_data, userdata);
         if (rc != 0) {
             vlogE("Express: Failed to set http request body.(CURLE: %d)", rc);
-            return ELA_EXPRESS_ERROR(exp_conv_curlcode(rc));
+            return ELA_EXPRESS_ERROR(conv_curlcode(rc));
         }
     } else if (method == HTTP_METHOD_GET) {
-        rc = http_client_set_response_body(http_client, exp_http_read_data, userdata);
+        rc = http_client_set_response_body(http_client, http_read_data, userdata);
         if (rc != 0) {
             vlogE("Express: Failed to set http response body.(CURLE: %d)", rc);
-            return ELA_EXPRESS_ERROR(exp_conv_curlcode(rc));
+            return ELA_EXPRESS_ERROR(conv_curlcode(rc));
         }
     }
 
@@ -388,13 +400,13 @@ static int exp_http_do(ExpressConnector *connector, http_client_t *http_client,
     rc = http_client_request(http_client);
     if(rc != 0) {
         vlogE("Express: Failed to perform http request.(CURLE: %d)", rc);
-        return ELA_EXPRESS_ERROR(exp_conv_curlcode(rc));
+        return ELA_EXPRESS_ERROR(conv_curlcode(rc));
     }
 
     rc = http_client_get_response_code(http_client, &http_client_rescode);
     if(rc != 0) {
         vlogE("Express: Failed to get http response code.(CURLE: %d)", rc);
-        return ELA_EXPRESS_ERROR(exp_conv_curlcode(rc));
+        return ELA_EXPRESS_ERROR(conv_curlcode(rc));
     }
     if((method == HTTP_METHOD_POST && http_client_rescode != 201)
     || (method == HTTP_METHOD_GET && http_client_rescode != 200)
@@ -408,7 +420,7 @@ static int exp_http_do(ExpressConnector *connector, http_client_t *http_client,
     return 0;
 }
 
-static int exp_del_msgs(ExpressConnector *connector, http_client_t *httpc,
+static int del_msgs(ExpressConnector *connector, http_client_t *httpc,
                         int64_t msg_lasttime)
 {
     int rc;
@@ -427,7 +439,7 @@ static int exp_del_msgs(ExpressConnector *connector, http_client_t *httpc,
     lasttime_len = strlen(lasttime);
 
     crypted_data = alloca(NONCE_BYTES + lasttime_len + ZERO_BYTES);
-    rc = exp_encrypt_data(connector->shared_key, (uint8_t*)lasttime, lasttime_len, crypted_data);
+    rc = encrypt_data(connector->shared_key, (uint8_t*)lasttime, lasttime_len, crypted_data);
     if(rc < 0) {
         vlogE("Express: encrypt last tiime failed.(%x)", rc);
         return rc;
@@ -443,8 +455,8 @@ static int exp_del_msgs(ExpressConnector *connector, http_client_t *httpc,
         return ELA_EXPRESS_ERROR(ELAERR_INVALID_CREDENTIAL);
     }
 
-    snprintf(path, sizeof(path), "%s?until=%s", exp_my_userid(connector), encoded_data);
-    rc = exp_http_do(connector, httpc,
+    snprintf(path, sizeof(path), "%s?until=%s", my_userid(connector), encoded_data);
+    rc = http_do(connector, httpc,
                      path, HTTP_METHOD_DELETE,
                      NULL);
     if(rc < 0) {
@@ -455,7 +467,7 @@ static int exp_del_msgs(ExpressConnector *connector, http_client_t *httpc,
     return 0;
 }
 
-static int exp_postmsg_runner(ExpTasklet *base)
+static int postmsg_runner(ExpTasklet *base)
 {
     int rc;
     ExpSendTasklet *task = (ExpSendTasklet *)base;
@@ -467,8 +479,8 @@ static int exp_postmsg_runner(ExpTasklet *base)
           length, data[0], data[1], data[length - 2], data[length - 1]);
 #endif
 
-    snprintf(path, sizeof(path), "%s/%s", task->to, exp_my_userid(connector));
-    rc = exp_http_do(connector, connector->http_client,
+    snprintf(path, sizeof(path), "%s/%s", task->to, my_userid(connector));
+    rc = http_do(connector, connector->http_client,
                      path, HTTP_METHOD_POST,
                      task);
     connector->on_stat_cb(connector->carrier, task->to, task->msgid, rc);
@@ -481,15 +493,15 @@ static int exp_postmsg_runner(ExpTasklet *base)
     return 0;
 }
 
-static int exp_pullmsgs_runner(ExpTasklet *base)
+static int pullmsgs_runner(ExpTasklet *base)
 {
     int rc;
     ExpPullTasklet *task = (ExpPullTasklet *)base;
     ExpressConnector *connector = task->base.connector;
     const char *path;
 
-    path = exp_my_userid(connector);
-    rc = exp_http_do(connector, connector->http_client,
+    path = my_userid(connector);
+    rc = http_do(connector, connector->http_client,
                      path, HTTP_METHOD_GET,
                      task);
     if(rc < 0) {
@@ -499,7 +511,7 @@ static int exp_pullmsgs_runner(ExpTasklet *base)
     vlogD("Express: Success to pull message from %s.", path);
 
     if(task->last_timestamp > 0) {
-        rc = exp_del_msgs(connector, connector->http_client, task->last_timestamp);
+        rc = del_msgs(connector, connector->http_client, task->last_timestamp);
         if(rc < 0) {
             vlogE("Express: Failed to delete message.(%x)", rc);
             return rc;
@@ -508,7 +520,7 @@ static int exp_pullmsgs_runner(ExpTasklet *base)
     return 0;
 }
 
-static int exp_enqueue_post_tasklet(ExpressConnector *connector, const char *to,
+static int enqueue_post_tasklet(ExpressConnector *connector, const char *to,
                                     const void *data, size_t size, int64_t msgid)
 {
     int rc;
@@ -528,13 +540,13 @@ static int exp_enqueue_post_tasklet(ExpressConnector *connector, const char *to,
 
     task->base.entry.data = task;
     task->base.connector = connector;
-    task->base.runner = exp_postmsg_runner;
+    task->base.runner = postmsg_runner;
 
     strcpy(task->to, to);
 
     task->msgid = msgid;
     crypted_data = task->data;
-    rc = exp_encrypt_data(connector->shared_key, (uint8_t*)data, size, crypted_data);
+    rc = encrypt_data(connector->shared_key, (uint8_t*)data, size, crypted_data);
     if(rc < 0) {
         vlogE("Express: Encrypt data error");
         deref(task);
@@ -556,7 +568,7 @@ static int exp_enqueue_post_tasklet(ExpressConnector *connector, const char *to,
     return 0;
 }
 
-static void exp_connector_releaser(void *arg)
+static void connector_releaser(void *arg)
 {
     ExpressConnector *connector = (ExpressConnector *)arg;
     assert(connector);
@@ -585,7 +597,7 @@ static void exp_connector_releaser(void *arg)
     pthread_cond_destroy (&connector->cond);
 }
 
-static void *exp_connector_laundry(void *arg)
+static void *connector_laundry(void *arg)
 {
     int rc;
     ExpressConnector *connector = (ExpressConnector *)arg;
@@ -607,10 +619,10 @@ static void *exp_connector_laundry(void *arg)
 
         rc = task->runner(task);
         deref(task);
-        if(rc < 0) {
-            vlogW("Express: exec tasklet failed.(%x)", rc);
-            ela_set_error(rc);
-        }
+        // if(rc < 0) {
+        //     vlogW("Express: exec tasklet failed.(%x)", rc);
+        //     ela_set_error(rc);
+        // }
 
         pthread_mutex_lock(&connector->lock);
     }
@@ -637,7 +649,7 @@ ExpressConnector *express_connector_create(ElaCarrier *carrier,
 
     assert(carrier);
 
-    connector = rc_zalloc(sizeof(ExpressConnector), exp_connector_releaser); // deref by outside
+    connector = rc_zalloc(sizeof(ExpressConnector), connector_releaser); // deref by outside
     if (!connector) {
         ela_set_error(ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY));
         return NULL;
@@ -673,7 +685,7 @@ ExpressConnector *express_connector_create(ElaCarrier *carrier,
     }
 
     DhtBootstrapNodeBuf *express_bootstrap_0 = &carrier->pref.express_bootstraps[0];
-    rc = exp_compute_sharedkey(carrier, express_bootstrap_0->public_key, connector->shared_key);
+    rc = compute_sharedkey(carrier, express_bootstrap_0->public_key, connector->shared_key);
     if (rc < 0) {
         deref(connector);
         ela_set_error(rc);
@@ -684,7 +696,7 @@ ExpressConnector *express_connector_create(ElaCarrier *carrier,
     connector->base_url = strdup(url_base);
     connector->magic_num = ntohl(EXP_HTTP_MAGICNUM);
 
-    rc = pthread_create(&tid, NULL, exp_connector_laundry, connector);
+    rc = pthread_create(&tid, NULL, connector_laundry, connector);
     if (rc != 0) {
         deref(connector);
         ela_set_error(ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY));
@@ -692,8 +704,8 @@ ExpressConnector *express_connector_create(ElaCarrier *carrier,
     }
     pthread_detach(tid);
 
-    // ref for exp_connector_laundry thread,
-    // and deref by exp_connector_laundry
+    // ref for connector_laundry thread,
+    // and deref by connector_laundry
     ref(connector);
 
     return connector;
@@ -715,14 +727,14 @@ int express_enqueue_post_message(ExpressConnector *connector,
                                  const char *friendid,
                                  const void *data, size_t size)
 {
-    return exp_enqueue_post_tasklet(connector, friendid, data, size, 0);
+    return enqueue_post_tasklet(connector, friendid, data, size, 0);
 }
 
 int express_enqueue_post_request(ExpressConnector *connector,
                                  const char *address,
                                  const void *hello, size_t size)
 {
-    return exp_enqueue_post_tasklet(connector, address, hello, size, 0);
+    return enqueue_post_tasklet(connector, address, hello, size, 0);
 }
 
 int express_enqueue_post_message_with_receipt(ExpressConnector *connector,
@@ -730,7 +742,7 @@ int express_enqueue_post_message_with_receipt(ExpressConnector *connector,
                                               const void *data, size_t size,
                                               int64_t msgid)
 {
-    return exp_enqueue_post_tasklet(connector, friendid, data, size, msgid);
+    return enqueue_post_tasklet(connector, friendid, data, size, msgid);
 }
 
 int express_enqueue_pull_messages(ExpressConnector *connector)
@@ -745,7 +757,7 @@ int express_enqueue_pull_messages(ExpressConnector *connector)
 
     task->base.entry.data = task;
     task->base.connector = connector;
-    task->base.runner = exp_pullmsgs_runner;
+    task->base.runner = pullmsgs_runner;
 
     pthread_mutex_lock(&connector->lock);
     list_push_head(connector->task_list, &task->base.entry);
