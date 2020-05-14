@@ -117,6 +117,27 @@ static int compute_sharedkey(ElaCarrier *carrier, uint8_t *pk, uint8_t *shared_k
     return 0;
 }
 
+static int compute_friend_sharedkey(ElaCarrier *carrier, const char *friendid, uint8_t *shared_key)
+{
+    uint8_t friend_pk[PUBLIC_KEY_BYTES];
+    ssize_t size;
+    int rc;
+
+    size = base58_decode(friendid, strlen(friendid), friend_pk, sizeof(friend_pk));
+    if (size != sizeof(friend_pk))  {
+        vlogE("Express: Decode base58 friendid %s error", friendid);
+        return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+    }
+
+    rc = compute_sharedkey(carrier, friend_pk, shared_key);
+    if (rc < 0) {
+        vlogE("Express: compute shared key error(%x)", rc);
+        return rc;
+    }
+
+    return 0;
+}
+
 static ssize_t encrypt_data(uint8_t *key,
                                 uint8_t *plain_data, size_t plain_len,
                                 uint8_t *crypted_data)
@@ -185,15 +206,41 @@ static int process_message(ExpressConnector *connector,
     *timestamp = pmsg.timestamp;
 
     if (pmsg.type == 'M') {
+        uint8_t shared_key[SYMMETRIC_KEY_BYTES];
+        uint8_t *plain_data;
+        int plain_size;
+
         vlogV("Express: recieved offline message at time %llu", pmsg.timestamp);
         if (!ela_is_friend(connector->carrier, pmsg.from)) {
             vlogE("Express: Friend message not frond friend, dropped.");
             return -1;
         }
 
+        rc = compute_friend_sharedkey(connector->carrier, pmsg.from, shared_key);
+        if (rc < 0) {
+            vlogE("Express: compute shared key error(%x)", rc);
+            return rc;
+        }
+
+        plain_data = (uint8_t *)calloc(1, pmsg.payload_sz);
+        if (!plain_data) {
+            vlogW("Express: parse message failed.");
+            return ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY);
+        }
+
+        rc = decrypt_data(connector->shared_key, pmsg.payload, pmsg.payload_sz,
+                          plain_data);
+        if (rc < 0) {
+            vlogW("Express: decrypt message data failed: (%x).", rc);
+            free(plain_data);
+            return rc;
+        }
+        plain_size = rc;
+
         connector->on_msg_cb(connector->carrier, pmsg.from,
-                             pmsg.payload, pmsg.payload_sz,
+                             plain_data, plain_size,
                              pmsg.timestamp);
+        free(plain_data);
     } else if (pmsg.type == 'R') {
         vlogV("Express: recieved offline request at time %llu", pmsg.timestamp);
         char addr[ELA_MAX_ADDRESS_LEN + 1];
@@ -228,8 +275,8 @@ static int parse_msg(ExpressConnector *connector,
     }
 
     rc = decrypt_data(connector->shared_key,
-                          crypted_data, crypted_size,
-                          plain_data);
+                      crypted_data, crypted_size,
+                      plain_data);
     if (rc < 0) {
         vlogW("Express: decrypt message data failed: (%x).", rc);
         free(plain_data);
@@ -727,7 +774,38 @@ int express_enqueue_post_message(ExpressConnector *connector,
                                  const char *friendid,
                                  const void *data, size_t size)
 {
-    return enqueue_post_tasklet(connector, friendid, data, size, 0);
+    uint8_t shared_key[SYMMETRIC_KEY_BYTES];
+    uint8_t *crypted_data;
+    ssize_t crypted_sz;
+    int rc;
+
+    rc = compute_friend_sharedkey(connector->carrier, friendid, shared_key);
+    if (rc < 0) {
+        vlogE("Express: compute shared key error(%x)", rc);
+        return rc;
+    }
+
+    crypted_data = (uint8_t *)calloc(1, size + NONCE_BYTES + ZERO_BYTES);
+    if (!crypted_data) {
+        vlogW("Express: post message failed.");
+        return ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY);
+    }
+    rc = encrypt_data(shared_key, (uint8_t *)data, size, crypted_data);
+    if(rc < 0) {
+        free(crypted_data);
+        vlogE("Express: encrypt last tiime failed.(%x)", rc);
+        return rc;
+    }
+    crypted_sz = rc;
+
+    rc = enqueue_post_tasklet(connector, friendid, crypted_data, crypted_sz, 0);
+    free(crypted_data);
+    if (rc < 0) {
+        vlogE("Express: enqueue post tasklet error(%x)", rc);
+        return rc;
+    }
+
+    return 0;
 }
 
 int express_enqueue_post_request(ExpressConnector *connector,
@@ -742,7 +820,38 @@ int express_enqueue_post_message_with_receipt(ExpressConnector *connector,
                                               const void *data, size_t size,
                                               int64_t msgid)
 {
-    return enqueue_post_tasklet(connector, friendid, data, size, msgid);
+    uint8_t shared_key[SYMMETRIC_KEY_BYTES];
+    uint8_t *crypted_data;
+    ssize_t crypted_sz;
+    int rc;
+
+    rc = compute_friend_sharedkey(connector->carrier, friendid, shared_key);
+    if (rc < 0) {
+        vlogE("Express: compute shared key error(%x)", rc);
+        return rc;
+    }
+
+    crypted_data = (uint8_t *)calloc(1, size + NONCE_BYTES + ZERO_BYTES);
+    if (!crypted_data) {
+        vlogW("Express: post receipt message failed.");
+        return ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY);
+    }
+    rc = encrypt_data(shared_key, (uint8_t *)data, size, crypted_data);
+    if(rc < 0) {
+        free(crypted_data);
+        vlogE("Express: encrypt last tiime failed.(%x)", rc);
+        return rc;
+    }
+    crypted_sz = rc;
+
+    rc = enqueue_post_tasklet(connector, friendid, crypted_data, crypted_sz, msgid);
+    free(crypted_data);
+    if (rc < 0) {
+        vlogE("Express: enqueue post tasklet error(%x)", rc);
+        return rc;
+    }
+
+    return 0;
 }
 
 int express_enqueue_pull_messages(ExpressConnector *connector)
