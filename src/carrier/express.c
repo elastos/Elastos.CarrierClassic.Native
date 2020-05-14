@@ -218,7 +218,7 @@ static int process_message(ExpressConnector *connector,
 
         rc = compute_friend_sharedkey(connector->carrier, pmsg.from, shared_key);
         if (rc < 0) {
-            vlogE("Express: compute shared key error(%x)", rc);
+            vlogE("Express: compute message shared key error(%x)", rc);
             return rc;
         }
 
@@ -228,7 +228,7 @@ static int process_message(ExpressConnector *connector,
             return ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY);
         }
 
-        rc = decrypt_data(connector->shared_key, pmsg.payload, pmsg.payload_sz,
+        rc = decrypt_data(shared_key, (uint8_t *)pmsg.payload, pmsg.payload_sz,
                           plain_data);
         if (rc < 0) {
             vlogW("Express: decrypt message data failed: (%x).", rc);
