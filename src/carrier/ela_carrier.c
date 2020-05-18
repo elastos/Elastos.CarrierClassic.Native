@@ -4692,21 +4692,27 @@ redo_events:
 static void do_express_expire(ElaCarrier *w, struct timeval *now)
 {
     struct timeval expire_interval;
+    bool need_pullmsg = false;
     bool conn_made;
     int rc;
 
     if (timercmp(now, &w->express_expiretime, <))
         return;
     
+    if(w->express_expiretime.tv_sec != 0)
+        need_pullmsg = true;
+
     expire_interval.tv_sec = EXPRESS_DEF_TIMEOUT;
     expire_interval.tv_usec = 0;
     timeradd(now, &expire_interval, &w->express_expiretime);
 
-    conn_made = try_make_connector(w);
-    if (conn_made) {
-        rc = express_enqueue_pull_messages(w->connector);
-        if(rc < 0)
-            vlogE("Express: expire pullmsg failed.(%x)", rc);
+    if (need_pullmsg) {
+        conn_made = try_make_connector(w);
+        if (need_pullmsg && conn_made) {
+            rc = express_enqueue_pull_messages(w->connector);
+            if(rc < 0)
+                vlogE("Express: expire pullmsg failed.(%x)", rc);
+        }
     }
 
     return;

@@ -447,7 +447,7 @@ static int http_do(ExpressConnector *connector, http_client_t *http_client,
     http_client_set_timeout(connector->http_client, EXP_HTTP_TIMEOUT);
     rc = http_client_request(http_client);
     if(rc != 0) {
-        vlogE("Express: Failed to perform http request.(CURLE: %d)", rc);
+        vlogE("Express: Failed to perform http request. url=%s,(CURLE: %d)", url, rc);
         return ELA_EXPRESS_ERROR(conv_curlcode(rc));
     }
 
