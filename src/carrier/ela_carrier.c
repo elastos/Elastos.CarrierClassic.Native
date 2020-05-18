@@ -4584,6 +4584,7 @@ static int bundle_bulk_message(const void *msg, size_t len, const char *ext_name
 
 int make_express_pref(const ElaOptions *opts, Preferences* pref)
 {
+    int idx;
     int express_bootstraps_size = opts->express_bootstraps_size;
     pref->express_bootstraps = (DhtBootstrapNodeBuf *)calloc(1, sizeof(DhtBootstrapNodeBuf)
                          * express_bootstraps_size);
@@ -4591,9 +4592,9 @@ int make_express_pref(const ElaOptions *opts, Preferences* pref)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
     }
 
-    for (int i = 0; i < express_bootstraps_size; i++) {
-        BootstrapNode *b = &opts->express_bootstraps[i];
-        DhtBootstrapNodeBuf *bi = &pref->express_bootstraps[i];
+    for (idx = 0; idx < express_bootstraps_size; idx++) {
+        BootstrapNode *b = &opts->express_bootstraps[idx];
+        DhtBootstrapNodeBuf *bi = &pref->express_bootstraps[idx];
         char *endptr = "";
         ssize_t len;
 

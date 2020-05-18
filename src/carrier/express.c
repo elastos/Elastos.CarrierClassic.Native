@@ -97,7 +97,7 @@ static const int  EXP_CURLCODE_MASK    = 0x00001000;
 static const int  EXP_HTTP_MAGICNUM    = 0xCA6EE595;
 static const int  EXP_HTTP_MAGICSIZE   = 4;
 static const int  EXP_HTTP_TIMEOUT     = 30 * 1000; // ms
-static const int  EXP_HTTP_URL_MAXSIZE = 1024;
+#define  EXP_HTTP_URL_MAXSIZE 1024
 
 static inline int conv_curlcode(int curlcode) {
     return (curlcode | EXP_CURLCODE_MASK);
@@ -359,7 +359,7 @@ size_t http_read_data(char *buffer, size_t size, size_t nitems, void *userdata)
     }
     parsed_sz = rc;
 
-    if(parsed_sz > 0 && parsed_sz < task->pos) {
+    if(parsed_sz > 0 && parsed_sz < (int)task->pos) {
         size_t remain_sz = task->pos - parsed_sz;
         uint8_t *remain_data = rc_alloc(remain_sz, NULL);
         memcpy(remain_data, task->data + parsed_sz, remain_sz);
