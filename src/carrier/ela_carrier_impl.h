@@ -161,6 +161,8 @@ struct ElaCarrier {
 
     hashtable_t *bulkmsgs;
 
+    hashtable_t *recptmsg;
+
     pthread_t main_thread;
 
     int running;
