@@ -108,7 +108,10 @@ endif()
 
 set(LIBS
     cjson
-    libcurl
+    z
+    crypto
+    ssl
+    curl
     crystal
     toxcore
     flatccrt)
