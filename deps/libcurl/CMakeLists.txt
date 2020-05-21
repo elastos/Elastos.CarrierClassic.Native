@@ -1,16 +1,14 @@
-project(libcurl)
+project(curl)
 
 include(CarrierDefaults)
 include(ExternalProject)
 include(ExternalConfigureArgs)
 
-#    "--with-ssl=${PROJECT_INT_DIST_DIR}/../deps/libspvsdk/external/src/libspvsdk-build/intermediates"
-
 set(CONFIGURE_CMD "./configure")
 set(CONFIGURE_ARGS
     "--prefix=${CARRIER_INT_DIST_DIR}"
     "--with-ssl=${CARRIER_INT_DIST_DIR}"
-    "--with-zlib=${PROJECT_INT_DIST_DIR}"
+    "--with-zlib=${CARRIER_INT_DIST_DIR}"
     "--disable-shared"
     "--enable-static"
     "--without-brotli"
@@ -56,7 +54,7 @@ set(INSTALL_CMD
     make install)
 
 ExternalProject_Add(
-    libcurl
+    curl
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
     URL "https://curl.haxx.se/download/curl-7.66.0.tar.gz"
@@ -72,3 +70,22 @@ ExternalProject_Add(
     BUILD_COMMAND ${BUILD_CMD} ${BUILD_ARGS}
     INSTALL_COMMAND ${INSTALL_CMD}
 )
+
+if(ENABLE_STATIC)
+    export_static_library(curl)
+endif()
+
+set(CURL_DEPS
+    curl
+    ssl
+    crypto
+    z)
+if(WIN32)
+    set(CURL_DEPS ${CURL_DEPS} Ws2_32 Iphlpapi)
+endif()
+
+add_library(libcurl INTERFACE)
+target_link_libraries(libcurl INTERFACE ${CURL_DEPS})
+if(WIN32)
+    target_compile_definitions(libcurl INTERFACE CURL_STATICLIB)
+endif()
