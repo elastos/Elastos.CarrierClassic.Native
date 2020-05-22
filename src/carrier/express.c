@@ -331,6 +331,7 @@ static int parse_msg_stream(ExpressConnector *connector, uint8_t *shared_key,
         data_off += sizeof(msg_sz);
 
         if(data_off + msg_sz > size) { // message is incomplete
+            data_off = magic_off;
             break;
         }
         msg = &data[data_off];
@@ -371,7 +372,7 @@ size_t http_read_data(char *buffer, size_t size, size_t nitems, void *userdata)
     }
     parsed_sz = rc;
 
-    if(parsed_sz > 0 && parsed_sz < (int)task->pos) {
+    if(parsed_sz >= 0 && parsed_sz < (int)task->pos) {
         size_t remain_sz = task->pos - parsed_sz;
         uint8_t *remain_data = rc_alloc(remain_sz, NULL);
         memcpy(remain_data, task->data + parsed_sz, remain_sz);
