@@ -1239,14 +1239,6 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         return NULL;
     }
 
-    w->friend_msgs = list_create(1, NULL);
-    if (!w->friend_msgs) {
-        free_persistence_data(&data);
-        deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
-        return NULL;
-    }
-
     w->tcallbacks = transacted_callbacks_create(31);
     if (!w->tcallbacks) {
         free_persistence_data(&data);
