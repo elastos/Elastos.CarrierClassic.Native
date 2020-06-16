@@ -29,6 +29,5 @@ ExternalProject_Add(
 
 if(ENABLE_STATIC)
     export_static_library(ssl)
-    export_static_library(tls)
     export_static_library(crypto)
 endif()
