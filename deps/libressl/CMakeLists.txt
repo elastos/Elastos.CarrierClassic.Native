@@ -8,11 +8,13 @@ ExternalProject_Add(
     libressl
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
-    URL "https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.7.4.tar.gz"
-    URL_HASH SHA256=1e3a9fada06c1c060011470ad0ff960de28f9a0515277d7336f7e09362517da6
-    DOWNLOAD_NAME "libressl-2.7.4.tar.gz"
+    URL "https://github.com/libressl-portable/portable/archive/v2.9.2.tar.gz"
+    URL_HASH SHA256=242a7bc598a6dfb4e4181be65567c9ebf8960c750e5e37536a738e5631013b7d
+    DOWNLOAD_NAME "libressl-2.9.2.tar.gz"
     DOWNLOAD_DIR ${CARRIER_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1
+
+    PATCH_COMMAND ./update.sh
 
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CARRIER_INT_DIST_DIR}
         -DLIBRESSL_SKIP_INSTALL=OFF
