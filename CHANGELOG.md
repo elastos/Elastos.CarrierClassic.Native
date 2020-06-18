@@ -1,3 +1,23 @@
+06/18/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
+
+**version 5.6.1**, main changes to previous version:
+
+```markdown
+- Support to disabling offline message.
+- Resolve internal memory leakage issues.
+- Fix curl dependencies.
+- update libressl to v2.9.2.
+- Update Dockerfile to ubuntu:18.04 and correct docs variable reference.
+- update flatcc to 0.6.0.
+- Fix connector destroy bug.
+- Support pre-defined secret key.
+- fix send_friend_message side issue.
+- Improving express node access order.
+- Fix ios static library install issue.
+- Fix receipt thread sync issue.
+```
+
+
 05/27/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
 
 **version 5.6.0**, main changes to previous version:
