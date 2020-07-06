@@ -1,3 +1,12 @@
+07/06/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
+
+**version 5.6.2**, main changes to previous version:
+
+```markdown
+- Update libsodium to 1.0.18.
+- Fix crash issue when online message send timeout.
+```
+
 06/18/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
 
 **version 5.6.1**, main changes to previous version:
