@@ -1859,7 +1859,9 @@ redo_check:
             if (rc < 0) {
                 if(item->callback != NULL)
                     item->callback(item->msgid, ElaReceipt_Error, item->context);
+                vlogW("Express: do_receipts_expire() after callback. msgid=%llx.", item->msgid);
                 receipts_iterator_remove(&it);
+                vlogW("Express: do_receipts_expire() remove error message. msgid=%llx.", item->msgid);
             }
         }
 
@@ -2338,13 +2340,16 @@ void on_friend_message_receipt(ElaCarrier *w, ElaReceiptState state,
     Receipt *receipt;
 
     pthread_mutex_lock(&w->receipts_mutex);
+    vlogW("Express: on_friend_message_receipt() receipts_remove. msgid=%llx.", msgid);
     receipt = receipts_remove(w->receipts, msgid);
     pthread_mutex_unlock(&w->receipts_mutex);
     if(!receipt)
         return;
+    vlogW("Express: on_friend_message_receipt() remove receipt message. msgid=%llx.", receipt->msgid);
 
     if(receipt->callback != NULL)
         receipt->callback(receipt->msgid, state, receipt->context);
+    vlogW("Express: on_friend_message_receipt() after callback. msgid=%llx.", receipt->msgid);
 
     deref(receipt);
 }
