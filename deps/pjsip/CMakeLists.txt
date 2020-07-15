@@ -83,15 +83,16 @@ ExternalProject_Add(
     pjsip
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
-    URL "http://www.pjsip.org/release/2.5.5/pjproject-2.5.5.tar.bz2"
-    URL_HASH SHA256=ab39207b761d3485199cd881410afeb2d171dff7c2bf75e8caae91c6dca508f3
-    DOWNLOAD_NAME "pjproject-2.5.5.tar.bz2"
+    URL "https://github.com/pjsip/pjproject/archive/2.10.tar.gz"
+    URL_HASH SHA256=936a4c5b98601b52325463a397ddf11ab4106c6a7b04f8dc7cdd377efbb597de
+    DOWNLOAD_NAME "pjproject-2.10.tar.bz2"
     DOWNLOAD_DIR ${CARRIER_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1
 
     BUILD_IN_SOURCE 1
 
     PATCH_COMMAND ${PATCH_EXE} -s -p1 < ${CMAKE_CURRENT_LIST_DIR}/pjsip.patch
+    UPDATE_COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_LIST_DIR}/pjsip.config_site.h" "pjlib/include/pj/config_site.h"
 
     CONFIGURE_COMMAND ${CONFIGURE_CMD} ${CONFIGURE_ARGS}
     BUILD_COMMAND ${BUILD_CMD} ${BUILD_ARGS}
