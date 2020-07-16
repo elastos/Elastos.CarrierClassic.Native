@@ -772,7 +772,7 @@ typedef struct ElaCallbacks {
      */
     void (*friend_request)(ElaCarrier *carrier, const char *userid,
                            const ElaUserInfo *info,
-                           const char *hello, void *context);
+                           const char *hello, bool offline, void *context);
 
     /**
      * \~English

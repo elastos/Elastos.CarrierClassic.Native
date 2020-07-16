@@ -148,7 +148,7 @@ static void carrier_friend_presence_cb(ElaCarrier *w, const char *friendid,
 
 static void carrier_friend_request_cb(ElaCarrier *w, const char *userid,
                                       const ElaUserInfo *info,
-                                      const char *hello, void *context)
+                                      const char *hello, bool offline, void *context)
 {
     ElaCallbacks *cbs = ((CarrierContext*)context)->cbs;
     CarrierContext *wctx = (CarrierContext*)context;
@@ -165,7 +165,7 @@ static void carrier_friend_request_cb(ElaCarrier *w, const char *userid,
     }
 
     if (cbs && cbs->friend_request)
-        cbs->friend_request(w, userid, info, hello, context);
+        cbs->friend_request(w, userid, info, hello, offline, context);
 }
 
 static void carrier_friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info,

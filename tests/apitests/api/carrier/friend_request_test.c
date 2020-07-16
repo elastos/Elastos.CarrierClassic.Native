@@ -91,7 +91,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
 
 static
 void friend_request_cb(ElaCarrier *w, const char *userid, const ElaUserInfo *info,
-                       const char *hello, void* context)
+                       const char *hello, bool offline, void* context)
 {
     CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
 

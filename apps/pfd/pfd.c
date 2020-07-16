@@ -199,7 +199,8 @@ static void friend_connection(ElaCarrier *w, const char *friendid,
 
 // Server and client
 static void friend_request(ElaCarrier *w, const char *userid,
-            const ElaUserInfo *info, const char *hello, void *context)
+                           const ElaUserInfo *info,
+                           const char *hello, bool offline, void *context)
 {
     int rc;
     int status = -1;

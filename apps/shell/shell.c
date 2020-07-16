@@ -2423,8 +2423,8 @@ static void friend_presence_callback(ElaCarrier *w, const char *friendid,
 }
 
 static void friend_request_callback(ElaCarrier *w, const char *userid,
-                                    const ElaUserInfo *info, const char *hello,
-                                    void *context)
+                                    const ElaUserInfo *info,
+                                    const char *hello, bool offline, void *context)
 {
     output("Friend request from user[%s] with HELLO: %s.\n",
            *info->name ? info->name : userid, hello);

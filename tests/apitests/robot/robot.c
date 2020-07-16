@@ -211,8 +211,8 @@ static void* ela_accept_friend_entry(void *arg)
 }
 
 static void friend_request_cb(ElaCarrier *w, const char *userid,
-                const ElaUserInfo *info, const char *hello, void *context)
-{
+                              const ElaUserInfo *info,
+                              const char *hello, bool offline, void *context) {
     TestContext *ctx = (TestContext *)context;
     CarrierContext *wctx = ctx->carrier;
 
