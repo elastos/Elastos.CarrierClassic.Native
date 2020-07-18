@@ -8,13 +8,11 @@ ExternalProject_Add(
     toxcore0
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
-    URL "https://github.com/TokTok/c-toxcore/archive/v0.2.10.tar.gz"
-    URL_HASH SHA256=5ccc4ecd79b95c367efe8341b06bf2a81f853032e6fcd7cb2bc0ad0ef7419d40
-    DOWNLOAD_NAME "c-toxcore-0.2.10.tar.gz"
+    URL "https://github.com/elastos/c-toxcore/archive/v0.2.12.tar.gz"
+    URL_HASH SHA256=e405d3ff1f05bd90e623e3b52ee824714f1f03a2135a4470baa4440857325e5a
+    DOWNLOAD_NAME "c-toxcore-0.2.12.tar.gz"
     DOWNLOAD_DIR ${CARRIER_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1
-
-    PATCH_COMMAND ${PATCH_EXE} -s -p1 < ${CMAKE_CURRENT_LIST_DIR}/toxcore.patch
 
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CARRIER_INT_DIST_DIR}
         -DCMAKE_USE_SLIM_PTHREAD_INIT=TRUE
