@@ -193,13 +193,9 @@ static void test_send_offline_friend_request(void)
     CU_ASSERT_STRING_EQUAL_FATAL(buf[0], "offreq");
     CU_ASSERT_STRING_EQUAL_FATAL(buf[1], hello);
 
-    // wait for robot to be ready.
-    rc = write_cmd("wready\n");
-    CU_ASSERT_FATAL(rc > 0);
-
     rc = read_ack("%32s", buf[0]);
     CU_ASSERT_EQUAL_FATAL(rc, 1);
-    CU_ASSERT_STRING_EQUAL(buf[0], "ready");
+    CU_ASSERT_STRING_EQUAL(buf[0], "hello");
 
     // tell robot to accept ourself as friend as long as robot is ready.
     ela_get_userid(wctxt->carrier, userid, sizeof(userid));
