@@ -1844,7 +1844,9 @@ redo_check:
             if (rc < 0) {
                 if(item->callback != NULL)
                     item->callback(item->msgid, ElaReceipt_Error, item->context);
-                receipts_iterator_remove(&it);
+                rc = receipts_iterator_remove(&it);
+                vlogW(" receipts_iterator_remove() ==> msgid=%llx, %d", item->msgid, rc);
+                assert(rc == 1);
             }
         }
 
@@ -2283,11 +2285,29 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
     elacp_free(cp);
 }
 
+#include <stdio.h>
+#include <execinfo.h>
+void print_trace(void) {
+    char **strings;
+    size_t i, size;
+    enum Constexpr { MAX_SIZE = 1024 };
+    void *array[MAX_SIZE];
+    size = backtrace(array, MAX_SIZE);
+    strings = backtrace_symbols(array, size);
+    for (i = 0; i < size; i++)
+        vlogE("-------- %s\n", strings[i]);
+    puts("");
+    free(strings);
+}
+
+
 static
 int64_t generate_msgid(uint32_t base_msgid, uint32_t friend_number,
                        bool use_dht)
 {
     int64_t msgid = (int64_t)base_msgid;
+    print_trace();
+    vlogE("========== generate_msgid() %llx", msgid);
 
     if (msgid > 0x1FFFFFFF)
         msgid %= 0x1FFFFFFF;
@@ -2295,6 +2315,7 @@ int64_t generate_msgid(uint32_t base_msgid, uint32_t friend_number,
     msgid = (msgid <<  2) + (int)use_dht;
     msgid = (msgid << 32) + friend_number;
 
+    vlogE("========== generate_msgid() %llx", msgid);
     return msgid;
 }
 
@@ -2307,6 +2328,8 @@ void on_friend_message_receipt(ElaCarrier *w, ElaReceiptState state,
     pthread_mutex_lock(&w->receipts_mutex);
     receipt = receipts_remove(w->receipts, msgid);
     pthread_mutex_unlock(&w->receipts_mutex);
+    vlogW(" receipts_remove() ==> msgid=%llx, %p", msgid, receipt);
+    print_trace();
     if(!receipt)
         return;
 
@@ -3398,24 +3421,28 @@ static int64_t send_friend_message_internal(ElaCarrier *w, const char *to,
     deref(fi);
 
     if(online) {
-        if (len <= ELA_MAX_APP_MESSAGE_LEN)
+        if (len <= ELA_MAX_APP_MESSAGE_LEN) {
             msgid = send_general_message(w, friend_number, to, msg, len, ext_name);
-        else
+            vlogW(" send_general_message() ==> msgid=%llx", msgid);
+        } else {
             msgid = send_bulk_message(w, friend_number, to, msg, len, ext_name);
+            vlogW(" send_bulk_message() ==> msgid=%llx", msgid);
+        }
 
         rc = (msgid < 0 ? (int)msgid : 0);
         if (rc == 0 && offline)
             *offline = false;
-
-    } else {
-        rc = ELA_DHT_ERROR(ELAERR_FRIEND_OFFLINE);
-    }
+        }
+        else {
+            rc = ELA_DHT_ERROR(ELAERR_FRIEND_OFFLINE);
+        }
 
     if (rc < 0) {
         msgid = generate_msgid(++w->offmsgid, friend_number, false);
         rc = send_express_message(w, friend_number, to, msgid, msg, len, ext_name);
         if (rc == 0 && offline)
             *offline = true;
+        vlogW(" send_express_message() ==> msgid=%llx", msgid);
     }
 
     if (rc < 0) {
@@ -3615,6 +3642,7 @@ int64_t send_message_with_receipt_internal(ElaCarrier *w, const char *to,
     receipt->msgch = (offline ? MSGCH_EXPRESS : MSGCH_DHT);
     receipt->msgid = msgid;
     receipts_put(w->receipts, receipt);
+    vlogW(" receipts_put() ==> msgid=%llx", receipt->msgid);
     deref(receipt);
     pthread_mutex_unlock(&w->receipts_mutex);
 
@@ -3627,14 +3655,19 @@ int64_t send_message_with_receipt_internal(ElaCarrier *w, const char *to,
 int ela_send_friend_message(ElaCarrier *w, const char *to,
                             const void *message, size_t len, bool *is_offline)
 {
-    return (int)send_message_with_receipt_internal(w, to, message, len, NULL, NULL, is_offline);
+    int64_t msgid = send_message_with_receipt_internal(w, to, message, len, NULL, NULL, is_offline);
+    vlogE("========== ela_send_friend_message() %llx", msgid);
+
+    return (int)msgid;
 }
 
 int64_t ela_send_message_with_receipt(ElaCarrier *w, const char *to,
                                       const void *message, size_t len,
                                       ElaFriendMessageReceiptCallback *cb, void *context)
 {
-    return send_message_with_receipt_internal(w, to, message, len, cb, context, NULL);
+    int64_t msgid = send_message_with_receipt_internal(w, to, message, len, cb, context, NULL);
+    vlogE("========== ela_send_message_with_receipt() %llx", msgid);
+    return msgid;
 }
 
 int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
