@@ -3627,7 +3627,12 @@ int64_t send_message_with_receipt_internal(ElaCarrier *w, const char *to,
 int ela_send_friend_message(ElaCarrier *w, const char *to,
                             const void *message, size_t len, bool *is_offline)
 {
-    return (int)send_message_with_receipt_internal(w, to, message, len, NULL, NULL, is_offline);
+    int64_t rc = send_message_with_receipt_internal(w, to, message, len, NULL, NULL, is_offline);
+    if(rc < 0) {
+        return -1;
+    }
+
+    return 0;
 }
 
 int64_t ela_send_message_with_receipt(ElaCarrier *w, const char *to,
