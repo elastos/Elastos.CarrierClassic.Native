@@ -91,7 +91,7 @@
 // Carrier invite request/response data transmission unit length.
 #define INVITE_DATA_UNIT                (1280)
 
-#define DHT_MSG_EXPIRE_TIME               (10) //10s.
+#define DHT_MSG_EXPIRE_TIME               (60) //60s.
 
 const char* ela_get_version(void)
 {
