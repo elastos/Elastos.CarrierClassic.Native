@@ -1026,8 +1026,17 @@ static void ela_destroy(void *argv)
     if (w->pref.data_location)
         free(w->pref.data_location);
 
-    if (w->pref.bootstrap_nodes)
+    if (w->pref.bootstrap_nodes) {
+        int i;
+
+        for (i = 0; i < w->pref.bootstrap_size; i++) {
+            if(w->pref.bootstrap_nodes[i].ipv4)
+                free(w->pref.bootstrap_nodes[i].ipv4);
+            if(w->pref.bootstrap_nodes[i].ipv6)
+                free(w->pref.bootstrap_nodes[i].ipv6);
+        }
         free(w->pref.bootstrap_nodes);
+    }
 
     if (w->pref.express_nodes) {
         int i;
