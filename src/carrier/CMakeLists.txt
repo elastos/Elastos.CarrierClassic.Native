@@ -64,9 +64,10 @@ set(SRC
     dht/dht.c
     elacp.c
     ela_carrier.c
-    ela_error.c
+    error.c
     extension.c
-    express.c)
+    express.c
+    turnserver.c)
 
 set(HEADERS
     ela_carrier.h)

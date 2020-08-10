@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Elastos Foundation
+ * Copyright (c) 2020 Elastos Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,48 +20,37 @@
  * SOFTWARE.
  */
 
-#ifndef __ROBOT_H__
-#define __ROBOT_H__
+#ifndef __CARRIER_UTILTIY_H__
+#define __CARRIER_UTILTIY_H__
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+#include "ela_carrier.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "ela_carrier.h"
-#include "ela_session.h"
-#include "test_context.h"
+static inline ElaConnectionStatus connection_status(bool connected)
+{
+    return connected ? ElaConnectionStatus_Connected : ElaConnectionStatus_Disconnected;
+}
 
-enum {
-    OffmsgCase_Absence  = 0,
-    OffmsgCase_Once  = 1,
-    OffmsgCase_Multi = 2
-};
+static inline void gettimeofday_elapsed(struct timeval *tm, int elapsed)
+{
+    struct timeval interval;
 
-struct CarrierContextExtra {
-    pthread_t tid;
-    pthread_mutex_t mutex;
-    char userid[ELA_MAX_ID_LEN + 1];
-    char *bundle;
-    char *data;
-    int len;
+    interval.tv_sec  = elapsed;
+    interval.tv_usec = 0;
 
-    int offmsg_case;
-    int offmsg_count_actual;
-    int offmsg_count_expection;
-    struct timeval offmsg_case_expireat;
-    char offmsg_prefix[32];
-
-    char gcookie[128];
-    int gcookie_len;
-    char gfrom[ELA_MAX_ID_LEN + 1];
-    char groupid[ELA_MAX_ID_LEN + 1];
-
-    char fileid[ELA_MAX_FILE_ID_LEN + 1];
-    char recv_file[ELA_MAX_FILE_NAME_LEN + 1];
-};
+    gettimeofday(tm, NULL);
+    timeradd(tm, &interval, tm);
+}
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* __CARRIER_UTILTIY_H__ */

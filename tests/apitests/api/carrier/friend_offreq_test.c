@@ -38,14 +38,12 @@
 
 struct CarrierContextExtra {
     char* from;
-    char* msg;
-    int len;
+    ElaConnectionStatus connection_status;
 };
 
 static CarrierContextExtra extra = {
     .from = NULL,
-    .msg  = NULL,
-    .len  = 0
+    .connection_status = ElaConnectionStatus_Disconnected
 };
 
 static inline void wakeup(void* context)
@@ -58,14 +56,17 @@ static void ready_cb(ElaCarrier *w, void *context)
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static
+void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
 {
     wakeup(context);
+    vlogD("Friend %s added.", info->user_info.userid);
 }
 
 static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
 {
     wakeup(context);
+    vlogD("Friend %s removed.\n", friendid);
 }
 
 static void friend_connection_cb(ElaCarrier *w, const char *friendid,
@@ -73,21 +74,39 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
+    wctxt->extra->connection_status = status;
     status_cond_signal(wctxt->friend_status_cond, status);
 
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void friend_message_cb(ElaCarrier *w, const char *from, const void *msg, size_t len,
-                              int64_t timestamp, bool is_offline, void *context)
+static void kill_node()
 {
-    CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
+    int rc;
+    char buf[2][32] = {0};
 
-    extra->from = strdup(from);
-    extra->msg  = strdup((const char *)msg);
-    extra->len  = (int)len;
+    clear_socket_buffer();
+    rc = write_cmd("killnode\n");
+    CU_ASSERT_FATAL(rc > 0);
 
-    wakeup(context);
+    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    CU_ASSERT_EQUAL(rc, 2);
+    CU_ASSERT_STRING_EQUAL(buf[0], "killnode");
+    CU_ASSERT_STRING_EQUAL(buf[1], "success");
+}
+
+static void start_node()
+{
+    int rc;
+    char buf[2][32] = {0};
+
+    clear_socket_buffer();
+    rc = write_cmd("restartnode %d\n", 10000);
+    CU_ASSERT_FATAL(rc > 0);
+
+    rc = read_ack("%32s", buf[0]);
+    CU_ASSERT_EQUAL_FATAL(rc, 1);
+    CU_ASSERT_STRING_EQUAL_FATAL(buf[0], "ready");
 }
 
 static ElaCallbacks callbacks = {
@@ -102,7 +121,7 @@ static ElaCallbacks callbacks = {
     .friend_request  = NULL,
     .friend_added    = friend_added_cb,
     .friend_removed  = friend_removed_cb,
-    .friend_message  = friend_message_cb,
+    .friend_message  = NULL,
     .friend_invite   = NULL
 };
 
@@ -132,105 +151,85 @@ static TestContext test_context = {
     .context_reset = test_context_reset
 };
 
-static void send_offmsg_to_friend(int count, int timeout)
+static void test_send_offline_friend_request(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char ack[128] = {0};
-    char header[32] = {0};
-    char buf[2][32] = {0};
-    char robot_id[ELA_MAX_ID_LEN + 1] = {0};
-    char robot_addr[ELA_MAX_ADDRESS_LEN + 1] = {0};
-    bool is_offline;
+    CarrierContextExtra *extra = wctxt->extra;
+    char userid[ELA_MAX_ID_LEN + 1];
+    char prefix[32] = {0};
+    char hello[32] = {0};
+    char buf[2][64] = {0};
     int rc;
-    int i;
 
     test_context.context_reset(&test_context);
 
-    rc = add_friend_anyway(&test_context, robotid, robotaddr);
+    rc = remove_friend_anyway(&test_context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
 
-    rc = write_cmd("killnode\n");
-    CU_ASSERT_FATAL(rc > 0);
-
-    rc = read_ack("%32s %32s", buf[0], buf[1]);
-    CU_ASSERT_EQUAL(rc, 2);
-    CU_ASSERT_STRING_EQUAL(buf[0], "killnode");
-    CU_ASSERT_STRING_EQUAL(buf[1], "success");
-
+    kill_node();
     status_cond_wait(wctxt->friend_status_cond, OFFLINE);
 
-    sprintf(header, "%ld:", time(NULL));
-    rc = write_cmd("setmsgheader %s\n", header);
+    sprintf(prefix, "%ld", time(NULL));
+    rc = write_cmd("offmsgprefix %s\n", prefix);
     CU_ASSERT_FATAL(rc > 0);
 
     rc = read_ack("%32s %32s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);
-    CU_ASSERT_STRING_EQUAL(buf[0], "setmsgheader");
+    CU_ASSERT_STRING_EQUAL(buf[0], "offmsgprefix");
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 
-    char out[32] = {0};
-    for (i = 0; i < count; i++) {
-        memset(out, 0, sizeof(out));
-        sprintf(out, "%s%d", header, (count > 1) ? (i + 1) : i);
-        rc = ela_send_friend_message(wctxt->carrier, robotid, out, strlen(out), &is_offline);
-        CU_ASSERT_EQUAL_FATAL(rc, 0);
-        CU_ASSERT_EQUAL_FATAL(is_offline, true);
-    }
+    sprintf(hello, "%s:greeting", prefix);
+    rc = ela_add_friend(wctxt->carrier, robotaddr, hello);
+    CU_ASSERT_EQUAL_FATAL(rc, 0);
+    cond_wait(wctxt->cond);
 
-    usleep(5000000);
-
-    if (count > 1)
-        rc = write_cmd("restartnode %d %d\n", timeout, count);
-    else
-        rc = write_cmd("restartnode %d\n", timeout);
+    rc = write_cmd("restartnode %d\n", 900);
     CU_ASSERT_FATAL(rc > 0);
 
+    // wait until robot having received "fadd” request.
+    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    CU_ASSERT_EQUAL_FATAL(rc, 2);
+    CU_ASSERT_STRING_EQUAL_FATAL(buf[0], "offreq");
+    CU_ASSERT_STRING_EQUAL_FATAL(buf[1], hello);
+
+    // wait for robot to be ready.
+    rc = write_cmd("wready\n");
+    CU_ASSERT_FATAL(rc > 0);
+
+    rc = read_ack("%32s", buf[0]);
+    CU_ASSERT_EQUAL_FATAL(rc, 1);
+    CU_ASSERT_STRING_EQUAL(buf[0], "ready");
+
+    // tell robot to accept ourself as friend as long as robot is ready.
+    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    rc = write_cmd("faccept %s\n", userid);
+    CU_ASSERT_FATAL(rc > 0);
+
+    // wait for friend_added() callback to be invoked.
+    cond_trywait(wctxt->cond, 60000);
+    CU_ASSERT_TRUE(ela_is_friend(wctxt->carrier, robotid));
+    // wait for friend connection (online) callback to be invoked.
     status_cond_wait(wctxt->friend_status_cond, ONLINE);
+    CU_ASSERT_TRUE(extra->connection_status == ElaConnectionStatus_Connected);
 
-    rc = read_ack("%32s %45s %52s", ack, robot_id, robot_addr);
-    CU_ASSERT_EQUAL(rc, 3);
-    CU_ASSERT_STRING_EQUAL(ack, "ready");
-    CU_ASSERT_STRING_EQUAL(robot_id, robotid);
-    CU_ASSERT_STRING_EQUAL(robot_addr, robotaddr);
-
-    if (count > 1) {
-        int recv_count = 0;
-
-        rc = read_ack("%d", &recv_count);
-        CU_ASSERT_EQUAL(rc, 1);
-        CU_ASSERT_EQUAL(count, recv_count);
-    } else {
-        char in[64] = {0};
-
-        rc = read_ack("%64s", in);
-        CU_ASSERT_EQUAL(rc, 1);
-        CU_ASSERT_STRING_EQUAL(in, out);
-    }
-}
-
-static void test_send_offline_msg_to_friend(void)
-{
-    send_offmsg_to_friend(1, 900);
-}
-
-static void test_send_offline_msgs_to_friend(void)
-{
-    send_offmsg_to_friend(10, 900);
+    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    CU_ASSERT_EQUAL_FATAL(rc, 2);
+    CU_ASSERT_STRING_EQUAL(buf[0], "fadd");
+    CU_ASSERT_STRING_EQUAL(buf[1], "succeeded");
 }
 
 static CU_TestInfo cases[] = {
-    { "test_send_offline_msg_to_friend",   test_send_offline_msg_to_friend  },
-    // { "test_send_offline_msgs_to_friend",  test_send_offline_msgs_to_friend },
+    { "test_send_offline_friend_request", test_send_offline_friend_request },
     {NULL, NULL }
 };
 
-CU_TestInfo *friend_offline_message_test_get_cases(void)
+CU_TestInfo *friend_offreq_test_get_cases(void)
 {
     return cases;
 }
 
-int friend_offline_message_test_suite_init(void)
+int friend_offreq_test_suite_init(void)
 {
     int rc;
 
@@ -243,7 +242,7 @@ int friend_offline_message_test_suite_init(void)
     return 0;
 }
 
-int friend_offline_message_test_suite_cleanup(void)
+int friend_offreq_test_suite_cleanup(void)
 {
     test_suite_cleanup(&test_context);
 

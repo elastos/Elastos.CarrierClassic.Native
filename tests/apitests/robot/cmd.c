@@ -282,9 +282,14 @@ TestContext test_context = {
  */
 static void wready(TestContext *context, int argc, char *argv[])
 {
+    ElaCarrier *w = context->carrier->carrier;
+
     CHK_ARGS(argc == 1);
 
-    //ready_to_echo = 1;
+    while(!ela_is_ready(w))
+        usleep(1*1000*1000);
+
+    write_ack("ready\n");
 }
 
 /*
@@ -594,7 +599,7 @@ static void restartnode(TestContext *context, int argc, char *argv[])
 {
     CarrierContextExtra *extra = context->carrier->extra;
     CarrierContext *wctx = context->carrier;
-    struct timeval timeout_interval;
+    struct timeval interval;
     struct timeval now;
     extern void *carrier_run_entry(void *);
 
@@ -614,33 +619,34 @@ static void restartnode(TestContext *context, int argc, char *argv[])
 
     pthread_mutex_lock(&extra->mutex);
     if (argc == 2) {
-        extra->test_offmsg = OffMsgCase_Single;
+        extra->offmsg_case = OffmsgCase_Once;
     } else {
-        extra->test_offmsg = OffMsgCase_Bulk;
-        extra->test_offmsg_count = 0;
-        extra->expected_offmsg_count = atoi(argv[2]);
+        extra->offmsg_case = OffmsgCase_Multi;
+        extra->offmsg_count_actual = 0;
+        extra->offmsg_count_expection = atoi(argv[2]);
     }
 
     gettimeofday(&now, NULL);
-    timeout_interval.tv_sec = atoi(argv[1]);
-    timeout_interval.tv_usec = 0;
-    timeradd(&now, &timeout_interval, &extra->test_offmsg_expires);
+    interval.tv_sec = atoi(argv[1]);
+    interval.tv_usec = 0;
+    timeradd(&now, &interval, &extra->offmsg_case_expireat);
+
     pthread_mutex_unlock(&extra->mutex);
 
     pthread_create(&extra->tid, 0, &carrier_run_entry, NULL);
 }
 
-static void setmsgheader(TestContext *context, int argc, char *argv[])
+static void offmsgprefix(TestContext *context, int argc, char *argv[])
 {
     CarrierContextExtra *extra = context->carrier->extra;
 
     CHK_ARGS(argc == 2);
 
     pthread_mutex_lock(&extra->mutex);
-    strcpy(extra->offmsg_header, argv[1]);
+    strcpy(extra->offmsg_prefix, argv[1]);
     pthread_mutex_unlock(&extra->mutex);
 
-    write_ack("setmsgheader success\n");
+    write_ack("offmsgprefix success\n");
 }
 
 static void robot_context_reset(TestContext *context)
@@ -1644,7 +1650,7 @@ static struct command {
     const char* name;
     void (*cmd_cb) (TestContext *context, int argc, char *argv[]);
 } commands[] = {
-    { "ready",        wready       },
+    { "wready",       wready       },
     { "fadd",         fadd         },
     { "faccept",      faccept      },
     { "fmsg",         fmsg         },
@@ -1657,7 +1663,7 @@ static struct command {
     { "kill",         wkill        },
     { "killnode",     killnode     },
     { "restartnode",  restartnode  },
-    { "setmsgheader", setmsgheader },
+    { "offmsgprefix", offmsgprefix },
     { "sinit",        sinit        },
     { "srequest",     srequest     },
     { "sreply",       sreply       },

@@ -20,45 +20,25 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_EXTENSION_H__
-#define __CARRIER_EXTENSION_H__
+#ifndef __CARRIER_ERROR_H__
+#define __CARRIER_ERROR_H__
 
-#include <stddef.h>
-#include <stdbool.h>
-#include <sys/types.h>
-
-#include <ela_carrier.h>
+#include "ela_carrier.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef void ExtensionInviteCallback(ElaCarrier *carrier, const char *from,
-                                     const void *data, size_t len, void *context);
+CARRIER_API
+void ela_set_error(int error);
+
+typedef int (*strerror_t)(int errnum, char *, size_t);
 
 CARRIER_API
-int extension_init(ElaCarrier *carrier, ExtensionInviteCallback *callback, void *context);
-
-CARRIER_API
-void extension_cleanup(ElaCarrier *carrier);
-
-typedef void ExtensionInviteReplyCallback(ElaCarrier *carrier, const char *from,
-                                          int status, const char *reason,
-                                          const void *data, size_t len, void *context);
-
-CARRIER_API
-int extension_invite_friend(ElaCarrier *carrier, const char *to,
-                            const void *data, size_t len,
-                            ExtensionInviteReplyCallback *callback,
-                            void *context);
-
-CARRIER_API
-int extension_reply_friend_invite(ElaCarrier *carrier, const char *to,
-                                  int status, const char *reason,
-                                  const void *data, size_t len);
+int ela_register_strerror(int facility, strerror_t strerr);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __CARRIER_EXTENSION_H__ */
+#endif /* __CARRIER_ERROR_H__ */

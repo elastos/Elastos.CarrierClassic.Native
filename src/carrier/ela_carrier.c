@@ -65,8 +65,8 @@
 
 #include "version.h"
 #include "ela_carrier.h"
+#include "ela_error.h"
 #include "ela_carrier_impl.h"
-#include "ela_turnserver.h"
 #include "friends.h"
 #include "tcallbacks.h"
 #include "thistory.h"
@@ -76,19 +76,22 @@
 #include "bulkmsgs.h"
 #include "express.h"
 #include "receipts.h"
-
-#define TURN_SERVER_PORT                ((uint16_t)3478)
-#define TURN_SERVER_USER_SUFFIX         "auth.tox"
-#define TURN_REALM                      "elastos.org"
+#include "utility.h"
 
 #define TASSEMBLY_TIMEOUT               (60) //60s.
-#define EXPRESS_DEF_TIMEOUT             (5 * 60) //5min.
-#define EXPRESS_CUS_TIMEOUT             (2 * 60) //2min.
+
+/* it would conduct to pull offline messages at the regular interval
+ * of 5 minutes except that connection status of at least one friend
+ * changes, which would conduct at interval of 2 minutes only for
+ * that moment.
+ */
+#define PULLMSG_REGULAR_INTERVAL (5 * 60) //5m
+#define PULLMSG_INSTANT_INTERVAL (2 * 60) //2m
 
 // Carrier invite request/response data transmission unit length.
 #define INVITE_DATA_UNIT                (1280)
 
-#define DHT_MSG_EXPIRE_TIME               (10) //10s.
+#define DHT_MSG_EXPIRE_TIME               (60) //60s.
 
 const char* ela_get_version(void)
 {
@@ -1023,14 +1026,15 @@ static void ela_destroy(void *argv)
     if (w->pref.data_location)
         free(w->pref.data_location);
 
-    if (w->pref.dht_bootstraps)
-        free(w->pref.dht_bootstraps);
+    if (w->pref.bootstrap_nodes)
+        free(w->pref.bootstrap_nodes);
 
     if (w->pref.express_nodes) {
-        int idx;
-        for(idx = 0; idx < w->pref.express_nodes_size; idx++) {
-            if(w->pref.express_nodes[idx].ipv4)
-                free(w->pref.express_nodes[idx].ipv4);
+        int i;
+
+        for(i = 0; i < w->pref.express_size; i++) {
+            if(w->pref.express_nodes[i].ipv4)
+                free(w->pref.express_nodes[i].ipv4);
         }
         free(w->pref.express_nodes);
     }
@@ -1108,51 +1112,43 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
 
     w->pref.udp_enabled = opts->udp_enabled;
     w->pref.data_location = strdup(opts->persistent_location);
-    w->pref.dht_bootstraps_size = opts->bootstraps_size;
 
-    w->pref.dht_bootstraps = (DhtBootstrapNodeBuf *)calloc(1,
-                        sizeof(DhtBootstrapNodeBuf) * opts->bootstraps_size);
-    if (!w->pref.dht_bootstraps) {
-        deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
-        return NULL;
+    w->pref.bootstrap_size = opts->bootstraps_size;
+    if (w->pref.bootstrap_size > 0) {
+        w->pref.bootstrap_nodes = (BootstrapNodeBuf *)calloc(1,
+                            sizeof(BootstrapNodeBuf) * w->pref.bootstrap_size);
+        if (!w->pref.bootstrap_nodes) {
+            deref(w);
+            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            return NULL;
+        }
     }
 
-    for (i = 0; i < opts->bootstraps_size; i++) {
+    for (i = 0; i < w->pref.bootstrap_size; i++) {
         BootstrapNode *b = &opts->bootstraps[i];
-        DhtBootstrapNodeBuf *bi = &w->pref.dht_bootstraps[i];
+        BootstrapNodeBuf *bi = &w->pref.bootstrap_nodes[i];
         char *endptr = "";
         ssize_t len;
 
-        if (b->ipv4 && strlen(b->ipv4) > MAX_IPV4_ADDRESS_LEN) {
-            vlogE("Carrier: DHT bootstrap ipv4 address (%s) too long", b->ipv4);
-            deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-            return NULL;
-        }
-
-        if (b->ipv6 && strlen(b->ipv6) > MAX_IPV6_ADDRESS_LEN) {
-            vlogE("Carrier: DHT bootstrap ipv4 address (%s) too long", b->ipv6);
-            deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-            return NULL;
-        }
-
         if (!b->ipv4 && !b->ipv6) {
-            vlogE("Carrier: DHT bootstrap ipv4 and ipv6 address both empty");
+            vlogE("Carrier: IPv4 and IPv6 address of bootstrap node are both empty");
             deref(w);
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
             return NULL;
         }
 
-        if (b->ipv4)
-            strcpy(bi->ipv4, b->ipv4);
-        if (b->ipv6)
-            strcpy(bi->ipv6, b->ipv6);
+        if (b->ipv4) bi->ipv4 = strdup(b->ipv4);
+        if (b->ipv6) bi->ipv6 = strdup(b->ipv6);
 
-        bi->port = b->port ? (int)strtol(b->port, &endptr, 10) : DHT_BOOTSTRAP_DEFAULT_PORT;
+        if (!bi->ipv4 && !bi->ipv6) {
+            deref(w);
+            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            return NULL;
+        }
+
+        bi->port = b->port ? (int)strtol(b->port, &endptr, 10) : BOOTSTRAP_DEFAULT_PORT;
         if (bi->port < 1 || bi->port > 65535 || *endptr) {
-            vlogE("Carrier: Invalid DHT bootstrap port value (%s)", b->port);
+            vlogE("Carrier: Port value (%s) of bootstrap node is invalid", b->port);
             deref(w);
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
             return NULL;
@@ -1161,17 +1157,17 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         len = base58_decode(b->public_key, strlen(b->public_key), bi->public_key,
                             sizeof(bi->public_key));
         if (len != DHT_PUBLIC_KEY_SIZE) {
-            vlogE("Carrier: Invalid DHT bootstrap public key (%s)", b->public_key);
+            vlogE("Carrier: Public key (%s) of bootstrap node is invalid", b->public_key);
             deref(w);
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
             return NULL;
         }
     }
 
-    w->pref.express_nodes_size = opts->express_nodes_size;
-    if (w->pref.express_nodes_size > 0) {
+    w->pref.express_size = opts->express_nodes_size;
+    if (w->pref.express_size > 0) {
         w->pref.express_nodes = (ExpressNodeBuf *)calloc(1,
-                            sizeof(ExpressNodeBuf) * opts->express_nodes_size);
+                            sizeof(ExpressNodeBuf) * w->pref.express_size);
 
         if (!w->pref.express_nodes) {
             deref(w);
@@ -1180,23 +1176,29 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         }
     }
 
-    for (i = 0; i < w->pref.express_nodes_size; i++) {
+    for (i = 0; i < w->pref.express_size; i++) {
         ExpressNode *n = &opts->express_nodes[i];
         ExpressNodeBuf *ni= &w->pref.express_nodes[i];
         char *endptr = "";
         ssize_t len;
 
         if (!n->ipv4) {
-            vlogE("Carrier: Express node without ipv4 address.");
+            vlogE("Carrier: IPv4 address (%s) of express node is empty", n->ipv4);
             deref(w);
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
             return NULL;
         }
-        ni->ipv4 = strdup(n->ipv4);
 
-        ni->port = n->port ? (int)strtol(n->port, &endptr, 10) : DHT_BOOTSTRAP_DEFAULT_PORT;
+        ni->ipv4 = strdup(n->ipv4);
+        if (!ni->ipv4) {
+            deref(w);
+            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            return NULL;
+        }
+
+        ni->port = n->port ? (int)strtol(n->port, &endptr, 10) : EXPRESS_DEFAULT_PORT;
         if (ni->port < 1 || ni->port > 65535 || *endptr) {
-            vlogE("Carrier: Invalid express node port value (%s)", n->port);
+            vlogE("Carrier: Port value (%s) of express node is invalid", n->port);
             deref(w);
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
             return NULL;
@@ -1205,7 +1207,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         len = base58_decode(n->public_key, strlen(n->public_key), ni->public_key,
                             sizeof(ni->public_key));
         if (len != DHT_PUBLIC_KEY_SIZE) {
-            vlogE("Carrier: Invalid express node public key (%s)", n->public_key);
+            vlogE("Carrier: Public key (%s) of express node is invalid", n->public_key);
             deref(w);
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
             return NULL;
@@ -1338,7 +1340,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         w->context = context;
     }
 
-    vlogI("Carrier: Carrier node created.");
+    vlogI("Carrier: Carrier instance created");
 
     return w;
 }
@@ -1378,16 +1380,18 @@ static void notify_friends(ElaCarrier *w)
     friends_iterate(w->friends, &it);
     while(friends_iterator_has_next(&it)) {
         FriendInfo *fi;
-        ElaFriendInfo _fi;
 
-        if (friends_iterator_next(&it, &fi) == 1) {
-            if (w->callbacks.friend_list) {
-                memcpy(&_fi, &fi->info, sizeof(ElaFriendInfo));
-                w->callbacks.friend_list(w, &_fi, w->context);
-            }
+        if (friends_iterator_next(&it, &fi) != 1) // end of interation.
+            break;
 
-            deref(fi);
+        if (w->callbacks.friend_list) {
+            ElaFriendInfo _fi;
+
+            memcpy(&_fi, &fi->info, sizeof(ElaFriendInfo));
+            w->callbacks.friend_list(w, &_fi, w->context);
         }
+
+        deref(fi);
     }
 
     if (w->callbacks.friend_list)
@@ -1404,9 +1408,7 @@ static void notify_connection_cb(bool connected, void *context)
             w->callbacks.ready(w, w->context);
     }
 
-    w->connection_status = (connected ? ElaConnectionStatus_Connected :
-                                        ElaConnectionStatus_Disconnected);
-
+    w->connection_status = connection_status(connected);
     if (w->callbacks.connection_status)
         w->callbacks.connection_status(w, w->connection_status, w->context);
 
@@ -1415,31 +1417,12 @@ static void notify_connection_cb(bool connected, void *context)
         express_enqueue_pull_messages(w->connector);
 }
 
-static void notify_friend_info(ElaCarrier *w, uint32_t friend_number,
-                               ElaFriendInfo *info)
-
-{
-    const char *userid;
-
-    assert(w);
-    assert(friend_number != UINT32_MAX);
-    assert(info);
-
-    userid = info->user_info.userid;
-
-    if (friends_exist(w->friends, friend_number)) {
-        if (w->callbacks.friend_info)
-            w->callbacks.friend_info(w, userid, info, w->context);
-    }
-}
-
 static
 void notify_friend_description_cb(uint32_t friend_number, const uint8_t *desc,
                                   size_t length, void *context)
 {
     ElaCarrier *w = (ElaCarrier *)context;
     FriendInfo *fi;
-    ElaUserInfo *ui;
     bool changed = false;
 
     assert(friend_number != UINT32_MAX);
@@ -1447,7 +1430,7 @@ void notify_friend_description_cb(uint32_t friend_number, const uint8_t *desc,
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
-        vlogE("Carrier: Unknown friend number %u, friend description message "
+        vlogW("Carrier: Unknown friend number %u, friend description message "
               "dropped.", friend_number);
         return;
     }
@@ -1459,14 +1442,15 @@ void notify_friend_description_cb(uint32_t friend_number, const uint8_t *desc,
         return;
     }
 
-    ui = &fi->info.user_info;
-    unpack_user_desc(desc, length, ui, &changed);
+    unpack_user_desc(desc, length, &fi->info.user_info, &changed);
 
     if (changed) {
-        ElaFriendInfo tmpfi;
+        ElaFriendInfo _fi;
 
-        memcpy(&tmpfi, &fi->info, sizeof(tmpfi));
-        notify_friend_info(w, friend_number, &tmpfi);
+        memcpy(&_fi, &fi->info, sizeof(_fi));
+
+        if (w->callbacks.friend_info)
+            w->callbacks.friend_info(w, _fi.user_info.userid, &_fi, w->context);
     }
 
     deref(fi);
@@ -1482,45 +1466,58 @@ static void notify_friend_connection(ElaCarrier *w, const char *friendid,
         w->callbacks.friend_connection(w, friendid, status, w->context);
 }
 
+static void trigger_pull_offmsg_instantly(ElaCarrier *w)
+{
+    struct timeval expireat;
+    struct timeval interval;
+    /*
+     * - when the status of friend connection changes, it would trigger
+     *   to pull offmsg in short interval (2m) for just once.
+     * - In general, it would trigger to pull offmsg in genral interval(5m)
+     */
+
+    gettimeofday(&expireat, NULL);
+
+    interval.tv_sec  = PULLMSG_INSTANT_INTERVAL;
+    interval.tv_usec = 0;
+    timeradd(&expireat, &interval, &expireat);
+
+    if (timercmp(&expireat, &w->express_expiretime, <))
+        w->express_expiretime = expireat;
+}
+
 static
 void notify_friend_connection_cb(uint32_t friend_number, bool connected,
                                  void *context)
 {
     ElaCarrier *w = (ElaCarrier *)context;
-    FriendInfo *fi;
-    char tmpid[ELA_MAX_ID_LEN + 1];
     ElaConnectionStatus status;
-    bool conn_made;
-    struct timeval now, subres, expire_interval;
+    FriendInfo *fi;
+
+    struct timeval expireat;
+    struct timeval interval;
 
     assert(friend_number != UINT32_MAX);
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
-        vlogE("Carrier: Unknown friend number %u, connection status message "
+        vlogW("Carrier: Unknown friend number %u, connection status message "
               "dropped (%s).", friend_number, connected ? "true":"false");
         return;
     }
 
-    status = connected ? ElaConnectionStatus_Connected :
-                         ElaConnectionStatus_Disconnected;
-
+    status = connection_status(connected);
     if (status != fi->info.status) {
-        fi->info.status = status;
-        strcpy(tmpid, fi->info.user_info.userid);
+        char friendid[ELA_MAX_ID_LEN + 1];
 
-        notify_friend_connection(w, tmpid, status);
+        fi->info.status = status;
+        strcpy(friendid, fi->info.user_info.userid);
+
+        notify_friend_connection(w, friendid, status);
     }
 
     deref(fi);
-
-    gettimeofday(&now, NULL);
-    timersub(&w->express_expiretime, &now, &subres);
-    if(subres.tv_sec > EXPRESS_CUS_TIMEOUT) {
-        expire_interval.tv_sec = EXPRESS_CUS_TIMEOUT;
-        expire_interval.tv_usec = 0;
-        timeradd(&now, &expire_interval, &w->express_expiretime);
-    }
+    trigger_pull_offmsg_instantly(w);
 }
 
 static void notify_friend_presence(ElaCarrier *w, const char *friendid,
@@ -1539,35 +1536,36 @@ void notify_friend_status_cb(uint32_t friend_number, int status,
 {
     ElaCarrier *w = (ElaCarrier *)context;
     FriendInfo *fi;
-    char tmpid[ELA_MAX_ID_LEN + 1];
 
     assert(friend_number != UINT32_MAX);
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
-        vlogE("Carrier: Unknown friend number (%u), friend presence message "
+        vlogW("Carrier: Unknown friend number (%u), friend presence message "
               "dropped.", friend_number);
         return;
     }
 
     if (status < ElaPresenceStatus_None ||
         status > ElaPresenceStatus_Busy) {
-        vlogE("Carrier: Invalid friend status %d received, dropped it.", status);
+        vlogW("Carrier: Invalid friend status %d received, dropped it.", status);
         return;
     }
 
     if (status != fi->info.presence) {
-        fi->info.presence = status;
-        strcpy(tmpid, fi->info.user_info.userid);
+        char friendid[ELA_MAX_ID_LEN + 1];
 
-        notify_friend_presence(w, tmpid, status);
+        fi->info.presence = status;
+        strcpy(friendid, fi->info.user_info.userid);
+
+        notify_friend_presence(w, friendid, status);
     }
 
     deref(fi);
 }
 
 static
-void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* gretting,
+void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* greeting,
                               size_t length, void *context)
 {
     ElaCarrier *w = (ElaCarrier *)context;
@@ -1576,12 +1574,13 @@ void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* gretting
     ElaUserInfo ui;
     size_t _len = sizeof(ui.userid);
     const char *name;
-    const char *descr;
+    const char *desc;
     const char *hello;
     int rc;
 
     assert(public_key);
-    assert(gretting && length > 0);
+    assert(greeting);
+    assert(length > 0);
 
     rc = dht_get_friend_number(&w->dht, public_key, &friend_number);
     if (rc == 0 && friend_number != UINT32_MAX) {
@@ -1589,7 +1588,7 @@ void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* gretting
         return;
     }
 
-    cp = elacp_decode(gretting, length);
+    cp = elacp_decode(greeting, length);
     if (!cp) {
         vlogE("Carrier: Inavlid friend request, dropped this request.");
         return;
@@ -1605,13 +1604,14 @@ void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* gretting
     base58_encode(public_key, DHT_PUBLIC_KEY_SIZE, ui.userid, &_len);
 
     name  = elacp_get_name(cp)  ? elacp_get_name(cp)  : "";
-    descr = elacp_get_descr(cp) ? elacp_get_descr(cp) : "";
+    desc  = elacp_get_descr(cp) ? elacp_get_descr(cp) : "";
     hello = elacp_get_hello(cp) ? elacp_get_hello(cp) : "";
 
-    if (*name)
-        strcpy(ui.name, name);
-    if (*descr)
-        strcpy(ui.description, descr);
+    assert(strlen(name) < sizeof(ui.name));
+    assert(strlen(desc) < sizeof(ui.description));
+
+    strcpy(ui.name, name);
+    strcpy(ui.description, desc);
 
     if (w->callbacks.friend_request)
         w->callbacks.friend_request(w, ui.userid, &ui, hello, w->context);
@@ -1619,7 +1619,7 @@ void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* gretting
     elacp_free(cp);
 }
 
-static void handle_friend_added_event(EventBase *event, ElaCarrier *w)
+static void handle_add_friend_cb(EventBase *event, ElaCarrier *w)
 {
     FriendEvent *ev = (FriendEvent *)event;
 
@@ -1627,26 +1627,7 @@ static void handle_friend_added_event(EventBase *event, ElaCarrier *w)
         w->callbacks.friend_added(w, &ev->fi, w->context);
 }
 
-static void notify_friend_added(ElaCarrier *w, ElaFriendInfo *fi)
-{
-    FriendEvent *event;
-
-    assert(w);
-    assert(fi);
-
-    store_persistence_data(w);
-
-    event = (FriendEvent *)rc_alloc(sizeof(FriendEvent), NULL);
-    if (event) {
-        memcpy(&event->fi, fi, sizeof(*fi));
-        event->base.le.data = event;
-        event->base.handle = handle_friend_added_event;
-        list_push_tail(w->friend_events, &event->base.le);
-        deref(event);
-    }
-}
-
-static void handle_friend_removed_event(EventBase *event, ElaCarrier *w)
+static void handle_remove_friend_cb(EventBase *event, ElaCarrier *w)
 {
     FriendEvent *ev = (FriendEvent *)event;
 
@@ -1660,7 +1641,8 @@ static void handle_friend_removed_event(EventBase *event, ElaCarrier *w)
         w->callbacks.friend_removed(w, ev->fi.user_info.userid, w->context);
 }
 
-static void notify_friend_removed(ElaCarrier *w, ElaFriendInfo *fi)
+static void notify_friend_changed(ElaCarrier *w, ElaFriendInfo *fi,
+                                  void (*cb)(EventBase *, ElaCarrier *))
 {
     FriendEvent *event;
 
@@ -1673,7 +1655,7 @@ static void notify_friend_removed(ElaCarrier *w, ElaFriendInfo *fi)
     if (event) {
         memcpy(&event->fi, fi, sizeof(*fi));
         event->base.le.data = event;
-        event->base.handle = handle_friend_removed_event;
+        event->base.handle  = cb;
         list_push_tail(w->friend_events, &event->base.le);
         deref(event);
     }
@@ -1739,8 +1721,11 @@ void transacted_callback_expire(ElaCarrier *w, TransactedCallback *callback)
     FriendInfo *fi;
 
     fi = friends_get(w->friends, callback->friend_number);
-    if (!fi)
+    if (!fi) {
+        vlogW("Carrier: Unknown friend number (%u), friend presence message "
+              "dropped.", callback->friend_number);
         return;
+    }
 
     strcpy(friendid, fi->info.user_info.userid);
     deref(fi);
@@ -1834,7 +1819,7 @@ redo_check:
         if (rc == -1)
             goto redo_check;
 
-        if (timercmp(&now, &item->expire_time, <)) {
+        if (timercmp(&now, &item->expire_time, <=)) {
             deref(item);
             continue;
         }
@@ -1869,26 +1854,29 @@ redo_check:
 
 static void do_express_expire(ElaCarrier *w)
 {
-    struct timeval expire_interval;
-    bool need_pullmsg = false;
+    struct timeval timeout;
     struct timeval now;
-    int rc;
 
     gettimeofday(&now, NULL);
-
-    if (timercmp(&now, &w->express_expiretime, <))
+    if (timercmp(&now, &w->express_expiretime, <=))
         return;
 
-    if(w->express_expiretime.tv_sec != 0)
-        need_pullmsg = true;
-
-    expire_interval.tv_sec = EXPRESS_DEF_TIMEOUT;
-    expire_interval.tv_usec = 0;
-    timeradd(&now, &expire_interval, &w->express_expiretime);
-
     w->connector = create_express_connector(w);
-    if (need_pullmsg && w->connector)
+    if (w->connector && w->express_expiretime.tv_sec > 0)
         express_enqueue_pull_messages(w->connector);
+
+    timeout.tv_sec  = PULLMSG_REGULAR_INTERVAL;
+    timeout.tv_usec = 0;
+    timeradd(&now, &timeout, &w->express_expiretime);
+}
+
+
+static inline int64_t current_timestamp(void)
+{
+    struct timeval now;
+    gettimeofday(&now, NULL);
+
+    return now.tv_sec * (int64_t)1000000 + now.tv_usec;
 }
 
 static
@@ -1901,8 +1889,8 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     size_t len;
 
     assert(w);
-    assert(friend_number != UINT32_MAX);
     assert(cp);
+    assert(friend_number != UINT32_MAX);
     assert(elacp_get_type(cp) == ELACP_TYPE_MESSAGE);
 
     fi = friends_get(w->friends, friend_number);
@@ -1919,12 +1907,9 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     msg  = elacp_get_raw_data(cp);
     len  = elacp_get_raw_data_length(cp);
 
-    if (w->callbacks.friend_message && (!name || strlen(name) == 0)) {
-        struct timeval now;
-        gettimeofday(&now, NULL);
-        int64_t timestampe = now.tv_sec * (int64_t)1000000 + now.tv_usec;
-        w->callbacks.friend_message(w, friendid, msg, len, timestampe, false, w->context);
-    }
+    if (w->callbacks.friend_message && (!name || !*name))
+        w->callbacks.friend_message(w, friendid, msg, len, current_timestamp(), false,
+                                    w->context);
 }
 
 static
@@ -1932,7 +1917,6 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
 {
     FriendInfo *fi;
     char friendid[ELA_MAX_ID_LEN + 1];
-    struct timeval now, expire_interval;
     BulkMsg *msg;
     const char *name;
     const void *data;
@@ -1971,43 +1955,38 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
         }
 
         msg = (BulkMsg *)rc_zalloc(sizeof(*msg) + totalsz, NULL);
-        if (!msg) {
-            vlogW("Carrier: Out of memory, bulk message dropped.");
+        if (!msg)
             return;
-        }
 
         strcpy(msg->ext, name ? name : "");
         strcpy(msg->friendid, friendid);
+
         msg->tid = tid;
-        msg->data_len = totalsz;
-        msg->data_off = 0;
+        msg->data_cap = totalsz;
+        msg->data_offset = 0;
         msg->data = (uint8_t*)(msg + 1);
 
-        gettimeofday(&now, NULL);
-        expire_interval.tv_sec = TASSEMBLY_TIMEOUT;
-        expire_interval.tv_usec = 0;
-        timeradd(&now, &expire_interval, &msg->expire_time);
-
+        gettimeofday_elapsed(&msg->expire_time, TASSEMBLY_TIMEOUT);
         need_add = true;  //Ready to put into bulkmsgs hashtable.
     }
 
     if ((name && strcmp(msg->ext, name)) ||
         strcmp(msg->friendid, friendid) || !len || len > ELA_MAX_APP_MESSAGE_LEN ||
-        msg->data_off + len < len || msg->data_off + len > msg->data_len) {
+        msg->data_offset + len < len || msg->data_offset + len > msg->data_cap) {
         vlogE("Carrier: Inavlid bulkmsg fragment (or HACKED), dropped.");
         deref(msg);
         return;
     }
 
-    memcpy(msg->data + msg->data_off, data, len);
-    msg->data_off += len;
+    memcpy(msg->data + msg->data_offset, data, len);
+    msg->data_offset += len;
 
-    if (msg->data_off == msg->data_len) {
+    if (msg->data_offset == msg->data_cap) {
         if (w->callbacks.friend_message && (!name || strlen(name) == 0)) {
             struct timeval now;
             gettimeofday(&now, NULL);
             int64_t timestamp = now.tv_sec * (int64_t)1000000 + now.tv_usec;
-            w->callbacks.friend_message(w, friendid, msg->data, msg->data_len, timestamp, false, w->context);
+            w->callbacks.friend_message(w, friendid, msg->data, msg->data_cap, timestamp, false, w->context);
         }
 
         if (!need_add)
@@ -2062,8 +2041,6 @@ void handle_invite_request(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
 
     ireq = tassemblies_get(w->tassembly_ireqs, &tid);
     if (!ireq) {
-        struct timeval now, expire_interval;
-
         if (!totalsz || totalsz > ELA_MAX_INVITE_DATA_LEN) {
             vlogW("Carrier: Received invite request fragment with invalid "
                   "totalsz %z, dropped.", totalsz);
@@ -2089,11 +2066,7 @@ void handle_invite_request(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
             ireq->bundle = NULL;
         }
 
-        gettimeofday(&now, NULL);
-        expire_interval.tv_sec = TASSEMBLY_TIMEOUT;
-        expire_interval.tv_usec = 0;
-        timeradd(&now, &expire_interval, &ireq->expire_time);
-
+        gettimeofday_elapsed(&ireq->expire_time, TASSEMBLY_TIMEOUT);
         need_add = true;  //Ready to put into tassembly hashtable.
     }
 
@@ -2203,8 +2176,6 @@ void handle_invite_response(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
 
     irsp = tassemblies_get(w->tassembly_irsps, &tid);
     if (!irsp) {
-        struct timeval now, expire_interval;
-
         if (totalsz > ELA_MAX_INVITE_DATA_LEN) {
             vlogW("Carrier: Received overlong invite request fragment, "
                   "dropped.");
@@ -2237,11 +2208,7 @@ void handle_invite_response(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
             strcpy(irsp->reason, reason);
         }
 
-        gettimeofday(&now, NULL);
-        expire_interval.tv_sec = TASSEMBLY_TIMEOUT;
-        expire_interval.tv_usec = 0;
-        timeradd(&now, &expire_interval, &irsp->expire_time);
-
+        gettimeofday_elapsed(&irsp->expire_time, TASSEMBLY_TIMEOUT);
         need_add = true;
     }
 
@@ -2567,8 +2534,8 @@ static void connect_to_bootstraps(ElaCarrier *w)
 {
     int i;
 
-    for (i = 0; i < w->pref.dht_bootstraps_size; i++) {
-        DhtBootstrapNodeBuf *bi = &w->pref.dht_bootstraps[i];
+    for (i = 0; i < w->pref.bootstrap_size; i++) {
+        BootstrapNodeBuf *bi = &w->pref.bootstrap_nodes[i];
         char id[ELA_MAX_ID_LEN + 1] = {0};
         size_t id_len = sizeof(id);
         int rc;
@@ -3110,7 +3077,7 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
     fi->info.status   = ElaConnectionStatus_Disconnected;
     friends_put(w->friends, fi);
 
-    notify_friend_added(w, &fi->info);
+    notify_friend_changed(w, &fi->info, handle_add_friend_cb);
 
     deref(fi);
 
@@ -3120,7 +3087,7 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
 int ela_accept_friend(ElaCarrier *w, const char *userid)
 {
     uint32_t friend_number = UINT32_MAX;
-    uint8_t public_key[DHT_PUBLIC_KEY_SIZE];
+    uint8_t pubkey[DHT_PUBLIC_KEY_SIZE];
     FriendInfo *fi;
     int rc;
 
@@ -3156,8 +3123,8 @@ int ela_accept_friend(ElaCarrier *w, const char *userid)
         return -1;
     }
 
-    base58_decode(userid, strlen(userid), public_key, sizeof(public_key));
-    rc = dht_friend_add_norequest(&w->dht, public_key, &friend_number);
+    base58_decode(userid, strlen(userid), pubkey, sizeof(pubkey));
+    rc = dht_friend_add_norequest(&w->dht, pubkey, &friend_number);
     if (rc < 0) {
         deref(fi);
         ela_set_error(rc);
@@ -3172,8 +3139,7 @@ int ela_accept_friend(ElaCarrier *w, const char *userid)
 
     friends_put(w->friends, fi);
 
-    notify_friend_added(w, &fi->info);
-
+    notify_friend_changed(w, &fi->info, handle_add_friend_cb);
     deref(fi);
 
     return 0;
@@ -3206,42 +3172,37 @@ int ela_remove_friend(ElaCarrier *w, const char *friendid)
         return -1;
     }
 
-    if (!friends_exist(w->friends, friend_number)) {
+    fi = friends_remove(w->friends, friend_number);
+    if (!fi) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
         return -1;
     }
 
     dht_friend_delete(&w->dht, friend_number);
 
-    fi = friends_remove(w->friends, friend_number);
-    assert(fi);
-
-    notify_friend_removed(w, &fi->info);
-
+    notify_friend_changed(w, &fi->info, handle_remove_friend_cb);
     deref(fi);
 
     return 0;
 }
 
-static void parse_address(const char *addr, char **uid, char **ext)
+static void parse_address(const char *addr, char **userid, char **ext)
 {
     char *colon_pos = NULL;
 
     assert(addr);
-    assert(uid && ext);
+    assert(userid);
+    assert(ext);
 
-    /* address format: userid:extenison */
-    if (uid)
-        *uid = (char *)addr;
+    /* Parse address with scheme like 'userid:extension' */
+    *userid = (char *)addr;
 
     colon_pos = strchr(addr, ':');
     if (colon_pos) {
-        if (ext)
-            *ext = colon_pos+1;
+        *ext = colon_pos+1;
         *colon_pos = 0;
     } else {
-        if (ext)
-            *ext = NULL;
+        *ext = NULL;
     }
 }
 
@@ -3465,30 +3426,31 @@ static int64_t send_friend_message_internal(ElaCarrier *w, const char *to,
     return msgid;
 }
 
-static void handle_offline_friend_message(EventBase *event, ElaCarrier *w)
+static void handle_offline_friend_message_cb(EventBase *base, ElaCarrier *w)
 {
-    OfflineMsgEvent *ev = (OfflineMsgEvent *)event;
+    OfflineEvent* event = (OfflineEvent *)base;
     ElaCP *cp;
     const char* name;
     const void* data;
     size_t len;
 
-    assert(ev->msg.timestamp > 0);
-    assert(ev->msg.len > 0);
+    assert(event->timestamp > 0);
+    assert(event->length > 0);
 
-    if (!ela_is_friend(w, ev->friendid)) {
-        vlogW("Carrier: Offline message not from friends, dropped.");
+    if (!ela_is_friend(w, event->from)) {
+        vlogW("Carrier: Offline message is not from friends, dropped");
         return;
     }
 
-    cp = elacp_decode(ev->msg.content, ev->msg.len);
+    cp = elacp_decode(event->data, event->length);
     if (!cp) {
-        vlogE("Carrier: Invalid offline message, dropped.");
+        vlogE("Carrier: Decode offline message content failed, dropped");
         return;
     }
 
     if (elacp_get_type(cp) != ELACP_TYPE_MESSAGE) {
-        vlogE("Carrier: Unknown offline message type, dropped.");
+        elacp_free(cp);
+        vlogE("Carrier: Invalid offline message type, dropped");
         return;
     }
 
@@ -3500,125 +3462,129 @@ static void handle_offline_friend_message(EventBase *event, ElaCarrier *w)
     assert(len > 0);
 
     if (w->callbacks.friend_message && (!name || !*name))
-        w->callbacks.friend_message(w, ev->friendid, data, len, ev->msg.timestamp,
+        w->callbacks.friend_message(w, event->from, data, len, event->timestamp,
                                     true, w->context);
+
+    elacp_free(cp);
 }
 
 static void notify_offmsg_received(ElaCarrier *w, const char *from,
                                    const uint8_t *msg, size_t len,
                                    int64_t timestamp)
 {
-    OfflineMsgEvent *event;
+    OfflineEvent *event;
 
     assert(w);
     assert(from && *from);
     assert(msg);
     assert(len);
 
-    event = rc_zalloc(sizeof(OfflineMsgEvent) + len, NULL);
+    event = rc_zalloc(sizeof(OfflineEvent) + len, NULL);
     if (event) {
-        strcpy(event->friendid, from);
-        event->msg.timestamp = timestamp;
-        event->msg.len = len;
-        memcpy(event->msg.content, msg, len);
+        strcpy(event->from, from);
+        event->timestamp = timestamp;
+        event->length = len;
+        memcpy(event->data, msg, len);
 
         event->base.le.data = event;
-        event->base.handle = handle_offline_friend_message;
+        event->base.handle = handle_offline_friend_message_cb;
         list_push_tail(w->friend_events, &event->base.le);
         deref(event);
     }
 }
 
-static void handle_offline_friend_request(EventBase *event, ElaCarrier *w)
+static void handle_offline_friend_request_cb(EventBase *base, ElaCarrier *w)
 {
-    OfflineMsgEvent *ev = (OfflineMsgEvent *)event;
-    uint8_t from[DHT_PUBLIC_KEY_SIZE] = {0};
+    OfflineEvent *event = (OfflineEvent *)base;
+    uint8_t pubkey[DHT_PUBLIC_KEY_SIZE] = {0};
     ssize_t len;
 
-    len = base58_decode(ev->friendid, strlen(ev->friendid), from, sizeof(from));
-    if (len != (ssize_t)sizeof(from)) {
-        vlogE("Carrier: Offline friend request from nodeid (%s) that can not"
-              " base58 encoded.", ev->friendid);
+    len = base58_decode(event->from, strlen(event->from), pubkey, sizeof(pubkey));
+    if (len != (ssize_t)sizeof(pubkey)) {
+        vlogE("Carrier: Base8 decode offline friend request failed.", event->from);
         return;
     }
 
-    notify_friend_request_cb(from, ev->req.gretting, ev->req.len, w);
+    notify_friend_request_cb(pubkey, event->data, event->length, w);
 }
 
 static void notify_offreq_received(ElaCarrier *w, const char *from,
-                                   const uint8_t *gretting, size_t len,
+                                   const uint8_t *greeting, size_t len,
                                    int64_t timestamp)
 {
-    OfflineMsgEvent *event;
+    OfflineEvent *event;
 
     assert(w);
     assert(from && *from);
-    assert(gretting);
+    assert(greeting);
     assert(len);
 
-    event = rc_zalloc(sizeof(OfflineMsgEvent) + len, NULL);
+    event = rc_zalloc(sizeof(OfflineEvent) + len, NULL);
     if (event) {
-        strcpy(event->friendid, from);
-        event->req.timestamp = timestamp;
-        event->req.len = len;
-        memcpy(event->req.gretting, gretting, len);
+        strcpy(event->from, from);
+        event->timestamp = timestamp;
+        event->length = len;
+        memcpy(event->data, greeting, len);
 
         event->base.le.data = event;
-        event->base.handle = handle_offline_friend_request;
+        event->base.handle = handle_offline_friend_request_cb;
         list_push_tail(w->friend_events, &event->base.le);
         deref(event);
     }
 }
 
-static void handle_offline_message_receipt(EventBase *event, ElaCarrier *w)
+static void handle_offline_message_receipt_cb(EventBase *base, ElaCarrier *w)
 {
-    OfflineMsgEvent *ev = (OfflineMsgEvent *)event;
+    MsgidEvent *event = (MsgidEvent *)base;
     ElaReceiptState state;
 
-    if(ev->stat.errcode < 0) {
+    if(event->errcode < 0) {
         state = ElaReceipt_Error;
-        ela_set_error(ev->stat.errcode);
+        ela_set_error(event->errcode);
     } else {
         state = ElaReceipt_Offline;
     }
 
-    if (ev->stat.msgid > 0)
-        on_friend_message_receipt(w, state, ev->stat.msgid);
+    if (event->msgid > 0)
+        on_friend_message_receipt(w, state, event->msgid);
     else
-        vlogI("Carrier: offline request friend %s %s(%d).",
-              ev->friendid, (ev->stat.errcode == 0 ? "success" : "failed"), ev->stat.errcode);
+        vlogI("Carrier: offline request friend %s %s(%x).",
+              event->friendid, (event->errcode == 0 ? "success" : "failed"), event->errcode);
 
 }
 
 static void notify_offreceipt_received(ElaCarrier *w, const char *to,
                                        int64_t msgid, int errcode)
 {
-    OfflineMsgEvent *event;
+    MsgidEvent *event;
 
     assert(w);
     assert(to && *to);
 
-    event = rc_zalloc(sizeof(OfflineMsgEvent) + sizeof(int64_t), NULL);
+    event = rc_zalloc(sizeof(MsgidEvent), NULL);
     if (event) {
         strcpy(event->friendid, to);
-        event->stat.msgid = msgid;
-        event->stat.errcode = errcode;
+        event->msgid = msgid;
+        event->errcode = errcode;
 
         event->base.le.data = event;
-        event->base.handle = handle_offline_message_receipt;
+        event->base.handle = handle_offline_message_receipt_cb;
         list_push_tail(w->friend_events, &event->base.le);
         deref(event);
     }
 }
 
-static int64_t ela_send_message_with_receipt_internal(ElaCarrier *carrier, const char *to,
-                                             const void *msg, size_t len,
-                                             ElaFriendMessageReceiptCallback *cb, void *context,
-                                             bool *is_offline)
+static
+int64_t send_message_with_receipt_internal(ElaCarrier *w, const char *to,
+                                const void *msg, size_t len,
+                                ElaFriendMessageReceiptCallback *cb,
+                                void *context,
+                                bool *is_offline)
 {
     int64_t msgid;
     Receipt *receipt;
     struct timeval expire_interval;
+    bool offline = false;
 
     receipt = (Receipt*)rc_zalloc(sizeof(Receipt) + len, NULL);
     if (!receipt) {
@@ -3638,48 +3604,37 @@ static int64_t ela_send_message_with_receipt_internal(ElaCarrier *carrier, const
     receipt->size = len;
     memcpy(receipt->data, msg, len);
 
-    pthread_mutex_lock(&carrier->receipts_mutex);
-    msgid = send_friend_message_internal(carrier, to, msg, len, is_offline);
+    pthread_mutex_lock(&w->receipts_mutex);
+    msgid = send_friend_message_internal(w, to, msg, len, &offline);
     if(msgid < 0) {
         deref(receipt);
-        pthread_mutex_unlock(&carrier->receipts_mutex);
+        pthread_mutex_unlock(&w->receipts_mutex);
         return -1;
     }
-    receipt->msgch = (*is_offline ? MSGCH_EXPRESS : MSGCH_DHT);
+
+    receipt->msgch = (offline ? MSGCH_EXPRESS : MSGCH_DHT);
     receipt->msgid = msgid;
-    receipts_put(carrier->receipts, receipt);
+    receipts_put(w->receipts, receipt);
     deref(receipt);
-    pthread_mutex_unlock(&carrier->receipts_mutex);
+    pthread_mutex_unlock(&w->receipts_mutex);
+
+    if (is_offline)
+        *is_offline = offline;
 
     return msgid;
 }
 
 int ela_send_friend_message(ElaCarrier *w, const char *to,
-                            const void *msg, size_t len, bool *is_offline)
+                            const void *message, size_t len, bool *is_offline)
 {
-    bool is_offline_tmp;
-    int64_t msgid;
-
-    msgid = ela_send_message_with_receipt_internal(w, to, msg, len, NULL, NULL, &is_offline_tmp);
-    if(msgid < 0)
-        return (int)msgid;
-
-    if(is_offline)
-        *is_offline = is_offline_tmp;
-
-    return 0;
+    return send_message_with_receipt_internal(w, to, message, len, NULL, NULL, is_offline) < 0 ? -1 : 0;
 }
 
-int64_t ela_send_message_with_receipt(ElaCarrier *carrier, const char *to,
-                                      const void *msg, size_t len,
+int64_t ela_send_message_with_receipt(ElaCarrier *w, const char *to,
+                                      const void *message, size_t len,
                                       ElaFriendMessageReceiptCallback *cb, void *context)
 {
-    bool is_offline;
-    int64_t msgid;
-
-    msgid = ela_send_message_with_receipt_internal(carrier, to, msg, len, cb, context, &is_offline);
-
-    return msgid;
+    return send_message_with_receipt_internal(w, to, message, len, cb, context, NULL);
 }
 
 int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
@@ -3796,6 +3751,7 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
 
             tcb->tid = tid;
             tcb->callback_func = callback;
+            tcb->friend_number = friend_number;
             tcb->callback_context = context;
             if (bundle) {
                 tcb->bundle = (char*)(tcb + 1);
@@ -3955,90 +3911,6 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
     } while (len > 0);
 
     transaction_history_remove_invite(w->thistory, to);
-
-    return 0;
-}
-
-int ela_get_turn_server(ElaCarrier *w, ElaTurnServer *turn_server)
-{
-    uint8_t secret_key[PUBLIC_KEY_BYTES];
-    uint8_t public_key[PUBLIC_KEY_BYTES];
-    uint8_t shared_key[SYMMETRIC_KEY_BYTES];
-    uint8_t nonce[NONCE_BYTES];
-    uint8_t digest[SHA256_BYTES];
-    char nonce_str[64];
-    size_t text_len;
-    int rc;
-    int times = 0;
-
-    if (!w || !turn_server) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
-        return -1;
-    }
-
-    if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
-        return -1;
-    }
-
-redo_get_tcp_relay:
-    rc = dht_get_random_tcp_relay(&w->dht, turn_server->server,
-                                  sizeof(turn_server->server), public_key);
-    if (rc < 0) {
-        if (++times < 5) {
-            usleep(1000);
-            //BUGBUG: Try to get tcp relay again and again.
-            goto redo_get_tcp_relay;
-        } else {
-            vlogE("Carrier: Get turn server address and public key error (%d)", rc);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
-            return -1;
-        }
-    }
-
-    {
-        char bootstrap_pk[ELA_MAX_ID_LEN + 1];
-        size_t pk_len = sizeof(bootstrap_pk);
-
-        base58_encode(public_key, sizeof(public_key), bootstrap_pk, &pk_len);
-        vlogD("Carrier: Acquired a random tcp relay (ip: %s, pk: %s)",
-              turn_server->server, bootstrap_pk);
-    }
-
-    turn_server->port = TURN_SERVER_PORT;
-
-    dht_self_get_secret_key(&w->dht, secret_key);
-    crypto_compute_symmetric_key(public_key, secret_key, shared_key);
-
-    crypto_random_nonce(nonce);
-    rc = (int)hmac_sha256(shared_key, sizeof(shared_key),
-                          nonce, sizeof(nonce), digest, sizeof(digest));
-
-    memset(secret_key, 0, sizeof(secret_key));
-    memset(shared_key, 0, sizeof(shared_key));
-
-    if (rc != sizeof(digest)) {
-        vlogE("Carrier: Hmac sha256 to nonce error");
-        return -1;
-    }
-
-    text_len = sizeof(turn_server->password);
-    base58_encode(digest, sizeof(digest), turn_server->password, &text_len);
-
-    text_len = sizeof(nonce_str);
-    base58_encode(nonce, sizeof(nonce), nonce_str, &text_len);
-
-    sprintf(turn_server->username, "%s@%s.%s", w->me.userid, nonce_str, TURN_SERVER_USER_SUFFIX);
-
-    strcpy(turn_server->realm, TURN_REALM);
-
-    vlogD("Carrier: Valid turn server information: >>>>");
-    vlogD("    host: %s", turn_server->server);
-    vlogD("    port: %hu", turn_server->port);
-    vlogD("   realm: %s", turn_server->realm);
-    vlogD("username: %s", turn_server->username);
-    vlogD("password: %s", turn_server->password);
-    vlogD("<<<<");
 
     return 0;
 }

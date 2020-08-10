@@ -961,7 +961,7 @@ static void send_receipt_message(ElaCarrier *w, int argc, char *argv[])
 static void send_receipt_bulkmessage(ElaCarrier *w, int argc, char *argv[])
 {
     int rc;
-    int datalen = 2048;
+    int datalen = ELA_MAX_APP_BULKMSG_LEN;
     char *data;
     int idx;
 

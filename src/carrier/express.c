@@ -45,6 +45,7 @@
 
 #include "dht.h"
 #include "ela_carrier.h"
+#include "ela_error.h"
 #include "ela_carrier_impl.h"
 #include "elacp.h"
 #include "express.h"
@@ -108,7 +109,7 @@ typedef struct {
 static const int  EXP_CURLCODE_MASK    = 0x00001000;
 static const int  EXP_HTTP_MAGICNUM    = 0xCA6EE595;
 static const int  EXP_HTTP_MAGICSIZE   = 4;
-static const int  EXP_HTTP_REQ_TIMEOUT     = 30 * 1000; // ms
+static const int  EXP_HTTP_REQ_TIMEOUT     = 60 * 1000; // ms
 static const int  EXP_HTTP_HEAD_TIMEOUT     = 5 * 1000; // ms
 #define  EXP_HTTP_URL_MAXSIZE 1024
 
@@ -435,7 +436,7 @@ static int http_do(ExpressConnector *connector,
         vlogE("Express: Failed to new client.");
         return ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY);
     }
-    
+
     rc = http_client_set_url(http_client, url);
     if(rc != 0) {
         http_client_close(http_client);
@@ -481,14 +482,14 @@ static int http_do(ExpressConnector *connector,
     rc = http_client_get_response_code(http_client, &http_client_rescode);
     if(rc != 0) {
         http_client_close(http_client);
-        vlogE("Express: Failed to get response code.(CURLE: %d)", rc);
+        vlogW("Express: Failed to get response code.(CURLE: %d)", rc);
         return ELA_EXPRESS_ERROR(conv_curlcode(rc));
     }
     if((method == HTTP_METHOD_POST && http_client_rescode != 201)
     || (method == HTTP_METHOD_GET && http_client_rescode != 200)
     || (method == HTTP_METHOD_DELETE && http_client_rescode != 205)) {
         http_client_close(http_client);
-        vlogE("Express: Failed to %s message from node. rescode=%d.(CURLE: %d)", dowhat, http_client_rescode, rc);
+        vlogW("Express: Failed to %s message from node. rescode=%d.(CURLE: %d)", dowhat, http_client_rescode, rc);
         return ELA_EXPRESS_ERROR(ELAERR_WRONG_STATE);
     }
 
@@ -660,7 +661,7 @@ static int speedmeter_runner(ExpTasklet *base)
     int idx, iidx, jidx;
     struct timeval starttime;
     struct timeval *timeloss;
-    
+
     timeloss = alloca(sizeof(*timeloss) * connector->express_nodes_size);
     memset(timeloss, 0, sizeof(*timeloss) * connector->express_nodes_size);
 
@@ -840,12 +841,12 @@ ExpressConnector *express_connector_create(ElaCarrier *carrier,
     int idx;
 
     assert(carrier);
-    if (carrier->pref.express_nodes_size <= 0) {
+    if (carrier->pref.express_size <= 0) {
         ela_set_error(ELA_EXPRESS_ERROR(ELAERR_INVALID_ARGS));
         return NULL;
     }
 
-    connector = rc_zalloc(sizeof(ExpressConnector) + sizeof(ExpNode) * carrier->pref.express_nodes_size,
+    connector = rc_zalloc(sizeof(ExpressConnector) + sizeof(ExpNode) * carrier->pref.express_size,
                           connector_releaser); // deref by outside
     if (!connector) {
         ela_set_error(ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY));
@@ -870,7 +871,7 @@ ExpressConnector *express_connector_create(ElaCarrier *carrier,
 
     connector->magic_num = ntohl(EXP_HTTP_MAGICNUM);
 
-    connector->express_nodes_size = carrier->pref.express_nodes_size;
+    connector->express_nodes_size = carrier->pref.express_size;
     for(idx = 0; idx < connector->express_nodes_size; idx++) {
         connector->express_nodes[idx].ipv4 = carrier->pref.express_nodes[idx].ipv4;
         connector->express_nodes[idx].port = carrier->pref.express_nodes[idx].port;

@@ -20,24 +20,28 @@
  * SOFTWARE.
  */
 
-#ifndef __ELA_CARRIER_IMPL_H__
-#define __ELA_CARRIER_IMPL_H__
+#ifndef __CARRIER_IMPL_H__
+#define __CARRIER_IMPL_H__
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 
 #include <stdlib.h>
-
 #include <crystal.h>
 
 #include "ela_carrier.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "dht_callbacks.h"
 #include "dht.h"
 
 #include "express.h"
 
-#define DHT_BOOTSTRAP_DEFAULT_PORT 33445
-
-#define MAX_IPV4_ADDRESS_LEN (15)
-#define MAX_IPV6_ADDRESS_LEN (47)
+#define BOOTSTRAP_DEFAULT_PORT 33445
 
 #define ELA_MAX_EXTENSION_NAME_LEN  (31)
 
@@ -45,12 +49,12 @@ typedef struct DHT {
     uint8_t padding[32];  // reserved for DHT.
 } DHT;
 
-typedef struct DhtBootstrapNodeBuf {
-    char ipv4[MAX_IPV4_ADDRESS_LEN + 1];
-    char ipv6[MAX_IPV6_ADDRESS_LEN + 1];
+typedef struct BootstrapNodeBuf {
+    char *ipv4;
+    char *ipv6;
     uint16_t port;
     uint8_t public_key[DHT_PUBLIC_KEY_SIZE];
-} DhtBootstrapNodeBuf;
+} BootstrapNodeBuf;
 
 typedef struct ExpressNodeBuf {
     char *ipv4;
@@ -62,10 +66,10 @@ typedef struct Preferences {
     char *data_location;
     bool udp_enabled;
 
-    size_t dht_bootstraps_size;
-    DhtBootstrapNodeBuf *dht_bootstraps;
+    size_t bootstrap_size;
+    BootstrapNodeBuf *bootstrap_nodes;
 
-    size_t express_nodes_size;
+    size_t express_size;
     ExpressNodeBuf *express_nodes;
 } Preferences;
 
@@ -80,44 +84,25 @@ typedef struct FriendEvent {
     ElaFriendInfo fi;
 } FriendEvent;
 
+typedef struct OfflineEvent {
+    EventBase base;
+    char from [ELA_MAX_ADDRESS_LEN + 1];
+    int64_t timestamp;
+    size_t length;
+    uint8_t data[0];
+} OfflineEvent;
+
+typedef struct MsgidEvent {
+    EventBase base;
+    char friendid[ELA_MAX_ADDRESS_LEN + 1];
+    int64_t msgid;
+    int errcode;
+} MsgidEvent;
+
 typedef enum MsgCh {
     MSGCH_DHT = 1,
     MSGCH_EXPRESS = 2,
 } MsgCh;
-
-typedef struct MsgReceiptEvent {
-    EventBase base;
-    char to[ELA_MAX_ADDRESS_LEN + 1];
-    MsgCh msgch;
-    int64_t msgid;
-
-    ElaFriendMessageReceiptCallback *callback;
-    void *context;
-
-    size_t size;
-    uint8_t data[0];
-} MsgReceiptEvent;
-
-typedef struct OfflineMsgEvent {
-    EventBase base;
-    char friendid[ELA_MAX_ADDRESS_LEN + 1];
-    union {
-        struct {
-            int64_t timestamp;
-            size_t len;
-            uint8_t content[0];
-        } msg;
-        struct {
-            int64_t timestamp;
-            size_t len;
-            uint8_t gretting[0];
-        } req;
-        struct {
-            int64_t msgid;
-            int errcode;
-        } stat;
-    };
-} OfflineMsgEvent;
 
 struct ElaCarrier {
     pthread_mutex_t ext_mutex;
@@ -191,14 +176,10 @@ typedef struct CarrierExtension {
 } CarrierExtension;
 
 CARRIER_API
-void ela_set_error(int error);
-
-typedef int (*strerror_t)(int errnum, char *, size_t);
-
-CARRIER_API
-int ela_register_strerror(int facility, strerror_t strerr);
-
-CARRIER_API
 int ela_leave_all_groups(ElaCarrier *w);
 
-#endif /* __ELA_CARRIER_IMPL_H__ */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __CARRIER_IMPL_H__ */
