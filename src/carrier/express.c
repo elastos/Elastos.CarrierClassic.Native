@@ -109,7 +109,7 @@ typedef struct {
 static const int  EXP_CURLCODE_MASK    = 0x00001000;
 static const int  EXP_HTTP_MAGICNUM    = 0xCA6EE595;
 static const int  EXP_HTTP_MAGICSIZE   = 4;
-static const int  EXP_HTTP_REQ_TIMEOUT     = 30 * 1000; // ms
+static const int  EXP_HTTP_REQ_TIMEOUT     = 60 * 1000; // ms
 static const int  EXP_HTTP_HEAD_TIMEOUT     = 5 * 1000; // ms
 #define  EXP_HTTP_URL_MAXSIZE 1024
 
