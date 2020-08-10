@@ -317,7 +317,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    size_t bulksz = 1*1024*1024;
+    size_t bulksz = ELA_MAX_APP_BULKMSG_LEN;
     char *bulkmsg;
     int64_t msgid = 0;
     int size;
@@ -447,7 +447,7 @@ static CU_TestInfo cases[] = {
     { "test_send_message_with_receipt", test_send_message_with_receipt },
     { "test_send_bulkmsg_with_receipt", test_send_bulkmsg_with_receipt },
     { "test_send_offmsg_with_receipt",  test_send_offmsg_with_receipt  },
-    //{ "test_send_offline_bulkmsg_with_receipt", test_send_offline_bulkmsg_with_receipt },
+    { "test_send_offline_bulkmsg_with_receipt", test_send_offline_bulkmsg_with_receipt },
     { "test_send_msg_with_receipt_in_edge_case", test_send_msg_with_receipt_in_edge_case },
     {NULL, NULL }
 };
