@@ -1,3 +1,38 @@
+08/10/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
+
+**version 5.6.3**, main changes to previous version:
+
+```markdown
+- the expiration internal of receipt message to be 60s.
+- Open bulkmsg offline testcase.
+- Remove domain "ece01.trinity-tech.io" from configuration list  of express servers.
+- Fix send friend message return issue.
+- fix invite friend expire issue.
+- Fix libcrystal large buffer alloc crash issue.
+- Fix the markdown format errors in README.
+- Bugfix for synchronize for waiting for robot to be ready to let robot accept offline friend request.
+- Refinement for group testcases.
+- Refine for testcase to test API of 'ela_send_message_with_receipt'.
+- Make testcase of sending offline friend request as standalone testcase.
+- Resolve offline message to run with success in a row.
+- format improvementment for seerval internal headers.
+- format ela_error.h with delcaration with ela_set/get_error().
+- Make implementation of ela_get_turn_server as standalone file.
+- Improvement on internal computation of expires timestamp.
+- Bugfix for receipt notification on offline friend request.
+- Fix unstable issue for receipt testcases in elatests.
+- Improvement for notification implementation on offline event.
+- Update Android build to NDK r21d and cmake 3.16.3 on Ubuntu20.04.
+- improvement for removal of friends.
+- Bugfix for update offline state as outer parameters.
+- Improvement on internal implementation of ela_send_message_xxx APIs and a bugfix for friend notification.
+- Improvment internal implementation on internal function notify_friends.
+- Improvement on internal implementation of ela_run function.
+- Improvement on implementation of mechanism to triggger for pulling offline messages.
+```
+
+06/18/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
+
 07/06/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
 
 **version 5.6.2**, main changes to previous version:
