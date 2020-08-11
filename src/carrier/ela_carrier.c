@@ -1213,6 +1213,8 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
             return NULL;
         }
     }
+    w->pref.express_enabled = opts->express_enabled;
+    vlogI("Carrier: express nodes is %s.", w->pref.express_enabled ? "enabled" : "disabled");
 
     memset(&data, 0, sizeof(data));
     rc = load_persistence_data(opts->persistent_location, &data);

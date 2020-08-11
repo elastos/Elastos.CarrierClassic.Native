@@ -71,6 +71,7 @@ typedef struct Preferences {
 
     size_t express_size;
     ExpressNodeBuf *express_nodes;
+    bool express_enabled;
 } Preferences;
 
 typedef struct EventBase EventBase;

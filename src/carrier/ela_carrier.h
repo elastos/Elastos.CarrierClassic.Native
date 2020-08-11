@@ -379,6 +379,13 @@ typedef struct ElaOptions {
      * The array of Express nodes.
      */
     ExpressNode *express_nodes;
+
+    /**
+     * \~English
+     * The option to decide to use express nodes or not. Setting this option
+     * to false will force disable express nodes.
+     */
+    bool express_enabled;
 } ElaOptions;
 
 /**

@@ -283,6 +283,12 @@ ElaOptions *carrier_config_load(const char *config_file,
         }
     }
 
+    options->express_enabled = true;
+    rc = config_lookup_bool(&cfg, "express-enabled", &intopt);
+    if (rc)
+        options->express_enabled = !!intopt;
+
+
     options->udp_enabled = true;
     rc = config_lookup_bool(&cfg, "udp-enabled", &intopt);
     if (rc)
