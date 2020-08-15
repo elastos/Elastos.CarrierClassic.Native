@@ -4,7 +4,7 @@ set(ELACARRIER_DEPENDS
     libsodium
     flatcc
     cJSON
-    libcurl)
+    curl)
 
 set(ELASESSION_DEPENDS
     libcrystal
