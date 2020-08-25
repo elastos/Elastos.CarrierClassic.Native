@@ -8,13 +8,11 @@ ExternalProject_Add(
     libcrystal
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
-    URL "https://github.com/iwhisperio/libcrystal/archive/release-v1.0.5.tar.gz"
-    URL_HASH SHA256=6256713f34bb341d718a38b5f3a108c6d9c1db93e6391f670108de1cd09b3cee
-    DOWNLOAD_NAME "libcrystal-v1.0.5.tar.gz"
+    URL "https://github.com/iwhisperio/libcrystal/archive/v1.0.6.tar.gz"
+    URL_HASH SHA256=97664f8ab5063c56102547e9702bcb36159a885e3a87fa2d2273add961956245
+    DOWNLOAD_NAME "libcrystal-v1.0.6.tar.gz"
     DOWNLOAD_DIR ${CARRIER_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1
-
-    PATCH_COMMAND ${PATCH_EXE} -s -p1 < ${CMAKE_CURRENT_LIST_DIR}/libcrystal.patch
 
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CARRIER_INT_DIST_DIR}
         -DENABLE_STATIC=${ENABLE_STATIC}
