@@ -841,6 +841,7 @@ ExpressConnector *express_connector_create(ElaCarrier *carrier,
     int idx;
 
     assert(carrier);
+
     if (carrier->pref.express_size <= 0) {
         ela_set_error(ELA_EXPRESS_ERROR(ELAERR_INVALID_ARGS));
         return NULL;

@@ -1222,6 +1222,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
             return NULL;
         }
     }
+    vlogI("Carrier: express nodes is %s.", w->pref.express_size > 0 ? "enabled" : "disabled");
 
     memset(&data, 0, sizeof(data));
     rc = load_persistence_data(opts->persistent_location, &data);
@@ -1333,9 +1334,11 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         return NULL;
     }
 
-    w->connector = create_express_connector(w);
-    if (!w->connector)
-        vlogW("Carrier: Creating express connector error (%x)", ela_get_error());
+    if (w->pref.express_size > 0) {
+        w->connector = create_express_connector(w);
+        if (!w->connector)
+            vlogW("Carrier: Creating express connector error (%x)", ela_get_error());
+    }
 
     apply_extra_data(w, data.extra_savedata, data.extra_savedata_len);
     free_persistence_data(&data);
@@ -1420,10 +1423,12 @@ static void notify_connection_cb(bool connected, void *context)
     w->connection_status = connection_status(connected);
     if (w->callbacks.connection_status)
         w->callbacks.connection_status(w, w->connection_status, w->context);
-
-    w->connector = create_express_connector(w);
-    if (w->connector && connected)
-        express_enqueue_pull_messages(w->connector);
+ 
+    if (w->pref.express_size > 0) {
+        w->connector = create_express_connector(w);
+        if (w->connector && connected)
+            express_enqueue_pull_messages(w->connector);
+    }
 }
 
 static
@@ -1834,23 +1839,29 @@ redo_check:
         }
 
         if(item->msgch == MSGCH_DHT) {
-            vlogI("Carrier: Expired to send message to %s, resend(0x%llx) by express.", item->to, item->msgid);
-            uint32_t friend_number;
-            char *addr;
-            char *userid;
-            char *ext_name;
+            if (w->pref.express_size > 0) {
+                vlogI("Carrier: Expired to send message to %s, resend(0x%llx) by express.", item->to, item->msgid);
+                uint32_t friend_number;
+                char *addr;
+                char *userid;
+                char *ext_name;
 
-            get_friend_number(w, item->to, &friend_number);
-            addr = (char *)alloca(strlen(item->to) + 1);
-            strcpy(addr, item->to);
-            parse_address(addr, &userid, &ext_name);
+                get_friend_number(w, item->to, &friend_number);
+                addr = (char *)alloca(strlen(item->to) + 1);
+                strcpy(addr, item->to);
+                parse_address(addr, &userid, &ext_name);
 
-            item->msgch = MSGCH_EXPRESS;
-            rc = send_express_message(w, friend_number, item->to,
-                                      item->msgid, item->data, item->size,
-                                      ext_name);
+                item->msgch = MSGCH_EXPRESS;
+                rc = send_express_message(w, friend_number, item->to,
+                                        item->msgid, item->data, item->size,
+                                        ext_name);
 
-            if (rc < 0) {
+                if (rc < 0) {
+                    if(item->callback != NULL)
+                        item->callback(item->msgid, ElaReceipt_Error, item->context);
+                    receipts_iterator_remove(&it);
+                }
+            } else {
                 if(item->callback != NULL)
                     item->callback(item->msgid, ElaReceipt_Error, item->context);
                 receipts_iterator_remove(&it);
@@ -2622,7 +2633,9 @@ int ela_run(ElaCarrier *w, int interval)
         do_transacted_callabcks_expire(w);
         do_bulkmsgs_expire(w->bulkmsgs);
         do_receipts_expire(w);
-        do_express_expire(w);
+
+        if (w->pref.express_size > 0)
+            do_express_expire(w);
 
         if (idle_interval > 0)
             notify_idle(w);
@@ -3069,11 +3082,14 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
         return -1;
     }
 
-    w->connector = create_express_connector(w);
-    if (w->connector) {
-        rc = express_enqueue_post_request(w->connector, address, data, data_len);
-        if (rc < 0)
-            vlogW("Carrier: Enqueue offline friend request error (%d)", rc);
+    
+    if (w->pref.express_size > 0) {
+        w->connector = create_express_connector(w);
+        if (w->connector) {
+            rc = express_enqueue_post_request(w->connector, address, data, data_len);
+            if (rc < 0)
+                vlogW("Carrier: Enqueue offline friend request error (%d)", rc);
+        }
     }
 
     free(data);
@@ -3420,7 +3436,7 @@ static int64_t send_friend_message_internal(ElaCarrier *w, const char *to,
         rc = ELA_DHT_ERROR(ELAERR_FRIEND_OFFLINE);
     }
 
-    if (rc < 0) {
+    if (rc < 0 && w->pref.express_size > 0) {
         msgid = generate_msgid(++w->offmsgid, friend_number, false);
         rc = send_express_message(w, friend_number, to, msgid, msg, len, ext_name);
         if (rc == 0 && offline)
@@ -3585,10 +3601,10 @@ static void notify_offreceipt_received(ElaCarrier *w, const char *to,
 
 static
 int64_t send_message_with_receipt_internal(ElaCarrier *w, const char *to,
-                                const void *msg, size_t len,
-                                ElaFriendMessageReceiptCallback *cb,
-                                void *context,
-                                bool *is_offline)
+                                           const void *msg, size_t len,
+                                           ElaFriendMessageReceiptCallback *cb,
+                                           void *context,
+                                           bool *is_offline)
 {
     int64_t msgid;
     Receipt *receipt;
