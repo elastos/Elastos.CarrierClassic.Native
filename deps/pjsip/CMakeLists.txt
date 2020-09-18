@@ -11,7 +11,8 @@ if(WIN32)
 
     set(BUILD_CMD "msbuild")
     set(BUILD_ARGS ${WIN_BUILD_OPTIONS}
-        "pjproject-vs14.sln")
+        "pjproject-vs14.sln"
+        "/t:pjsua")
 
     set(INSTALL_CMD "echo")
     set(INSTALL_ARGS "Done")
@@ -43,10 +44,10 @@ else()
     set(CONFIGURE_ARGS
         "--prefix=${CARRIER_INT_DIST_DIR}"
         "--disable-ssl"
+        "--disable-darwin-ssl"
         "--disable-shared"
         "--disable-resample"
         "--disable-sound"
-        "--disable-oss"
         "--disable-video"
         "--disable-ext-sound"
         "--disable-speex-aec"
@@ -63,7 +64,7 @@ else()
         "--disable-ffmpeg"
         "--disable-v4l2"
         "--disable-openh264"
-        "--disable-webrtc"
+        "--disable-libwebrtc"
         "--disable-ipp"
         "--disable-opencore-amr"
         "--disable-silk"
@@ -83,9 +84,9 @@ ExternalProject_Add(
     pjsip
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
-    URL "http://www.pjsip.org/release/2.5.5/pjproject-2.5.5.tar.bz2"
-    URL_HASH SHA256=ab39207b761d3485199cd881410afeb2d171dff7c2bf75e8caae91c6dca508f3
-    DOWNLOAD_NAME "pjproject-2.5.5.tar.bz2"
+    URL "https://github.com/pjsip/pjproject/archive/2.10.tar.gz"
+    URL_HASH SHA256=936a4c5b98601b52325463a397ddf11ab4106c6a7b04f8dc7cdd377efbb597de
+    DOWNLOAD_NAME "pjproject-2.10.tar.gz"
     DOWNLOAD_DIR ${CARRIER_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1
 
