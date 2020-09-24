@@ -144,8 +144,8 @@ struct ElaCarrier {
 
     hashtable_t *bulkmsgs;
 
-    pthread_mutex_t receipts_mutex;
-    hashtable_t *receipts;
+    pthread_mutex_t motfs_lock;
+    hashtable_t *motfs;
 
     pthread_t main_thread;
 
