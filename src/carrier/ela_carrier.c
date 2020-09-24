@@ -75,7 +75,7 @@
 #include "tassemblies.h"
 #include "bulkmsgs.h"
 #include "express.h"
-#include "receipts.h"
+#include "msg_otf.h"
 #include "utility.h"
 
 #define TASSEMBLY_TIMEOUT               (60) //60s.
@@ -1069,9 +1069,10 @@ static void ela_destroy(void *argv)
     if (w->bulkmsgs)
         deref(w->bulkmsgs);
 
-    if (w->receipts)
-        deref(w->receipts);
-    pthread_mutex_destroy(&w->receipts_mutex);
+    if (w->motfs)
+        deref(w->motfs);
+    pthread_mutex_destroy(&w->motfs_lock);
+    pthread_cond_destroy(&w->motfs_cond);
 
     if (w->thistory)
         deref(w->thistory);
@@ -1303,20 +1304,28 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         return NULL;
     }
 
-    rc = pthread_mutex_init(&w->receipts_mutex, NULL);
+    rc = pthread_mutex_init(&w->motfs_lock, NULL);
     if (rc) {
         free_persistence_data(&data);
         deref(w);
         ela_set_error(ELA_SYS_ERROR(rc));
         return NULL;
     }
-    w->receipts = receipts_create(16);
-    if (!w->receipts) {
+    rc = pthread_cond_init(&w->motfs_cond, NULL);
+    if (rc) {
+        free_persistence_data(&data);
+        deref(w);
+        ela_set_error(ELA_SYS_ERROR(rc));
+        return NULL;
+    }
+    w->motfs = motfs_create();
+    if (!w->motfs) {
         free_persistence_data(&data);
         deref(w);
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return NULL;
     }
+    w->motfs_is_consistent = true;
 
     rc = dht_get_self_info(&w->dht, get_self_info_cb, w);
     if (rc < 0) {
@@ -1474,14 +1483,69 @@ void notify_friend_description_cb(uint32_t friend_number, const uint8_t *desc,
     deref(fi);
 }
 
+static void parse_address(const char *addr, char **uid, char **ext);
+static int send_express_message(ElaCarrier *w, const char *userid,
+                                int64_t msgid, const void *msg, size_t len,
+                                const char *ext_name);
 static void notify_friend_connection(ElaCarrier *w, const char *friendid,
                                      ElaConnectionStatus status)
 {
+    hashtable_iterator_t it;
+
     assert(w);
     assert(friendid);
 
     if (w->callbacks.friend_connection)
         w->callbacks.friend_connection(w, friendid, status, w->context);
+
+    if (status == ElaConnectionStatus_Connected)
+        return;
+
+    pthread_mutex_lock(&w->motfs_lock);
+    while (!w->motfs_is_consistent)
+        pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
+redo_check:
+    motfs_iterate(w->motfs, &it);
+    while (motfs_iterator_has_next(&it)) {
+        MessageOnTheFly *item;
+        ElaReceiptState state;
+        char *userid;
+        char *ext_name;
+        char *addr;
+        int rc;
+
+        rc = motfs_iterator_next(&it, &item);
+        if (rc == 0)
+            break;
+        else if (rc == -1)
+            goto redo_check;
+
+        addr = (char *)alloca(strlen(item->to) + 1);
+        strcpy(addr, item->to);
+        parse_address(addr, &userid, &ext_name);
+        if (strcmp(friendid, userid) || item->msgch != MSGCH_DHT) {
+            deref(item);
+            continue;
+        }
+
+        vlogI("Carrier: Friend[%s] goes offline, send message(0x%llx) by express.", userid, item->msgid);
+        rc = send_express_message(w, userid,
+                                  item->msgid, item->data, item->size,
+                                  ext_name);
+        if (rc < 0) {
+            motfs_iterator_remove(&it);
+            pthread_mutex_unlock(&w->motfs_lock);
+            if (item->callback)
+                item->callback(item->msgid, ElaReceipt_Error, item->context);
+            deref(item);
+            pthread_mutex_lock(&w->motfs_lock);
+            continue;
+        }
+
+        item->msgch = MSGCH_EXPRESS;
+        deref(item);
+    }
+    pthread_mutex_unlock(&w->motfs_lock);
 }
 
 static void trigger_pull_offmsg_instantly(ElaCarrier *w)
@@ -1648,6 +1712,7 @@ static void handle_add_friend_cb(EventBase *event, ElaCarrier *w)
 static void handle_remove_friend_cb(EventBase *event, ElaCarrier *w)
 {
     FriendEvent *ev = (FriendEvent *)event;
+    hashtable_iterator_t it;
 
     if (ev->fi.status == ElaConnectionStatus_Connected &&
         w->callbacks.friend_connection)
@@ -1657,6 +1722,42 @@ static void handle_remove_friend_cb(EventBase *event, ElaCarrier *w)
 
     if (w->callbacks.friend_removed)
         w->callbacks.friend_removed(w, ev->fi.user_info.userid, w->context);
+
+    pthread_mutex_lock(&w->motfs_lock);
+    while (!w->motfs_is_consistent)
+        pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
+redo_check:
+    motfs_iterate(w->motfs, &it);
+    while (motfs_iterator_has_next(&it)) {
+        MessageOnTheFly *item;
+        ElaReceiptState state;
+        char *userid;
+        char *ext_name;
+        char *addr;
+        int rc;
+
+        rc = motfs_iterator_next(&it, &item);
+        if (rc == 0)
+            break;
+        else if (rc == -1)
+            goto redo_check;
+
+        addr = (char *)alloca(strlen(item->to) + 1);
+        strcpy(addr, item->to);
+        parse_address(addr, &userid, &ext_name);
+        if (strcmp(ev->fi.user_info.userid, userid) || item->msgch != MSGCH_DHT) {
+            deref(item);
+            continue;
+        }
+
+        motfs_iterator_remove(&it);
+        pthread_mutex_unlock(&w->motfs_lock);
+        if (item->callback)
+            item->callback(item->msgid, ElaReceipt_Error, item->context);
+        deref(item);
+        pthread_mutex_lock(&w->motfs_lock);
+    }
+    pthread_mutex_unlock(&w->motfs_lock);
 }
 
 static void notify_friend_changed(ElaCarrier *w, ElaFriendInfo *fi,
@@ -1807,64 +1908,6 @@ redo_exipre:
 
         if (timercmp(&now, &item->expire_time, >))
             bulkmsgs_iterator_remove(&it);
-
-        deref(item);
-    }
-}
-
-static void parse_address(const char *addr, char **uid, char **ext);
-static int send_express_message(ElaCarrier *w, uint32_t friend_number, const char *userid,
-                                int64_t msgid, const void *msg, size_t len,
-                                const char *ext_name);
-static void do_receipts_expire(ElaCarrier *w)
-{
-    hashtable_iterator_t it;
-    struct timeval now;
-
-    gettimeofday(&now, NULL);
-
-redo_check:
-    receipts_iterate(w->receipts, &it);
-    while (receipts_iterator_has_next(&it)) {
-        Receipt *item;
-        ElaReceiptState state;
-        int rc;
-
-        rc = receipts_iterator_next(&it, &item);
-        if (rc == 0)
-            break;
-
-        if (rc == -1)
-            goto redo_check;
-
-        if (timercmp(&now, &item->expire_time, <=)) {
-            deref(item);
-            continue;
-        }
-
-        if(item->msgch == MSGCH_DHT) {
-            vlogI("Carrier: Expired to send message to %s, resend(0x%llx) by express.", item->to, item->msgid);
-            uint32_t friend_number;
-            char *addr;
-            char *userid;
-            char *ext_name;
-
-            get_friend_number(w, item->to, &friend_number);
-            addr = (char *)alloca(strlen(item->to) + 1);
-            strcpy(addr, item->to);
-            parse_address(addr, &userid, &ext_name);
-
-            item->msgch = MSGCH_EXPRESS;
-            rc = send_express_message(w, friend_number, item->to,
-                                      item->msgid, item->data, item->size,
-                                      ext_name);
-
-            if (rc < 0) {
-                if(item->callback != NULL)
-                    item->callback(item->msgid, ElaReceipt_Error, item->context);
-                receipts_iterator_remove(&it);
-            }
-        }
 
         deref(item);
     }
@@ -2309,30 +2352,25 @@ uint64_t generate_msgid(uint32_t base_msgid, uint32_t friend_number,
 }
 
 static
-void on_friend_message_receipt(ElaCarrier *w, ElaReceiptState state,
-                               int64_t msgid)
-{
-    Receipt *receipt;
-
-    pthread_mutex_lock(&w->receipts_mutex);
-    receipt = receipts_remove(w->receipts, msgid);
-    pthread_mutex_unlock(&w->receipts_mutex);
-    if(!receipt)
-        return;
-
-    if(receipt->callback != NULL)
-        receipt->callback(receipt->msgid, state, receipt->context);
-
-    deref(receipt);
-}
-
-static
 void notify_friend_read_receipt_cb(uint32_t friend_number, uint32_t dht_msgid,
                                    void *context)
 {
     ElaCarrier *w = (ElaCarrier *)context;
-    on_friend_message_receipt(w, ElaReceipt_ByFriend,
-                              generate_msgid(dht_msgid, friend_number, true));
+    MessageOnTheFly *motf;
+    int64_t msgid = generate_msgid(dht_msgid, friend_number, true);
+
+    pthread_mutex_lock(&w->motfs_lock);
+    while (!w->motfs_is_consistent)
+        pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
+    motf = motf_remove(w->motfs, msgid);
+    pthread_mutex_unlock(&w->motfs_lock);
+    if (!motf)
+        return;
+
+    if (motf->callback)
+        motf->callback(motf->msgid, ElaReceipt_ByFriend, motf->context);
+
+    deref(motf);
 }
 
 static
@@ -2622,7 +2660,6 @@ int ela_run(ElaCarrier *w, int interval)
         do_tassemblies_expire(w->tassembly_irsps);
         do_transacted_callabcks_expire(w);
         do_bulkmsgs_expire(w->bulkmsgs);
-        do_receipts_expire(w);
         do_express_expire(w);
 
         if (idle_interval > 0)
@@ -3217,7 +3254,6 @@ static void parse_address(const char *addr, char **userid, char **ext)
 }
 
 static int64_t send_general_message(ElaCarrier *w, uint32_t friend_number,
-                                    const char *userid,
                                     const void *msg, size_t len,
                                     const char *ext_name)
 {
@@ -3261,7 +3297,6 @@ static int64_t generate_tid(void)
 }
 
 static int64_t send_bulk_message(ElaCarrier *w, uint32_t friend_number,
-                                 const char *userid,
                                  const void *msg, size_t len,
                                  const char *ext_name)
 {
@@ -3315,7 +3350,7 @@ static int64_t send_bulk_message(ElaCarrier *w, uint32_t friend_number,
     return generate_msgid(msgid, friend_number, true);
 }
 
-static int send_express_message(ElaCarrier *w, uint32_t friend_number, const char *userid,
+static int send_express_message(ElaCarrier *w, const char *userid,
                                 int64_t msgid, const void *msg, size_t len,
                                 const char *ext_name)
 {
@@ -3407,11 +3442,11 @@ static int64_t send_friend_message_internal(ElaCarrier *w, const char *to,
     online = (fi->info.status == ElaConnectionStatus_Connected);
     deref(fi);
 
-    if(online) {
+    if (online) {
         if (len <= ELA_MAX_APP_MESSAGE_LEN)
-            msgid = send_general_message(w, friend_number, to, msg, len, ext_name);
+            msgid = send_general_message(w, friend_number, msg, len, ext_name);
         else
-            msgid = send_bulk_message(w, friend_number, to, msg, len, ext_name);
+            msgid = send_bulk_message(w, friend_number, msg, len, ext_name);
 
         rc = (msgid < 0 ? (int)msgid : 0);
         if (rc == 0 && offline)
@@ -3423,7 +3458,7 @@ static int64_t send_friend_message_internal(ElaCarrier *w, const char *to,
 
     if (rc < 0) {
         msgid = generate_msgid(w->offmsgid++, friend_number, false);
-        rc = send_express_message(w, friend_number, to, msgid, msg, len, ext_name);
+        rc = send_express_message(w, userid, msgid, msg, len, ext_name);
         if (rc == 0 && offline)
             *offline = true;
     }
@@ -3546,6 +3581,7 @@ static void notify_offreq_received(ElaCarrier *w, const char *from,
 static void handle_offline_message_receipt_cb(EventBase *base, ElaCarrier *w)
 {
     MsgidEvent *event = (MsgidEvent *)base;
+    MessageOnTheFly *motf;
     ElaReceiptState state;
 
     if(event->errcode < 0) {
@@ -3555,7 +3591,17 @@ static void handle_offline_message_receipt_cb(EventBase *base, ElaCarrier *w)
         state = ElaReceipt_Offline;
     }
 
-    on_friend_message_receipt(w, state, event->msgid);
+    pthread_mutex_lock(&w->motfs_lock);
+    while (!w->motfs_is_consistent)
+        pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
+    motf = motf_remove(w->motfs, event->msgid);
+    assert(motf);
+    pthread_mutex_unlock(&w->motfs_lock);
+
+    if (motf->callback)
+        motf->callback(motf->msgid, state, motf->context);
+
+    deref(motf);
 }
 
 static void notify_offreceipt_received(ElaCarrier *w, const char *to,
@@ -3594,41 +3640,45 @@ int64_t send_message_with_receipt_internal(ElaCarrier *w, const char *to,
                                 bool *is_offline)
 {
     int64_t msgid;
-    Receipt *receipt;
+    MessageOnTheFly *motf;
     struct timeval expire_interval;
     bool offline = false;
 
-    receipt = (Receipt*)rc_zalloc(sizeof(Receipt) + len, NULL);
-    if (!receipt) {
+    motf = (MessageOnTheFly *)rc_zalloc(sizeof(MessageOnTheFly) + len, NULL);
+    if (!motf) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return -1;
     }
 
-    strcpy(receipt->to, to);
+    strcpy(motf->to, to);
+    motf->callback = cb;
+    motf->context  = context;
+    motf->size     = len;
+    memcpy(motf->data, msg, len);
 
-    gettimeofday(&receipt->expire_time, NULL);
-    expire_interval.tv_sec = DHT_MSG_EXPIRE_TIME;
-    expire_interval.tv_usec = 0;
-    timeradd(&receipt->expire_time, &expire_interval, &receipt->expire_time);
+    pthread_mutex_lock(&w->motfs_lock);
+    while (!w->motfs_is_consistent)
+        pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
+    w->motfs_is_consistent = false;
+    pthread_mutex_unlock(&w->motfs_lock);
 
-    receipt->callback = cb;
-    receipt->context = context;
-    receipt->size = len;
-    memcpy(receipt->data, msg, len);
-
-    pthread_mutex_lock(&w->receipts_mutex);
     msgid = send_friend_message_internal(w, to, msg, len, &offline);
-    if(msgid < 0) {
-        deref(receipt);
-        pthread_mutex_unlock(&w->receipts_mutex);
+    if (msgid < 0) {
+        pthread_mutex_lock(&w->motfs_lock);
+        w->motfs_is_consistent = true;
+        pthread_mutex_unlock(&w->motfs_lock);
+        deref(motf);
         return -1;
     }
 
-    receipt->msgch = (offline ? MSGCH_EXPRESS : MSGCH_DHT);
-    receipt->msgid = msgid;
-    receipts_put(w->receipts, receipt);
-    deref(receipt);
-    pthread_mutex_unlock(&w->receipts_mutex);
+    pthread_mutex_lock(&w->motfs_lock);
+    motf->msgch = offline ? MSGCH_EXPRESS : MSGCH_DHT;
+    motf->msgid = msgid;
+    motf_put(w->motfs, motf);
+    deref(motf);
+    w->motfs_is_consistent = true;
+    pthread_cond_broadcast(&w->motfs_cond);
+    pthread_mutex_unlock(&w->motfs_lock);
 
     if (is_offline)
         *is_offline = offline;
