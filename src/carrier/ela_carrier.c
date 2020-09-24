@@ -1083,7 +1083,7 @@ static void ela_destroy(void *argv)
 
 static void notify_offmsg_received(ElaCarrier *w, const char *, const uint8_t *, size_t, int64_t);
 static void notify_offreq_received(ElaCarrier *w, const char *, const uint8_t *, size_t, int64_t);
-static void notify_offreceipt_received(ElaCarrier *w, const char *, int64_t, int);
+static void notify_offreceipt_received(ElaCarrier *w, const char *, ExpressMessageType, int64_t, int);
 static ExpressConnector *create_express_connector(ElaCarrier *w)
 {
     if (w->connector)
@@ -2292,19 +2292,11 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
     elacp_free(cp);
 }
 
-static
-int64_t generate_msgid(uint32_t base_msgid, uint32_t friend_number,
-                       bool use_dht)
+static inline
+uint64_t generate_msgid(uint32_t base_msgid, uint32_t friend_number,
+                        bool use_dht)
 {
-    int64_t msgid = (int64_t)base_msgid;
-
-    if (msgid > 0x1FFFFFFF)
-        msgid %= 0x1FFFFFFF;
-
-    msgid = (msgid <<  2) + (int)use_dht;
-    msgid = (msgid << 32) + friend_number;
-
-    return msgid;
+    return ((uint64_t)friend_number << 32) + (base_msgid << 1) + (use_dht ? 1 : 0);
 }
 
 static
@@ -3421,7 +3413,7 @@ static int64_t send_friend_message_internal(ElaCarrier *w, const char *to,
     }
 
     if (rc < 0) {
-        msgid = generate_msgid(++w->offmsgid, friend_number, false);
+        msgid = generate_msgid(w->offmsgid++, friend_number, false);
         rc = send_express_message(w, friend_number, to, msgid, msg, len, ext_name);
         if (rc == 0 && offline)
             *offline = true;
@@ -3554,21 +3546,23 @@ static void handle_offline_message_receipt_cb(EventBase *base, ElaCarrier *w)
         state = ElaReceipt_Offline;
     }
 
-    if (event->msgid > 0)
-        on_friend_message_receipt(w, state, event->msgid);
-    else
-        vlogI("Carrier: offline request friend %s %s(%x).",
-              event->friendid, (event->errcode == 0 ? "success" : "failed"), event->errcode);
-
+    on_friend_message_receipt(w, state, event->msgid);
 }
 
 static void notify_offreceipt_received(ElaCarrier *w, const char *to,
+                                       ExpressMessageType type,
                                        int64_t msgid, int errcode)
 {
     MsgidEvent *event;
 
     assert(w);
     assert(to && *to);
+
+    if (type == EXPRESS_FRIEND_REQUEST) {
+        vlogI("Carrier: offline request friend %s %s(%x).",
+              to, (errcode == 0 ? "success" : "failed"), errcode);
+        return;
+    }
 
     event = rc_zalloc(sizeof(MsgidEvent), NULL);
     if (event) {

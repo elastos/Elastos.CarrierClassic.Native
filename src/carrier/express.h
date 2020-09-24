@@ -30,13 +30,18 @@ extern "C" {
 
 #define EXPRESS_DEFAULT_PORT    443
 
+typedef enum {
+    EXPRESS_FRIEND_REQUEST,
+    EXPRESS_FRIEND_MESSAGE
+} ExpressMessageType;
+
 typedef struct ExpConnector     ExpressConnector;
 typedef void (*ExpressOnRecvCallback)(ElaCarrier *carrier,
                                       const char *from,
                                       const uint8_t *data, size_t size,
                                       int64_t timestamp);
 typedef void (*ExpressOnStatCallback)(ElaCarrier *carrier,
-                                      const char *from,
+                                      const char *from, ExpressMessageType type,
                                       int64_t msgid, int errcode);
 
 ExpressConnector *express_connector_create(ElaCarrier *carrier,
