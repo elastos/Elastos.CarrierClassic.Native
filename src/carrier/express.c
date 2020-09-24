@@ -102,7 +102,7 @@ typedef struct {
     uint8_t *shared_key_cache;
 
     int64_t last_timestamp;
-    size_t pos;
+    size_t len;
     uint8_t *data;
 } ExpPullTasklet;
 
@@ -183,26 +183,6 @@ static ssize_t decrypt_data(uint8_t *key,
         return ELA_EXPRESS_ERROR(ELAERR_ENCRYPT);
 
     return rc;
-}
-
-int find_magic(uint8_t *buf, size_t start, size_t end, uint32_t magic_num)
-{
-    uint8_t *magicnum_buf = (uint8_t*)&magic_num;
-    size_t pos;
-    int idx;
-
-    for(pos = start; pos <= end - EXP_HTTP_MAGICSIZE; pos++) {
-        for(idx = 0; idx < EXP_HTTP_MAGICSIZE; idx++) {
-            if(buf[pos + idx] != magicnum_buf[idx]) {
-                break;
-            }
-        }
-        if(idx == EXP_HTTP_MAGICSIZE) {
-            return pos;
-        }
-    }
-
-    return -1;
 }
 
 static int process_message(ExpressConnector *connector,
@@ -310,46 +290,39 @@ static int parse_msg(ExpressConnector *connector, uint8_t *shared_key,
     return 0;
 }
 
-static int parse_msg_stream(ExpressConnector *connector, uint8_t *shared_key,
-                            uint8_t *data, size_t size,
-                            int64_t *timestamp)
+typedef struct {
+    uint32_t magic;
+    uint32_t len;
+    uint8_t  msg[0];
+} exp_resp_t;
+
+static int parse_exp_resp(ExpressConnector *connector, uint8_t *shared_key,
+                          const uint8_t *data, size_t size, int64_t *timestamp)
 {
+    exp_resp_t *resp = (exp_resp_t *) data;
+    uint32_t len;
     int rc;
-    int data_off, magic_off;
-    uint8_t *msg;
-    uint32_t msg_sz;
 
-    data_off = 0;
-    while(true) {
-        // search magic number
-        magic_off = find_magic(data, data_off, size, connector->magic_num);
-        if(magic_off < 0) { // has no magic left
-            break;
-        }
-        data_off = magic_off + EXP_HTTP_MAGICSIZE;
+    if (size < sizeof(exp_resp_t))
+        return 0;
 
-        // get message size
-        msg_sz = ntohl(*(uint32_t*)&data[data_off]);
-        data_off += sizeof(msg_sz);
+    if (resp->magic != connector->magic_num)
+        return ELA_EXPRESS_ERROR(ELAERR_UNKNOWN);
 
-        if(data_off + msg_sz > size) { // message is incomplete
-            data_off = magic_off;
-            break;
-        }
-        msg = &data[data_off];
-        data_off += msg_sz;
+    len = ntohl(resp->len);
+    if (!len)
+        return sizeof(exp_resp_t);
 
-        if(msg_sz == 0) { // empty message, ignore it
-            continue;
-        }
-        rc = parse_msg(connector, shared_key, msg, msg_sz, timestamp);
-        if(rc < 0) {
-            vlogW("Express: response body parse message failed: (%x).",rc);
-            continue; // skip to next message
-        }
+    if (sizeof(exp_resp_t) + len > size)
+        return 0;
+
+    rc = parse_msg(connector, shared_key, resp->msg, len, timestamp);
+    if (rc < 0) {
+        vlogW("Express: response body parse message failed: (%x).", rc);
+        return rc;
     }
 
-    return data_off;
+    return sizeof(exp_resp_t) + len;
 }
 
 size_t http_read_data(char *buffer, size_t size, size_t nitems, void *userdata)
@@ -358,34 +331,28 @@ size_t http_read_data(char *buffer, size_t size, size_t nitems, void *userdata)
     ExpPullTasklet *task = (ExpPullTasklet *)userdata;
     ExpressConnector *connector = task->base.connector;
     size_t buf_sz = size * nitems;
-    int parsed_sz;
+    size_t parsed;
 
-    if(task->data == NULL) {
+    if (!task->data)
         task->data = rc_alloc(buf_sz, NULL);
-    } else {
-        task->data = rc_realloc(task->data, task->pos + buf_sz);
-    }
-    memcpy(task->data + task->pos, buffer, buf_sz);
-    task->pos += buf_sz;
+    else
+        task->data = rc_realloc(task->data, task->len + buf_sz);
+    memcpy(task->data + task->len, buffer, buf_sz);
+    task->len += buf_sz;
 
-    rc = parse_msg_stream(connector, task->shared_key_cache, task->data, task->pos, &task->last_timestamp);
+    for (parsed = 0; (rc = parse_exp_resp(connector, task->shared_key_cache,
+                                          task->data + parsed, task->len - parsed,
+                                          &task->last_timestamp)) > 0; parsed += rc) ;
     if (rc < 0) {
         ela_set_error(rc);
-    }
-    parsed_sz = rc;
-
-    if(parsed_sz >= 0 && parsed_sz < (int)task->pos) {
-        size_t remain_sz = task->pos - parsed_sz;
-        uint8_t *remain_data = rc_alloc(remain_sz, NULL);
-        memcpy(remain_data, task->data + parsed_sz, remain_sz);
-        deref(task->data);
-        task->data = remain_data;
-        task->pos = remain_sz;
-    } else {
         deref(task->data);
         task->data = NULL;
-        task->pos = 0;
+        task->len = 0;
+        return -1;
     }
+
+    task->len -= parsed;
+    memmove(task->data, task->data + parsed, task->len);
 
     return buf_sz;
 }
