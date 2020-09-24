@@ -20,92 +20,74 @@
  * SOFTWARE.
  */
 
-#ifndef __RECEIPTS_H__
-#define __RECEIPTS_H__
+#ifndef __MSG_OTF_H__
+#define __MSG_OTF_H__
 
 #include <crystal.h>
 #include "ela_carrier.h"
 
-typedef struct Receipt {
+typedef struct MessageOnTheFly {
     hash_entry_t he;
 
     char to[ELA_MAX_ID_LEN + 1];
     MsgCh msgch;
     int64_t msgid;
 
-    struct timeval expire_time;
     ElaFriendMessageReceiptCallback *callback;
     void *context;
 
     size_t size;
     uint8_t data[0];
-} Receipt;
+} MessageOnTheFly;
 
 static inline
-int receipts_key_compare(const void *key1, size_t len1,
-                         const void *key2, size_t len2)
+hashtable_t *motfs_create()
 {
-    return memcmp(key1, key2, sizeof(int64_t));
+    return hashtable_create(0, 0, NULL, NULL);
 }
 
 static inline
-hashtable_t *receipts_create(int capacity)
+MessageOnTheFly *motf_get(hashtable_t *motfs, int64_t msgid)
 {
-    return hashtable_create(capacity, 1, NULL, receipts_key_compare);
-}
-
-static inline
-Receipt *receipts_get(hashtable_t *receipts, int64_t msgid)
-{
-    assert(receipts);
+    assert(motfs);
     assert(msgid);
 
-    return (Receipt *)hashtable_get(receipts, &msgid, sizeof(msgid));
+    return hashtable_get(motfs, &msgid, sizeof(msgid));
 }
 
 static inline
-int receipts_exist(hashtable_t *receipts, int64_t msgid)
+void motf_put(hashtable_t *motfs, MessageOnTheFly *motf)
 {
-    assert(receipts);
-    assert(msgid);
+    assert(motfs);
+    assert(motf);
 
-    return hashtable_exist(receipts, &msgid, sizeof(msgid));
+    motf->he.data = motf;
+    motf->he.key = &motf->msgid;
+    motf->he.keylen = sizeof(motf->msgid);
+
+    hashtable_put(motfs, &motf->he);
 }
 
 static inline
-void receipts_put(hashtable_t *receipts, Receipt *receipt)
+MessageOnTheFly *motf_remove(hashtable_t *motfs, int64_t msgid)
 {
-    assert(receipts);
-    assert(receipt);
+    assert(motfs);
 
-    receipt->he.data = receipt;
-    receipt->he.key = &receipt->msgid;
-    receipt->he.keylen = sizeof(receipt->msgid);
-
-    hashtable_put(receipts, &receipt->he);
+    return hashtable_remove(motfs, &msgid, sizeof(msgid));
 }
 
 static inline
-Receipt *receipts_remove(hashtable_t *receipts, int64_t msgid)
+hashtable_iterator_t *motfs_iterate(hashtable_t *motfs,
+                                    hashtable_iterator_t *iterator)
 {
-    assert(receipts);
-    assert(msgid);
-
-    return (Receipt *)hashtable_remove(receipts, &msgid, sizeof(msgid));
-}
-
-static inline
-hashtable_iterator_t *receipts_iterate(hashtable_t *receipts,
-                                       hashtable_iterator_t *iterator)
-{
-    assert(receipts);
+    assert(motfs);
     assert(iterator);
 
-    return hashtable_iterate(receipts, iterator);
+    return hashtable_iterate(motfs, iterator);
 }
 
 static inline
-int receipts_iterator_next(hashtable_iterator_t *iterator, Receipt **item)
+int motfs_iterator_next(hashtable_iterator_t *iterator, MessageOnTheFly **item)
 {
     assert(item);
     assert(iterator);
@@ -114,17 +96,17 @@ int receipts_iterator_next(hashtable_iterator_t *iterator, Receipt **item)
 }
 
 static inline
-int receipts_iterator_has_next(hashtable_iterator_t *iterator)
+int motfs_iterator_has_next(hashtable_iterator_t *iterator)
 {
     assert(iterator);
     return hashtable_iterator_has_next(iterator);
 }
 
 static inline
-int receipts_iterator_remove(hashtable_iterator_t *iterator)
+int motfs_iterator_remove(hashtable_iterator_t *iterator)
 {
     assert(iterator);
     return hashtable_iterator_remove(iterator);
 }
 
-#endif // __RECEIPTS_H__
+#endif // __MSG_OTF_H__
