@@ -198,7 +198,7 @@ static void test_send_message_with_receipt(void)
     memset(msg, 'm', sizeof(msg) -1);
     msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, msg, sizeof(msg),
                                           message_receipt_cb, wctxt);
-    CU_ASSERT_TRUE_FATAL(msgid > 0);
+    CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
@@ -237,7 +237,7 @@ static void test_send_bulkmsg_with_receipt(void)
 
     msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, bulkmsg, bulksz,
                                           message_receipt_cb, wctxt);
-    CU_ASSERT_TRUE_FATAL(msgid > 0);
+    CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
@@ -293,7 +293,7 @@ static void test_send_offmsg_with_receipt(void)
     sprintf(msg, "%s%s", prefix, "receipt");
     msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, msg, strlen(msg),
                                           message_receipt_cb, wctxt);
-    CU_ASSERT_TRUE_FATAL(msgid > 0);
+    CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
@@ -362,7 +362,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
 
     msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, bulkmsg, bulksz,
                                           message_receipt_cb, wctxt);
-    CU_ASSERT_TRUE_FATAL(msgid > 0);
+    CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
@@ -421,7 +421,7 @@ static void test_send_msg_with_receipt_in_edge_case(void)
     sprintf(msg, "%s%s", prefix, "receipt");
     msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, msg, strlen(msg),
                                           message_receipt_cb, wctxt);
-    CU_ASSERT_TRUE_FATAL(msgid > 0);
+    CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
     status_cond_wait(wctxt->friend_status_cond, OFFLINE);
 
