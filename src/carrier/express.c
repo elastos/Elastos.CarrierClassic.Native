@@ -839,7 +839,7 @@ ExpressConnector *express_connector_create(ElaCarrier *carrier,
     }
     connector->stop_flag = 0;
 
-    connector->magic_num = ntohl(EXP_HTTP_MAGICNUM);
+    connector->magic_num = htonl(EXP_HTTP_MAGICNUM);
 
     connector->express_nodes_size = carrier->pref.express_size;
     for(idx = 0; idx < connector->express_nodes_size; idx++) {
