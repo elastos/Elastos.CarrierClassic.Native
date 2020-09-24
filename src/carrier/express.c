@@ -92,6 +92,7 @@ typedef struct {
     } crypted_data_cache;
 
     char to[ELA_MAX_ADDRESS_LEN + 1];
+    ExpressMessageType type;
     int64_t msgid;
     size_t data_size;
     uint8_t data[0];
@@ -604,7 +605,7 @@ static int postmsg_runner(ExpTasklet *base)
             break;
     }
 
-    connector->on_stat_cb(connector->carrier, task->to, task->msgid, rc);
+    connector->on_stat_cb(connector->carrier, task->to, task->type, task->msgid, rc);
     if(rc < 0) {
         vlogE("Express: Failed to post message.(%x)", rc);
         return rc;
@@ -737,6 +738,7 @@ static int enqueue_speedmeter_tasklet(ExpressConnector *connector)
 }
 
 static int enqueue_post_tasklet(ExpressConnector *connector, const char *to,
+                                ExpressMessageType type,
                                 const void *data, size_t size, int64_t msgid)
 {
     int rc;
@@ -759,6 +761,7 @@ static int enqueue_post_tasklet(ExpressConnector *connector, const char *to,
 
     strcpy(task->to, to);
 
+    task->type = type;
     task->msgid = msgid;
     memcpy(task->data, data, size);
     task->data_size = size;
@@ -923,7 +926,7 @@ int express_enqueue_post_request(ExpressConnector *connector,
                                  const char *address,
                                  const void *hello, size_t size)
 {
-    return enqueue_post_tasklet(connector, address, hello, size, 0);
+    return enqueue_post_tasklet(connector, address, EXPRESS_FRIEND_REQUEST, hello, size, 0);
 }
 
 int express_enqueue_post_message_with_receipt(ExpressConnector *connector,
@@ -955,7 +958,7 @@ int express_enqueue_post_message_with_receipt(ExpressConnector *connector,
     }
     crypted_sz = rc;
 
-    rc = enqueue_post_tasklet(connector, friendid, crypted_data, crypted_sz, msgid);
+    rc = enqueue_post_tasklet(connector, friendid, EXPRESS_FRIEND_MESSAGE, crypted_data, crypted_sz, msgid);
     free(crypted_data);
     if (rc < 0) {
         vlogE("Express: enqueue post tasklet error(%x)", rc);
