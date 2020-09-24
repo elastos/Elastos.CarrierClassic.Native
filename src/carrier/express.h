@@ -50,10 +50,6 @@ int express_enqueue_post_request(ExpressConnector *connector,
                                  const char *address,
                                  const void *data, size_t size);
 
-int express_enqueue_post_message(ExpressConnector *connector,
-                                 const char *friendid,
-                                 const void *data, size_t size);
-
 int express_enqueue_post_message_with_receipt(ExpressConnector *connector,
                                               const char *friendid,
                                               const void *data, size_t size,
