@@ -886,44 +886,6 @@ void express_connector_kill(ExpressConnector *connector)
     pthread_mutex_unlock(&connector->lock);
 }
 
-int express_enqueue_post_message(ExpressConnector *connector,
-                                 const char *friendid,
-                                 const void *data, size_t size)
-{
-    uint8_t shared_key[SYMMETRIC_KEY_BYTES];
-    uint8_t *crypted_data;
-    ssize_t crypted_sz;
-    int rc;
-
-    rc = compute_friend_sharedkey(connector->carrier, friendid, shared_key);
-    if (rc < 0) {
-        vlogE("Express: compute shared key error(%x)", rc);
-        return rc;
-    }
-
-    crypted_data = (uint8_t *)calloc(1, size + NONCE_BYTES + ZERO_BYTES);
-    if (!crypted_data) {
-        vlogW("Express: post message failed.");
-        return ELA_EXPRESS_ERROR(ELAERR_OUT_OF_MEMORY);
-    }
-    rc = encrypt_data(shared_key, (uint8_t *)data, size, crypted_data);
-    if(rc < 0) {
-        free(crypted_data);
-        vlogE("Express: encrypt last tiime failed.(%x)", rc);
-        return rc;
-    }
-    crypted_sz = rc;
-
-    rc = enqueue_post_tasklet(connector, friendid, crypted_data, crypted_sz, 0);
-    free(crypted_data);
-    if (rc < 0) {
-        vlogE("Express: enqueue post tasklet error(%x)", rc);
-        return rc;
-    }
-
-    return 0;
-}
-
 int express_enqueue_post_request(ExpressConnector *connector,
                                  const char *address,
                                  const void *hello, size_t size)
