@@ -1084,15 +1084,6 @@ static void ela_destroy(void *argv)
 static void notify_offmsg_received(ElaCarrier *w, const char *, const uint8_t *, size_t, int64_t);
 static void notify_offreq_received(ElaCarrier *w, const char *, const uint8_t *, size_t, int64_t);
 static void notify_offreceipt_received(ElaCarrier *w, const char *, ExpressMessageType, int64_t, int);
-static ExpressConnector *create_express_connector(ElaCarrier *w)
-{
-    if (w->connector)
-        return w->connector;
-
-    return express_connector_create(w, notify_offmsg_received,
-                    notify_offreq_received, notify_offreceipt_received);
-}
-
 ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
                     void *context)
 {
@@ -1333,9 +1324,18 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         return NULL;
     }
 
-    w->connector = create_express_connector(w);
-    if (!w->connector)
-        vlogW("Carrier: Creating express connector error (%x)", ela_get_error());
+    if (w->pref.express_size) {
+        w->connector = express_connector_create(w, notify_offmsg_received,
+                                                notify_offreq_received,
+                                                notify_offreceipt_received);
+        if (!w->connector) {
+            vlogE("Carrier: Creating express connector error (%x)", ela_get_error());
+            free_persistence_data(&data);
+            deref(w);
+            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            return NULL;
+        }
+    }
 
     apply_extra_data(w, data.extra_savedata, data.extra_savedata_len);
     free_persistence_data(&data);
@@ -1421,7 +1421,6 @@ static void notify_connection_cb(bool connected, void *context)
     if (w->callbacks.connection_status)
         w->callbacks.connection_status(w, w->connection_status, w->context);
 
-    w->connector = create_express_connector(w);
     if (w->connector && connected)
         express_enqueue_pull_messages(w->connector);
 }
@@ -1509,9 +1508,8 @@ redo_check:
         }
 
         vlogI("Carrier: Friend[%s] goes offline, send message(0x%llx) by express.", userid, item->msgid);
-        rc = send_express_message(w, userid,
-                                  item->msgid, item->data, item->size,
-                                  ext_name);
+        rc = w->connector ? send_express_message(w, userid, item->msgid,
+                                                 item->data, item->size, ext_name) : -1;
         if (rc < 0) {
             motfs_iterator_remove(&it);
             pthread_mutex_unlock(&w->motfs_lock);
@@ -1896,13 +1894,14 @@ static void do_express_expire(ElaCarrier *w)
     struct timeval timeout;
     struct timeval now;
 
+    if (!w->connector)
+        return;
+
     gettimeofday(&now, NULL);
     if (timercmp(&now, &w->express_expiretime, <=))
         return;
 
-    w->connector = create_express_connector(w);
-    if (w->connector && w->express_expiretime.tv_sec > 0)
-        express_enqueue_pull_messages(w->connector);
+    express_enqueue_pull_messages(w->connector);
 
     timeout.tv_sec  = PULLMSG_REGULAR_INTERVAL;
     timeout.tv_usec = 0;
@@ -3083,7 +3082,6 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
         return -1;
     }
 
-    w->connector = create_express_connector(w);
     if (w->connector) {
         rc = express_enqueue_post_request(w->connector, address, data, data_len);
         if (rc < 0)
@@ -3335,9 +3333,7 @@ static int send_express_message(ElaCarrier *w, const char *userid,
     size_t data_len;
     int rc;
 
-    w->connector = create_express_connector(w);
-    if (!w->connector)
-        return ELA_EXPRESS_ERROR(ELAERR_BAD_PERSISTENT_DATA);
+    assert(w->connector);
 
     cp = elacp_create(ELACP_TYPE_MESSAGE, ext_name);
     if (!cp)
@@ -3432,7 +3428,7 @@ static int64_t send_friend_message_internal(ElaCarrier *w, const char *to,
         rc = ELA_DHT_ERROR(ELAERR_FRIEND_OFFLINE);
     }
 
-    if (rc < 0) {
+    if (rc < 0 && w->connector) {
         msgid = generate_msgid(w->offmsgid++, friend_number, false);
         rc = send_express_message(w, userid, msgid, msg, len, ext_name);
         if (rc == 0 && offline)
