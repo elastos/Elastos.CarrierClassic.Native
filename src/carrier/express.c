@@ -102,7 +102,7 @@ typedef struct {
     ExpTasklet base;
     uint8_t *shared_key_cache;
 
-    int64_t last_timestamp;
+    uint64_t last_timestamp;
     size_t len;
     uint8_t *data;
 } ExpPullTasklet;
@@ -188,7 +188,7 @@ static ssize_t decrypt_data(uint8_t *key,
 
 static int process_message(ExpressConnector *connector,
                            uint8_t *data, size_t size,
-                           int64_t *timestamp)
+                           uint64_t last_ts, uint64_t *timestamp)
 {
     int rc;
     ElaCPPullMsg pmsg;
@@ -199,7 +199,10 @@ static int process_message(ExpressConnector *connector,
         return ELA_EXPRESS_ERROR(ELAERR_BAD_FLATBUFFER);
     }
 
-    *timestamp = pmsg.timestamp;
+    if (last_ts > pmsg.timestamp) {
+        vlogE("Express: invalid message timestamp.");
+        return -1;
+    }
 
     if (pmsg.type == 'M') {
         uint8_t shared_key[SYMMETRIC_KEY_BYTES];
@@ -232,6 +235,7 @@ static int process_message(ExpressConnector *connector,
             return rc;
         }
         plain_size = rc;
+        *timestamp = pmsg.timestamp;
 
         connector->on_msg_cb(connector->carrier, pmsg.from,
                              plain_data, plain_size,
@@ -245,12 +249,14 @@ static int process_message(ExpressConnector *connector,
             vlogE("Express: Friend request with unmatched address, dropped.");
             return -1;
         }
+        *timestamp = pmsg.timestamp;
 
         connector->on_req_cb(connector->carrier, pmsg.from,
                              pmsg.payload, pmsg.payload_sz,
                              pmsg.timestamp);
     } else {
         vlogW("Express: recieved offline unknown type at time %llu", pmsg.timestamp);
+        return -1;
     }
 
     return 0;
@@ -258,7 +264,7 @@ static int process_message(ExpressConnector *connector,
 
 static int parse_msg(ExpressConnector *connector, uint8_t *shared_key,
                      uint8_t *crypted_data, size_t crypted_size,
-                     int64_t *timestamp)
+                     uint64_t last_ts, uint64_t *timestamp)
 {
     int rc;
     uint8_t *plain_data;
@@ -280,7 +286,7 @@ static int parse_msg(ExpressConnector *connector, uint8_t *shared_key,
     }
     plain_size = rc;
 
-    rc = process_message(connector, plain_data, plain_size, timestamp);
+    rc = process_message(connector, plain_data, plain_size, last_ts, timestamp);
     if (rc < 0) {
         vlogW("Express: process message failed: (%x).", rc);
         free(plain_data);
@@ -298,7 +304,7 @@ typedef struct {
 } exp_resp_t;
 
 static int parse_exp_resp(ExpressConnector *connector, uint8_t *shared_key,
-                          const uint8_t *data, size_t size, int64_t *timestamp)
+                          const uint8_t *data, size_t size, uint64_t last_ts, uint64_t *timestamp)
 {
     exp_resp_t *resp = (exp_resp_t *) data;
     uint32_t len;
@@ -317,7 +323,7 @@ static int parse_exp_resp(ExpressConnector *connector, uint8_t *shared_key,
     if (sizeof(exp_resp_t) + len > size)
         return 0;
 
-    rc = parse_msg(connector, shared_key, resp->msg, len, timestamp);
+    rc = parse_msg(connector, shared_key, resp->msg, len, last_ts, timestamp);
     if (rc < 0) {
         vlogW("Express: response body parse message failed: (%x).", rc);
         return rc;
@@ -332,6 +338,7 @@ size_t http_read_data(char *buffer, size_t size, size_t nitems, void *userdata)
     ExpPullTasklet *task = (ExpPullTasklet *)userdata;
     ExpressConnector *connector = task->base.connector;
     size_t buf_sz = size * nitems;
+    uint64_t ts;
     size_t parsed;
 
     if (!task->data)
@@ -341,9 +348,11 @@ size_t http_read_data(char *buffer, size_t size, size_t nitems, void *userdata)
     memcpy(task->data + task->len, buffer, buf_sz);
     task->len += buf_sz;
 
-    for (parsed = 0; (rc = parse_exp_resp(connector, task->shared_key_cache,
-                                          task->data + parsed, task->len - parsed,
-                                          &task->last_timestamp)) > 0; parsed += rc) ;
+    for (parsed = 0;
+         (rc = parse_exp_resp(connector, task->shared_key_cache,
+                              task->data + parsed, task->len - parsed,
+                              task->last_timestamp, &ts)) > 0;
+         parsed += rc, task->last_timestamp = ts) ;
     if (rc < 0) {
         ela_set_error(rc);
         deref(task->data);
