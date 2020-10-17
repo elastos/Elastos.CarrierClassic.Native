@@ -63,7 +63,7 @@ static bool group_iterate_cb(const char *groupid, void *context)
 
         for (i = 0; i < extra->group_total; i++) {
             if (strcmp(groupid, extra->groupids[i]) == 0) {
-                extra->groupids_mask |= 1 << i;
+                extra->groupids_mask |= (1 << i);
                 break;
             }
         }
