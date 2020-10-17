@@ -236,7 +236,7 @@ static void test_accept_friend(void)
         status_cond_wait(wctxt->friend_status_cond, ONLINE);
         CU_ASSERT_TRUE(extra->connection_status == ElaConnectionStatus_Connected);
 
-        rc = read_ack("%32s %32s", buf[0], buf[1]);
+        rc = read_ack("%31s %31s", buf[0], buf[1]);
         CU_ASSERT_EQUAL_FATAL(rc, 2);
         CU_ASSERT_STRING_EQUAL(buf[0], "fadd");
         CU_ASSERT_STRING_EQUAL(buf[1], "succeeded");

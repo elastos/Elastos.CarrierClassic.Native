@@ -148,7 +148,7 @@ static void test_send_message_to_friend(void)
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_EQUAL_FATAL(is_offline, false);
 
-    rc = read_ack("%1024s", buf);
+    rc = read_ack("%1023s", buf);
     CU_ASSERT_EQUAL(rc, 1);
     CU_ASSERT_STRING_EQUAL(msg, buf);
 }
@@ -249,7 +249,7 @@ static void test_send_bulkmsg_to_friend(void)
     rc = ela_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    rc = read_ack("%64s %d", buf, &size);
+    rc = read_ack("%31s %d", buf, &size);
     CU_ASSERT_EQUAL_FATAL(rc, 2);
     CU_ASSERT_EQUAL(size, bulksz);
     CU_ASSERT_STRING_EQUAL(buf, "bulkmsg");
