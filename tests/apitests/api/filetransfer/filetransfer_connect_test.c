@@ -241,8 +241,8 @@ static void test_filetransfer_accept_connect(void)
        FileTransferConnection_connected. */
     cond_wait(wctxt->ft_cond);
 
-    ft_con_state_bits |= 1 << FileTransferConnection_connecting;
-    ft_con_state_bits |= 1 << FileTransferConnection_connected;
+    ft_con_state_bits |= (1 << FileTransferConnection_connecting);
+    ft_con_state_bits |= (1 << FileTransferConnection_connected);
     CU_ASSERT_EQUAL_FATAL(wctxt->ft_con_state_bits, ft_con_state_bits);
 
     rc = write_cmd("ft_cleanup\n");
@@ -258,7 +258,7 @@ static void test_filetransfer_accept_connect(void)
        FileTransferConnection_closed. */
     cond_wait(wctxt->ft_cond);
 
-    ft_con_state_bits |= 1 << FileTransferConnection_closed;
+    ft_con_state_bits |= (1 << FileTransferConnection_closed);
     CU_ASSERT_EQUAL(wctxt->ft_con_state_bits, ft_con_state_bits);
 
     ela_filetransfer_close(wctxt->ft);

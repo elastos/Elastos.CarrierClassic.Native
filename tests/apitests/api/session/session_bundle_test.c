@@ -154,7 +154,7 @@ static void stream_state_changed(ElaSession *ws, int stream,
     StreamContext *stream_ctxt = (StreamContext *)context;
 
     stream_ctxt->state = state;
-    stream_ctxt->state_bits |= 1 << state;
+    stream_ctxt->state_bits |= (1 << state);
 
     vlogD("Stream [%d] state changed to: %s", stream, stream_state_name(state));
 

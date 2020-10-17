@@ -220,8 +220,8 @@ static void test_filetransfer_file(void)
        FileTransferConnection_connected. */
     cond_wait(wctxt->ft_cond);
 
-    ft_con_state_bits |= 1 << FileTransferConnection_connecting;
-    ft_con_state_bits |= 1 << FileTransferConnection_connected;
+    ft_con_state_bits |= (1 << FileTransferConnection_connecting);
+    ft_con_state_bits |= (1 << FileTransferConnection_connected);
     CU_ASSERT_EQUAL_FATAL(wctxt->ft_con_state_bits, ft_con_state_bits);
 
     // Wait for the sent_cb to be invoked.
@@ -329,8 +329,8 @@ static void test_filetransfer_receive_file(void)
        FileTransferConnection_connected. */
     cond_wait(wctxt->ft_cond);
 
-    ft_con_state_bits |= 1 << FileTransferConnection_connecting;
-    ft_con_state_bits |= 1 << FileTransferConnection_connected;
+    ft_con_state_bits |= (1 << FileTransferConnection_connecting);
+    ft_con_state_bits |= (1 << FileTransferConnection_connected);
     CU_ASSERT_EQUAL_FATAL(wctxt->ft_con_state_bits, ft_con_state_bits);
 
     // Wait for the sender to finish sending.
@@ -431,8 +431,8 @@ static void test_filetransfer_file_resume_interrupted_transferring(void)
        FileTransferConnection_connected. */
     cond_wait(wctxt->ft_cond);
 
-    ft_con_state_bits |= 1 << FileTransferConnection_connecting;
-    ft_con_state_bits |= 1 << FileTransferConnection_connected;
+    ft_con_state_bits |= (1 << FileTransferConnection_connecting);
+    ft_con_state_bits |= (1 << FileTransferConnection_connected);
     CU_ASSERT_EQUAL_FATAL(wctxt->ft_con_state_bits, ft_con_state_bits);
 
     // Wait for the sent_cb to be invoked.
@@ -549,8 +549,8 @@ static void test_filetransfer_resume_receiving_file(void)
        FileTransferConnection_connected. */
     cond_wait(wctxt->ft_cond);
 
-    ft_con_state_bits |= 1 << FileTransferConnection_connecting;
-    ft_con_state_bits |= 1 << FileTransferConnection_connected;
+    ft_con_state_bits |= (1 << FileTransferConnection_connecting);
+    ft_con_state_bits |= (1 << FileTransferConnection_connected);
     CU_ASSERT_EQUAL_FATAL(wctxt->ft_con_state_bits, ft_con_state_bits);
 
     // Wait for the sender to finish sending.
