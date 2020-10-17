@@ -205,7 +205,7 @@ static void test_send_message_with_receipt(void)
     CU_ASSERT_EQUAL(extra->msgid, msgid);
     CU_ASSERT_EQUAL(extra->state, ElaReceipt_ByFriend);
 
-    rc = read_ack("%1024s", in);
+    rc = read_ack("%1023s", in);
     CU_ASSERT_EQUAL_FATAL(rc, 1);
     CU_ASSERT_STRING_EQUAL(in, msg);
 }
@@ -244,7 +244,7 @@ static void test_send_bulkmsg_with_receipt(void)
     CU_ASSERT_EQUAL(extra->msgid, msgid);
     CU_ASSERT_EQUAL(extra->state, ElaReceipt_ByFriend);
 
-    rc = read_ack("%64s %d", buf, &size);
+    rc = read_ack("%31s %d", buf, &size);
     CU_ASSERT_EQUAL_FATAL(rc, 2);
     CU_ASSERT_EQUAL(size, bulksz);
     CU_ASSERT_STRING_EQUAL(buf, "bulkmsg");
@@ -284,7 +284,7 @@ static void test_send_offmsg_with_receipt(void)
     rc = write_cmd("offmsgprefix %s\n", prefix);
     CU_ASSERT_FATAL(rc > 0);
 
-    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL_FATAL(rc, 2);
     CU_ASSERT_STRING_EQUAL(buf[0], "offmsgprefix");
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
@@ -307,7 +307,7 @@ static void test_send_offmsg_with_receipt(void)
     // in offmsg case, robot would not ack with "ready" to testcase.
     status_cond_wait(wctxt->friend_status_cond, ONLINE);
 
-    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);
     CU_ASSERT_STRING_EQUAL(buf[0], "offmsg");
     CU_ASSERT_STRING_EQUAL(buf[1], msg);
@@ -335,7 +335,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     rc = write_cmd("killnode\n");
     CU_ASSERT_FATAL(rc > 0);
 
-    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);
     CU_ASSERT_STRING_EQUAL(buf[0], "killnode");
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
@@ -346,7 +346,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     rc = write_cmd("offmsgprefix %s\n", prefix);
     CU_ASSERT_FATAL(rc > 0);
 
-    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL_FATAL(rc, 2);
     CU_ASSERT_STRING_EQUAL(buf[0], "offmsgprefix");
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
@@ -376,7 +376,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     // in offmsg case, robot would not ack with "ready" to testcase.
     status_cond_wait(wctxt->friend_status_cond, ONLINE);
 
-    rc = read_ack("%32s %d", buf[0], &size);
+    rc = read_ack("%31s %d", buf[0], &size);
     CU_ASSERT_EQUAL_FATAL(rc, 2);
     CU_ASSERT_EQUAL(size, bulksz);
     CU_ASSERT_STRING_EQUAL(buf[0], "bulkmsg");
@@ -403,7 +403,7 @@ static void test_send_msg_with_receipt_in_edge_case(void)
     rc = write_cmd("killnode\n");
     CU_ASSERT_FATAL(rc > 0);
 
-    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);
     CU_ASSERT_STRING_EQUAL(buf[0], "killnode");
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
@@ -437,7 +437,7 @@ static void test_send_msg_with_receipt_in_edge_case(void)
     // in offmsg case, robot would not ack with "ready" to testcase.
     status_cond_wait(wctxt->friend_status_cond, ONLINE);
 
-    rc = read_ack("%32s %32s", buf[0], buf[1]);
+    rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);
     CU_ASSERT_STRING_EQUAL(buf[0], "offmsg");
     CU_ASSERT_STRING_EQUAL(buf[1], msg);
