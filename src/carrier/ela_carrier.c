@@ -931,6 +931,7 @@ static void get_extra_savedata(ElaCarrier *w, void *data, size_t len)
 
 static int store_persistence_data(ElaCarrier *w)
 {
+    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
     uint8_t *buf;
     uint8_t *pos;
     char *journal_filename;
@@ -977,9 +978,12 @@ static int store_persistence_data(ElaCarrier *w)
     pos = buf + 256;
     sha256(pos, total_len - 256, buf + (sizeof(uint32_t) * 4), SHA256_BYTES);
 
+    pthread_mutex_lock(&lock);
+
     rc = mkdirs(w->pref.data_location, S_IRWXU);
     if (rc < 0) {
         free(buf);
+        pthread_mutex_unlock(&lock);
         return ELA_SYS_ERROR(errno);
     }
 
@@ -991,18 +995,21 @@ static int store_persistence_data(ElaCarrier *w)
     fd = open(journal_filename, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         free(buf);
+        pthread_mutex_unlock(&lock);
         return ELA_SYS_ERROR(errno);
     }
 
     if (write(fd, buf, total_len) != total_len) {
         close(fd);
         remove(journal_filename);
+        pthread_mutex_unlock(&lock);
         return ELA_SYS_ERROR(errno);
     }
 
     if (fsync(fd) < 0) {
         close(fd);
         remove(journal_filename);
+        pthread_mutex_unlock(&lock);
         return ELA_SYS_ERROR(errno);
     }
 
@@ -1011,6 +1018,8 @@ static int store_persistence_data(ElaCarrier *w)
 
     remove(filename);
     rename(journal_filename, filename);
+
+    pthread_mutex_unlock(&lock);
 
     return 0;
 }
