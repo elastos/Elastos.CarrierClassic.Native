@@ -762,6 +762,7 @@ int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht)
     options.ipv6_enabled = false;
     options.udp_enabled = udp_enabled;
     options.log_callback = log_cb;
+    options.experimental_thread_safety = true;
 
     if (savedata && datalen) {
         if (datalen == TOX_SECRET_KEY_SIZE)
