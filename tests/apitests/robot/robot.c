@@ -294,7 +294,7 @@ static void friend_message_cb(ElaCarrier *w, const char *from,
         switch(extra->offmsg_case) {
         case OffmsgCase_Once:
             if (strstr((char *)msg, extra->offmsg_prefix)) {
-                if (len < 4*1204)
+                if (len < 4*1024)
                     write_ack("offmsg %.*s\n", len, msg);
                 else
                     write_ack("bulkmsg %d\n", len);
