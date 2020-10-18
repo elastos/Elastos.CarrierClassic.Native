@@ -299,6 +299,8 @@ static void test_send_multiple_friend_requests(void)
     CU_ASSERT_STRING_EQUAL_FATAL(buf[0], "hello");
     CU_ASSERT_STRING_EQUAL_FATAL(buf[1], hello);
 
+    // wait until a new friend request can be accepted.
+    sleep(2);
     clear_socket_buffer();
     memset(hello, '2', sizeof(hello) - 1);
     rc = ela_add_friend(wctxt->carrier, robotaddr, hello);
