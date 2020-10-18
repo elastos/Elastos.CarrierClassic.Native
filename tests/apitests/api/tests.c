@@ -38,8 +38,10 @@
 #include "config.h"
 #include "suites.h"
 
-#define OFFLINE_MSG_TEST_NAME   "friend_offline_message_test"
-#define OFFLINE_MSG_TEST_FILE   "friend_offline_message_test.c"
+#define OFFLINE_MSG_TEST_NAME   "friend_offmsg_test"
+#define OFFLINE_MSG_TEST_FILE   "friend_offmsg_test.c"
+#define OFFLINE_REQ_TEST_NAME   "friend_offreq_test"
+#define OFFLINE_REQ_TEST_FILE   "friend_offreq_test.c"
 
 static void shuffle(int *order, int count)
 {
@@ -223,10 +225,6 @@ int test_main(int argc, char *argv[])
     srand((unsigned int)time(NULL));
 
     for (i = 0, suites_cnt = 0; suites[i].fileName; i++) {
-        if (global_config.exclude_offmsg
-            && strcmp(suites[i].fileName, OFFLINE_MSG_TEST_FILE) == 0)
-            continue;
-
         suites_order[suites_cnt] = suites_cnt;
         suites_cnt++;
     }
@@ -239,7 +237,8 @@ int test_main(int argc, char *argv[])
 
         suite_idx = suites_order[i];
         if (global_config.exclude_offmsg
-            && strcmp(suites[suite_idx].strName, OFFLINE_MSG_TEST_NAME) == 0)
+            && (!strcmp(suites[suite_idx].strName, OFFLINE_MSG_TEST_NAME) ||
+                !strcmp(suites[suite_idx].strName, OFFLINE_REQ_TEST_NAME)))
             continue;
 
         pSuite = CU_add_suite(suites[suite_idx].strName,
@@ -259,6 +258,11 @@ int test_main(int argc, char *argv[])
             shuffle(cases_order, cases_cnt);
 
         for (j = 0; j < cases_cnt; j++) {
+            if (global_config.exclude_offmsg
+                && (strstr(ti[cases_order[j]].pName, "off") ||
+                    strstr(ti[cases_order[j]].pName, "edge")))
+                continue;
+
             if (CU_add_test(pSuite, ti[cases_order[j]].pName,
                             ti[cases_order[j]].pTestFunc) == NULL) {
                 CU_cleanup_registry();
