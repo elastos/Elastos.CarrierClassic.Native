@@ -55,7 +55,7 @@ static inline void cond_init(Condition *cond)
 static inline void cond_wait(Condition *cond)
 {
     pthread_mutex_lock(&cond->mutex);
-    if (cond->signaled <= 0) {
+    while (cond->signaled <= 0) {
         pthread_cond_wait(&cond->cond, &cond->mutex);
     }
     cond->signaled--;
@@ -66,7 +66,6 @@ static inline bool cond_trywait(Condition *cond, int ms)
 {
     struct timeval now;
     struct timespec end_time;
-    bool bRet = false;
     int rc = 0;
 
     gettimeofday(&now, NULL);
@@ -74,16 +73,16 @@ static inline bool cond_trywait(Condition *cond, int ms)
     end_time.tv_nsec = now.tv_usec * 1000;
 
     pthread_mutex_lock(&cond->mutex);
-    if (cond->signaled <= 0) {
+    while (cond->signaled <= 0) {
         rc = pthread_cond_timedwait(&cond->cond, &cond->mutex, &end_time);
+        if (rc == ETIMEDOUT) {
+            pthread_mutex_unlock(&cond->mutex);
+            return false;
+        }
     }
-    if (rc != ETIMEDOUT) {
-        cond->signaled--;
-        bRet = true;
-    }
-
+    cond->signaled--;
     pthread_mutex_unlock(&cond->mutex);
-    return bRet;
+    return true;
 }
 
 static inline void cond_signal(Condition *cond)
@@ -96,14 +95,7 @@ static inline void cond_signal(Condition *cond)
 
 static inline void cond_reset(Condition *cond)
 {
-    struct timespec timeout = {0, 1000};
-    int rc;
-
     pthread_mutex_lock(&cond->mutex);
-    do {
-        rc = pthread_cond_timedwait(&cond->cond, &cond->mutex, &timeout);
-    } while (rc != ETIMEDOUT);
-
     cond->signaled = 0;
     pthread_mutex_unlock(&cond->mutex);
 }
