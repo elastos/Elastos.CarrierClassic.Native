@@ -42,8 +42,8 @@ typedef struct Condition {
     int signaled;
 } Condition;
 
-#define DEFINE_COND(obj) \
-	obj = { .mutex = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER }
+#define COND_INITIALIZER { .mutex = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER }
+#define DEFINE_COND(obj) obj = COND_INITIALIZER
 
 static inline void cond_init(Condition *cond)
 {

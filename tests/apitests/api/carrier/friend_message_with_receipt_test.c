@@ -77,7 +77,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
-    status_cond_signal(wctxt->friend_status_cond, status);
+    status_cond_signal(wctxt->friend_status_cond);
 
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
@@ -278,7 +278,8 @@ static void test_send_offmsg_with_receipt(void)
     CU_ASSERT_STRING_EQUAL(buf[0], "killnode");
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 
-    status_cond_wait(wctxt->friend_status_cond, OFFLINE);
+    status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
+                     robotid, ElaConnectionStatus_Disconnected);
 
     sprintf(prefix, "%ld:", time(NULL));
     rc = write_cmd("offmsgprefix %s\n", prefix);
@@ -305,7 +306,8 @@ static void test_send_offmsg_with_receipt(void)
     CU_ASSERT_TRUE_FATAL(rc > 0);
 
     // in offmsg case, robot would not ack with "ready" to testcase.
-    status_cond_wait(wctxt->friend_status_cond, ONLINE);
+    status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
+                     robotid, ElaConnectionStatus_Connected);
 
     rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);
@@ -340,7 +342,8 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     CU_ASSERT_STRING_EQUAL(buf[0], "killnode");
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 
-    status_cond_wait(wctxt->friend_status_cond, OFFLINE);
+    status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
+                     robotid, ElaConnectionStatus_Disconnected);
 
     sprintf(prefix, "%ld:", time(NULL));
     rc = write_cmd("offmsgprefix %s\n", prefix);
@@ -374,7 +377,8 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     CU_ASSERT_TRUE_FATAL(rc > 0);
 
     // in offmsg case, robot would not ack with "ready" to testcase.
-    status_cond_wait(wctxt->friend_status_cond, ONLINE);
+    status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
+                     robotid, ElaConnectionStatus_Connected);
 
     rc = read_ack("%31s %d", buf[0], &size);
     CU_ASSERT_EQUAL_FATAL(rc, 2);
@@ -423,7 +427,8 @@ static void test_send_msg_with_receipt_in_edge_case(void)
                                           message_receipt_cb, wctxt);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
-    status_cond_wait(wctxt->friend_status_cond, OFFLINE);
+    status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
+                     robotid, ElaConnectionStatus_Disconnected);
 
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
@@ -435,7 +440,8 @@ static void test_send_msg_with_receipt_in_edge_case(void)
     CU_ASSERT_TRUE_FATAL(rc > 0);
 
     // in offmsg case, robot would not ack with "ready" to testcase.
-    status_cond_wait(wctxt->friend_status_cond, ONLINE);
+    status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
+                     robotid, ElaConnectionStatus_Connected);
 
     rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);

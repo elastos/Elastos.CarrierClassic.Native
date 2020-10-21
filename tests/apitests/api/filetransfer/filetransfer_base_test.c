@@ -67,7 +67,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
-    status_cond_signal(wctxt->friend_status_cond, status);
+    status_cond_signal(wctxt->friend_status_cond);
 
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
@@ -77,7 +77,7 @@ static void ft_state_changed_cb(ElaFileTransfer *filetransfer,
 {
     TestContext *wctx = (TestContext *)context;
     CarrierContext *ctx = wctx->carrier;
-    
+
     ctx->ft_con_state = state;
     ctx->ft_con_state_bits |= (1 << state);
     cond_signal(ctx->ft_cond);
