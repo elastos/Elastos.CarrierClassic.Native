@@ -70,7 +70,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
-    status_cond_signal(wctxt->friend_status_cond, status);
+    status_cond_signal(wctxt->friend_status_cond);
 
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
@@ -207,7 +207,8 @@ static int persistent_group_message_routine(TestContext *ctx)
 
     // wait until peer_list_changed callback invoked
     cond_wait(wctx->group_cond);
-    status_cond_wait(wctx->friend_status_cond, OFFLINE);
+    status_cond_wait(wctx->friend_status_cond, wctx->carrier,
+                     robotid, ElaConnectionStatus_Disconnected);
 
     write_cmd("restartnode\n");
 
@@ -222,7 +223,8 @@ static int persistent_group_message_routine(TestContext *ctx)
     CU_ASSERT_STRING_EQUAL(buf[0], "restartnode");
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 
-    status_cond_wait(wctx->friend_status_cond, ONLINE);
+    status_cond_wait(wctx->friend_status_cond, wctx->carrier,
+                     robotid, ElaConnectionStatus_Connected);
 
     // wait until peer_list_changed callback invoked
     cond_wait(wctx->group_cond);

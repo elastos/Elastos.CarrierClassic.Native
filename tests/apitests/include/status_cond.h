@@ -36,87 +36,38 @@
 
 #include <crystal.h>
 
+#include "cond.h"
+
 typedef struct StatusCondition {
-    enum {
-       OFFLINE,
-       ONLINE,
-       FAILED
-    } friend_status;
-    int status_changed;
-    int signaled;
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
+    Condition cond;
 } StatusCondition;
 
-#define DEFINE_STATUS_COND(obj) \
-	obj = { .friend_status = OFFLINE, .status_changed = 0, .signaled = 0, .mutex = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER }
+#define DEFINE_STATUS_COND(obj) obj = { .cond = COND_INITIALIZER }
 
-static inline void status_cond_init(StatusCondition *cond)
+static inline void status_cond_wait(StatusCondition *cond, ElaCarrier *c,
+                                    const char *friend_id, ElaConnectionStatus status)
 {
-    cond->friend_status = OFFLINE;
-    cond->status_changed = 0;
-    cond->signaled = 0;
-    pthread_mutex_init(&cond->mutex, 0);
-    pthread_cond_init(&cond->cond, 0);
-}
+    while (true) {
+        ElaFriendInfo fi;
 
-static inline void status_cond_wait(StatusCondition *cond, int status)
-{
-    pthread_mutex_lock(&cond->mutex);
-    do {
-        if (cond->friend_status != status) {
-            if (cond->signaled <= 0) {
-                pthread_cond_wait(&cond->cond, &cond->mutex);
-            }
-            cond->signaled--;
-            cond->status_changed = 0;
-        } else {
-            if (cond->status_changed) {
-                if (cond->signaled <= 0) {
-                    pthread_cond_wait(&cond->cond, &cond->mutex);
-                }
-                cond->signaled--;
-                cond->status_changed = 0;
-            }
-
-            break;
+        ela_get_friend_info(c, friend_id, &fi);
+        if (fi.status != status) {
+            cond_wait(&cond->cond);
+            continue;
         }
-    } while (cond->friend_status != status);
-    pthread_mutex_unlock(&cond->mutex);
+
+        break;
+    }
 }
 
-static inline void status_cond_signal(StatusCondition *cond, int status)
+static inline void status_cond_signal(StatusCondition *cond)
 {
-    pthread_mutex_lock(&cond->mutex);
-    cond->friend_status = (status == ElaConnectionStatus_Connected) ? ONLINE : OFFLINE;
-    cond->signaled++;
-    cond->status_changed = 1;
-    pthread_cond_signal(&cond->cond);
-    pthread_mutex_unlock(&cond->mutex);
+    cond_signal(&cond->cond);
 }
 
 static inline void status_cond_reset(StatusCondition *cond)
 {
-    struct timespec timeout = {0, 1000};
-    int rc;
-
-    pthread_mutex_lock(&cond->mutex);
-    do {
-        rc = pthread_cond_timedwait(&cond->cond, &cond->mutex, &timeout);
-    } while (rc != ETIMEDOUT);
-
-    cond->status_changed = 0;
-    cond->signaled = 0;
-    pthread_mutex_unlock(&cond->mutex);
-}
-
-static inline void status_cond_deinit(StatusCondition *cond)
-{
-    cond->friend_status = OFFLINE;
-    cond->status_changed = 0;
-    cond->signaled = 0;
-    pthread_mutex_destroy(&cond->mutex);
-    pthread_cond_destroy(&cond->cond);
+    // do nothing
 }
 
 #endif /* __API_TESTS_STATUS_COND_H__*/

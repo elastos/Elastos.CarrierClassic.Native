@@ -187,7 +187,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Friend %s's connection status changed -> %s",
           friendid, connection_str(status));
 
-    status_cond_signal(wctx->friend_status_cond, status);
+    status_cond_signal(wctx->friend_status_cond);
 }
 
 static void friend_info_cb(ElaCarrier *w, const char *friendid,
