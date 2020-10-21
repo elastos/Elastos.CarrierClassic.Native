@@ -395,10 +395,6 @@ static void fremove(TestContext *context, int argc, char *argv[])
     // wait for friend_removed callback invoked.
     cond_wait(wctx->cond);
 
-    // wait until elatest offline.
-    status_cond_wait(wctx->friend_status_cond, w,
-                     argv[1], ElaConnectionStatus_Disconnected);
-
     write_ack("fremove succeeded\n");
 }
 
