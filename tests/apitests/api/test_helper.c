@@ -394,10 +394,6 @@ int remove_friend_anyway(TestContext *context, const char *userid)
             return rc;
         }
 
-        // wait until robot offline.
-        status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                         robotid, ElaConnectionStatus_Disconnected);
-
         // wait for friend_removed callback invoked.
         cond_wait(wctxt->cond);
     }
