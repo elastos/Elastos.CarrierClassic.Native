@@ -95,20 +95,6 @@ static void kill_node()
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 }
 
-static void start_node()
-{
-    int rc;
-    char buf[2][32] = {0};
-
-    clear_socket_buffer();
-    rc = write_cmd("restartnode %d\n", 10000);
-    CU_ASSERT_FATAL(rc > 0);
-
-    rc = read_ack("%32s", buf[0]);
-    CU_ASSERT_EQUAL_FATAL(rc, 1);
-    CU_ASSERT_STRING_EQUAL_FATAL(buf[0], "ready");
-}
-
 static ElaCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
