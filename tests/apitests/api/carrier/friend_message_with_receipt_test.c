@@ -214,7 +214,7 @@ static void test_send_bulkmsg_with_receipt(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    size_t bulksz = ELA_MAX_APP_BULKMSG_LEN;
+    size_t bulksz = 10000;
     char *bulkmsg;
     int64_t msgid = 0;
     int size;
@@ -319,7 +319,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    size_t bulksz = ELA_MAX_APP_BULKMSG_LEN;
+    size_t bulksz = 10000;
     char *bulkmsg;
     int64_t msgid = 0;
     int size;
