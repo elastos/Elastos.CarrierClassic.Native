@@ -227,7 +227,7 @@ static void test_send_message_to_self(void)
 static void test_send_bulkmsg_to_friend(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    size_t bulksz = ELA_MAX_APP_BULKMSG_LEN;
+    size_t bulksz = 10000;
     char *bulkmsg;
     char buf[32] = {0};
     int size;
