@@ -137,15 +137,17 @@ static void ready_cb(ElaCarrier *w, void *context)
 
     char address[ELA_MAX_ADDRESS_LEN + 1];
     char robotid[ELA_MAX_ID_LEN + 1];
+    static bool notified = false;
 
     vlogI("Robot is ready");
 
-    if (extra->offmsg_case != OffmsgCase_Absence)
+    if (notified)
         return;
 
     ela_get_userid(w, robotid, sizeof(robotid));
     ela_get_address(w, address, sizeof(address));
     write_ack("ready %s %s\n", robotid, address);
+    notified = true;
 }
 
 static
