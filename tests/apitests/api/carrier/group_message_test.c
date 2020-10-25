@@ -212,12 +212,6 @@ static int persistent_group_message_routine(TestContext *ctx)
 
     write_cmd("restartnode\n");
 
-    rc = read_ack("%32s %45s %52s", ack, robot_id, robot_addr);
-    CU_ASSERT_EQUAL(rc, 3);
-    CU_ASSERT_STRING_EQUAL(ack, "ready");
-    CU_ASSERT_STRING_EQUAL(robot_id, robotid);
-    CU_ASSERT_STRING_EQUAL(robot_addr, robotaddr);
-
     rc = read_ack("%32s %32s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);
     CU_ASSERT_STRING_EQUAL(buf[0], "restartnode");
