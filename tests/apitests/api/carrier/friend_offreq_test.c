@@ -154,8 +154,6 @@ static void test_send_offline_friend_request(void)
     CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
 
     kill_node();
-    status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                     robotid, ElaConnectionStatus_Disconnected);
 
     sprintf(prefix, "%ld", time(NULL));
     rc = write_cmd("offmsgprefix %s\n", prefix);
@@ -169,7 +167,9 @@ static void test_send_offline_friend_request(void)
     sprintf(hello, "%s:greeting", prefix);
     rc = ela_add_friend(wctxt->carrier, robotaddr, hello);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
+    // wait for friend_added() callback to be invoked.
     cond_wait(wctxt->cond);
+    CU_ASSERT_TRUE(ela_is_friend(wctxt->carrier, robotid));
 
     rc = write_cmd("restartnode %d\n", 900);
     CU_ASSERT_FATAL(rc > 0);
@@ -193,13 +193,9 @@ static void test_send_offline_friend_request(void)
     rc = write_cmd("faccept %s\n", userid);
     CU_ASSERT_FATAL(rc > 0);
 
-    // wait for friend_added() callback to be invoked.
-    cond_trywait(wctxt->cond, 60000);
-    CU_ASSERT_TRUE(ela_is_friend(wctxt->carrier, robotid));
     // wait for friend connection (online) callback to be invoked.
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
                      robotid, ElaConnectionStatus_Connected);
-    CU_ASSERT_TRUE(extra->connection_status == ElaConnectionStatus_Connected);
 
     rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL_FATAL(rc, 2);
