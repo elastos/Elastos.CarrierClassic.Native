@@ -339,15 +339,40 @@ int test_suite_cleanup(TestContext *context)
     return 0;
 }
 
+int hello_prepare(ElaCarrier *c, const char *hello)
+{
+    int rc;
+    char buf[2][32];
+    char myid[ELA_MAX_ID_LEN + 1];
+    char myaddr[ELA_MAX_ADDRESS_LEN + 1];
+
+    (void)ela_get_userid(c, myid, sizeof(myid));
+    (void)ela_get_address(c, myaddr, sizeof(myaddr));
+
+    rc = write_cmd("hello %s %s %s\n", myid, myaddr, hello);
+    CU_ASSERT_FATAL(rc > 0);
+
+    rc = read_ack("%31s %31s", buf[0], buf[1]);
+    CU_ASSERT_EQUAL_FATAL(rc, 2);
+    CU_ASSERT_STRING_EQUAL_FATAL(buf[0], "hello");
+    CU_ASSERT_STRING_EQUAL_FATAL(buf[1], "succeeded");
+
+    return 0;
+}
+
 int add_friend_anyway(TestContext *context, const char *userid,
                       const char *address)
 {
     CarrierContext *wctxt = context->carrier;
+    const char *hello = "auto-reply";
     int rc;
 
     clear_socket_buffer();
     if (!ela_is_friend(wctxt->carrier, userid)) {
-        rc = ela_add_friend(wctxt->carrier, address, "auto-reply");
+        rc = hello_prepare(wctxt->carrier, hello);
+        CU_ASSERT_FATAL(rc == 0);
+
+        rc = ela_add_friend(wctxt->carrier, address, hello);
         if (rc < 0) {
             vlogE("Error: attempt to add friend error.");
             return rc;
@@ -356,14 +381,13 @@ int add_friend_anyway(TestContext *context, const char *userid,
         // wait for friend_added callback invoked.
         cond_wait(wctxt->cond);
     } else {
-        char userid[ELA_MAX_ID_LEN + 1];
-        char useraddr[ELA_MAX_ADDRESS_LEN + 1];
-        const char *hello = "auto-reply";
+        char myid[ELA_MAX_ID_LEN + 1];
+        char myaddr[ELA_MAX_ADDRESS_LEN + 1];
 
-        (void)ela_get_userid(wctxt->carrier, userid, sizeof(userid));
-        (void)ela_get_address(wctxt->carrier, useraddr, sizeof(useraddr));
+        (void)ela_get_userid(wctxt->carrier, myid, sizeof(myid));
+        (void)ela_get_address(wctxt->carrier, myaddr, sizeof(myaddr));
 
-        rc = write_cmd("fadd %s %s %s\n", userid, useraddr, hello);
+        rc = write_cmd("fadd %s %s %s\n", myid, myaddr, hello);
         CU_ASSERT_FATAL(rc > 0);
     }
 

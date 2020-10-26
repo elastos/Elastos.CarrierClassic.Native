@@ -45,6 +45,8 @@ int test_suite_init(TestContext *ctx);
 
 int test_suite_cleanup(TestContext *ctx);
 
+int hello_prepare(ElaCarrier *c, const char *hello);
+
 int add_friend_anyway(TestContext *ctx, const char *userid, const char *address);
 
 int remove_friend_anyway(TestContext *ctx, const char *userid);
@@ -60,7 +62,7 @@ void test_stream_scheme(ElaStreamType stream_type, int stream_options,
 
 const char* connection_str(enum ElaConnectionStatus status);
 
-void test_group_scheme(TestContext *context, 
+void test_group_scheme(TestContext *context,
                        int (*do_work_cb)(TestContext *));
 
 void test_filetransfer_scheme(TestContext *context, int (*do_work_cb)(TestContext *),
