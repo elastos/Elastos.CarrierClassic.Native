@@ -293,6 +293,27 @@ static void wready(TestContext *context, int argc, char *argv[])
 }
 
 /*
+ * command format: hello userid useraddr hellomsg
+ */
+static void hello(TestContext *context, int argc, char *argv[])
+{
+    ElaCarrier *w = context->carrier->carrier;
+    CarrierContext *wctx = context->carrier;
+    CarrierContextExtra *extra = context->carrier->extra;
+
+    CHK_ARGS(argc == 4);
+
+    if (!ela_is_friend(w, argv[1])) {
+        extra->offmsg_case = Freq_Once;
+        extra->hellomsg = strdup(argv[3]);
+        write_ack("hello succeeded\n");
+    } else {
+        write_ack("hello succeeded\n");
+        write_ack("fadd succeeded\n");
+    }
+}
+
+/*
  * command format: fadd userid useraddr hello
  */
 static void fadd(TestContext *context, int argc, char *argv[])
@@ -1650,6 +1671,7 @@ static struct command {
     void (*cmd_cb) (TestContext *context, int argc, char *argv[]);
 } commands[] = {
     { "wready",       wready       },
+    { "hello",        hello        },
     { "fadd",         fadd         },
     { "faccept",      faccept      },
     { "fmsg",         fmsg         },

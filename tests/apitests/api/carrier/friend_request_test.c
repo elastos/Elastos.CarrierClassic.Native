@@ -157,6 +157,8 @@ static void test_add_friend(void)
     CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
 
     clear_socket_buffer();
+    rc = hello_prepare(wctxt->carrier, "hello");
+    CU_ASSERT_FATAL(rc == 0);
     rc = ela_add_friend(wctxt->carrier, robotaddr, "hello");
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
@@ -290,6 +292,8 @@ static void test_send_multiple_friend_requests(void)
 
     clear_socket_buffer();
     memset(hello, '1', sizeof(hello) - 1);
+    rc = hello_prepare(wctxt->carrier, hello);
+    CU_ASSERT_FATAL(rc == 0);
     rc = ela_add_friend(wctxt->carrier, robotaddr, hello);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
@@ -303,6 +307,8 @@ static void test_send_multiple_friend_requests(void)
     sleep(2);
     clear_socket_buffer();
     memset(hello, '2', sizeof(hello) - 1);
+    rc = hello_prepare(wctxt->carrier, hello);
+    CU_ASSERT_FATAL(rc == 0);
     rc = ela_add_friend(wctxt->carrier, robotaddr, hello);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
