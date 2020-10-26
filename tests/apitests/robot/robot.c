@@ -435,8 +435,8 @@ static void ft_file_cb(ElaFileTransfer *filetransfer, const char *fileid,
     CarrierContext *wctx = ctx->carrier;
     CarrierContextExtra *extra = wctx->extra;
 
-    write_ack("%s %s %d\n", filename, fileid, size);
     strcpy(extra->fileid, fileid);
+    write_ack("%s %s %d\n", filename, fileid, size);
 }
 
 static void ft_pull_cb(ElaFileTransfer *filetransfer, const char *fileid,
