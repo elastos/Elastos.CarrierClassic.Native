@@ -236,15 +236,6 @@ static void friend_request_cb(ElaCarrier *w, const char *userid,
 
     switch(extra->offmsg_case) {
     case OffmsgCase_Absence:
-        if (!strcmp(hello, "auto-reply")) {
-            pthread_t tid;
-
-            strcpy(wctx->extra->userid, userid);
-            pthread_create(&tid, 0, &ela_accept_friend_entry, ctx);
-            pthread_detach(tid);
-        } else {
-            write_ack("hello %s\n", hello);
-        }
         break;
 
     case OffmsgCase_Once:
@@ -255,6 +246,27 @@ static void friend_request_cb(ElaCarrier *w, const char *userid,
         break;
 
     case OffmsgCase_Multi:
+        break;
+
+    case Freq_Once:
+        if (strcmp(hello, extra->hellomsg))
+            break;
+
+        extra->offmsg_case = OffmsgCase_Absence;
+        free(extra->hellomsg);
+
+        if (!strcmp(hello, "auto-reply")) {
+            pthread_t tid;
+
+            strcpy(wctx->extra->userid, userid);
+            pthread_create(&tid, 0, &ela_accept_friend_entry, ctx);
+            pthread_detach(tid);
+        } else {
+            write_ack("hello %s\n", hello);
+        }
+
+        break;
+
     default:
         break;
     }

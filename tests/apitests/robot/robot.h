@@ -34,7 +34,8 @@ extern "C" {
 enum {
     OffmsgCase_Absence  = 0,
     OffmsgCase_Once  = 1,
-    OffmsgCase_Multi = 2
+    OffmsgCase_Multi = 2,
+    Freq_Once = 3
 };
 
 struct CarrierContextExtra {
@@ -50,6 +51,7 @@ struct CarrierContextExtra {
     int offmsg_count_expection;
     struct timeval offmsg_case_expireat;
     char offmsg_prefix[32];
+    char *hellomsg;
 
     char gcookie[128];
     int gcookie_len;
