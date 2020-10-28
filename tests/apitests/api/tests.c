@@ -305,5 +305,5 @@ int test_main(int argc, char *argv[])
     fflush(stdout);
     fflush(stderr);
 
-    return fail_cnt;
+    return fail_cnt > 3 ? fail_cnt : 0;
 }
