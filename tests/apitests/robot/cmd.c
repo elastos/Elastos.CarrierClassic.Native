@@ -46,6 +46,7 @@
 #include "test_context.h"
 #include "test_helper.h"
 #include "carrier_extension.h"
+#include "cond.h"
 
 const char *stream_state_name(ElaStreamState state);
 
@@ -183,11 +184,13 @@ struct StreamContextExtra {
         int channel_error_state;
     } channels[MAX_CHANNEL_COUNT];
 
+    Condition channel_opened_cond;
     int portforwarding_id;
 };
 
 static StreamContextExtra stream_extra = {
     .channels = { {0, 0, 0 } },
+    .channel_opened_cond = COND_INITIALIZER,
     .portforwarding_id = -1
 };
 
@@ -210,6 +213,8 @@ void channel_opened(ElaSession *ws, int stream, int channel, void *context)
     vlogD("Channel %d opened.", channel);
 
     extra->channels[channel-1].channel_id = channel;
+    if (channel == 1)
+        cond_signal(&extra->channel_opened_cond);
 }
 
 static void channel_close(ElaSession *ws, int stream, int channel,
@@ -1251,6 +1256,8 @@ static void cpend(TestContext *context, int argc, char *argv[])
     int rc;
 
     CHK_ARGS(argc == 1);
+
+    cond_wait(&stream_ctxt->extra->channel_opened_cond);
 
     rc = ela_stream_pend_channel(session, stream_ctxt->stream_id,
                                  stream_ctxt->extra->channels[0].channel_id);
