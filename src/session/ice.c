@@ -101,7 +101,7 @@ static inline void prepare_thread_context(IceTransport *transport)
 /* log callback to write to file */
 static void ice_log_print(int level, const char *data, int len)
 {
-    vlogT("ICE: %d : %.*s", level, len, data);
+    vlogD("ICE: %d : %.*s", level, len, data);
 }
 
 static const char *ice_strerror(pj_status_t status)
@@ -454,7 +454,7 @@ static int ice_transport_init(IceTransport *transport)
     if (rc != 0)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-    pj_log_set_level(0);
+    pj_log_set_level(4);
     pj_log_set_log_func(ice_log_print);
 
     /* Initialize the libraries before anything else */
