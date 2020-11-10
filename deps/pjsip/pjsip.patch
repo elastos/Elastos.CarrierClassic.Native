@@ -1814,7 +1814,7 @@ diff -ruN pjproject-2.5.5/pjnath/build/pjnath_test.vcxproj pjproject-2.5.5-mod/p
    <PropertyGroup>
 diff -ruN pjproject-2.5.5/pjnath/src/pjnath/ice_session.c pjproject-2.5.5-mod/pjnath/src/pjnath/ice_session.c
 --- pjproject-2.5.5/pjnath/src/pjnath/ice_session.c	2016-06-08 11:17:45.000000000 +0800
-+++ pjproject-2.5.5-mod/pjnath/src/pjnath/ice_session.c	2020-11-10 21:08:02.000000000 +0800
++++ pjproject-2.5.5-mod/pjnath/src/pjnath/ice_session.c	2020-11-10 21:26:26.000000000 +0800
 @@ -1,5 +1,5 @@
  /* $Id: ice_session.c 5339 2016-06-08 03:17:45Z nanang $ */
 -/* 
@@ -1914,7 +1914,7 @@ diff -ruN pjproject-2.5.5/pjnath/src/pjnath/ice_session.c pjproject-2.5.5-mod/pj
 -    LOG4((ice->obj_name, 
 -	 "ICE session created, comp_cnt=%d, role is %s agent",
 -	 comp_cnt, role_names[ice->role]));
-+    LOG3((ice->obj_name,
++    LOG4((ice->obj_name,
 +	 "ICE session created, comp_cnt=%d, role is %s agent nom_timeout is %d, nominated_check_delay: %u ",
 +	 comp_cnt, role_names[ice->role], ice->opt.controlled_agent_want_nom_timeout, nominated_check_delay));
  

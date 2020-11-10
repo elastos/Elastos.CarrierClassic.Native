@@ -454,7 +454,7 @@ static int ice_transport_init(IceTransport *transport)
     if (rc != 0)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-    pj_log_set_level(4);
+    pj_log_set_level(5);
     pj_log_set_log_func(ice_log_print);
 
     /* Initialize the libraries before anything else */
