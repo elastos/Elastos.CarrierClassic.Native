@@ -1248,8 +1248,6 @@ static void ginvite(TestContext *context, int argc, char *argv[])
     }
 
     write_ack("ginvite succeeded\n");
-
-    cond_wait(wctx->group_cond);
 }
 
 static void gjoin(TestContext *context, int argc, char *argv[])
