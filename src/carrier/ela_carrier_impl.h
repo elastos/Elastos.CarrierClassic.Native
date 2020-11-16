@@ -108,7 +108,6 @@ struct ElaCarrier {
     pthread_mutex_t ext_mutex;
     void *session;          //reserved for session extension.
     void *filetransfer;     //reserved for filetransfer extension.
-    void *carrier_extesion; //reserved for carrier extension.
 
     DHT dht;
 
@@ -165,17 +164,6 @@ typedef struct SessionExtension {
 
     uint8_t                 reserved[1];
 } SessionExtension;
-
-static const char *carrier_extension_name = "carrier";
-typedef struct CarrierExtension {
-    ElaCarrier              *carrier;
-
-    friend_invite_callback  friend_invite_cb;
-    void                    *friend_invite_context;
-
-    void                    *user_callback;
-    void                    *user_context;
-} CarrierExtension;
 
 CARRIER_API
 int ela_leave_all_groups(ElaCarrier *w);
