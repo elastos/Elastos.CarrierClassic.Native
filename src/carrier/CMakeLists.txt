@@ -65,6 +65,7 @@ set(SRC
     elacp.c
     ela_carrier.c
     error.c
+    extension.c
     express.c
     turnserver.c)
 

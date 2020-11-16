@@ -67,7 +67,8 @@
 
 #define TAG "Filetransfer: "
 
-const char *bundle_prefix = "filetransfer";
+static const char *bundle_prefix = "filetransfer";
+static const char *extension_name = "carrier-filetransfer";
 
 static void cleanup_expired_filereqs(hashtable_t *filereqs)
 {
@@ -758,10 +759,8 @@ int ela_filetransfer_init(ElaCarrier *w,
     if (ela_session_init(w) < 0)
         return -1;
 
-    pthread_mutex_lock(&w->ext_mutex);
-    if (w->filetransfer) {
+    if (carrier_get_extension(w, extension_name)) {
         vlogD(TAG "filetransfer initialized already.");
-        pthread_mutex_unlock(&w->ext_mutex);
         ela_session_cleanup(w);
         return 0;
     }
@@ -787,16 +786,15 @@ int ela_filetransfer_init(ElaCarrier *w,
     ext->stream_callbacks.channel_pending = stream_channel_pending;
     ext->stream_callbacks.channel_resume  = stream_channel_resume;
 
-    w->filetransfer = ext;
-    pthread_mutex_unlock(&w->ext_mutex);
-
     ela_session_set_callback(w, bundle_prefix, sessionreq_callback, ext);
+
+    if (carrier_register_extension(w, extension_name, &ext->base, NULL))
+        goto error_exit;
 
     vlogD(TAG "initialize filetransfer extension success.");
     return 0;
 
 error_exit:
-    pthread_mutex_unlock(&w->ext_mutex);
     ela_session_cleanup(w);
     deref(ext);
     ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
@@ -805,23 +803,20 @@ error_exit:
 
 void ela_filetransfer_cleanup(ElaCarrier *w)
 {
-    bool cleanup = false;
+    FileTransferExt *ext;
 
     if (!w)
         return;
 
+    ext = (struct FileTransferExt *)carrier_get_extension(w, extension_name);
+    if (!ext)
+        return;
+
     ela_session_set_callback(w, bundle_prefix, NULL, NULL);
+    carrier_unregister_extension(ext->base.carrier, extension_name);
+    deref(ext);
 
-    pthread_mutex_lock(&w->ext_mutex);
-    if (w->filetransfer) {
-        deref(w->filetransfer);
-        w->filetransfer = NULL;
-        cleanup = true;
-    }
-    pthread_mutex_unlock(&w->ext_mutex);
-
-    if (cleanup)
-        ela_session_cleanup(w);
+    ela_session_cleanup(w);
 }
 
 char *ela_filetransfer_fileid(char *fileid, size_t length)
@@ -882,7 +877,7 @@ ElaFileTransfer *ela_filetransfer_new(ElaCarrier *w, const char *address,
             ela_filetransfer_fileid(fileid, sizeof(fileid));
     }
 
-    ext = w->filetransfer;
+    ext = (struct FileTransferExt *)carrier_get_extension(w, extension_name);
     if (!ext) {
         vlogE(TAG "filetransfer extension has not been initialized yet.");
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
