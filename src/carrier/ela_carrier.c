@@ -1545,8 +1545,6 @@ static void notify_friend_connection(ElaCarrier *w, const char *friendid,
         return;
 
     pthread_mutex_lock(&w->motfs_lock);
-    while (!w->motfs_is_consistent)
-        pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
 redo_check:
     motfs_iterate(w->motfs, &it);
     while (motfs_iterator_has_next(&it)) {
@@ -1766,8 +1764,6 @@ static void handle_remove_friend_cb(EventBase *event, ElaCarrier *w)
         w->callbacks.friend_removed(w, ev->fi.user_info.userid, w->context);
 
     pthread_mutex_lock(&w->motfs_lock);
-    while (!w->motfs_is_consistent)
-        pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
 redo_check:
     motfs_iterate(w->motfs, &it);
     while (motfs_iterator_has_next(&it)) {
@@ -3657,8 +3653,9 @@ static void handle_offline_message_receipt_cb(EventBase *base, ElaCarrier *w)
     while (!w->motfs_is_consistent)
         pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
     motf = motf_remove(w->motfs, event->msgid);
-    assert(motf);
     pthread_mutex_unlock(&w->motfs_lock);
+    if (!motf)
+        return;
 
     if (motf->callback)
         motf->callback(motf->msgid, state, motf->context);
@@ -3728,6 +3725,7 @@ int64_t send_message_with_receipt_internal(ElaCarrier *w, const char *to,
     if (msgid < 0) {
         pthread_mutex_lock(&w->motfs_lock);
         w->motfs_is_consistent = true;
+        pthread_cond_broadcast(&w->motfs_cond);
         pthread_mutex_unlock(&w->motfs_lock);
         deref(motf);
         return -1;
