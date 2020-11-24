@@ -1176,6 +1176,8 @@ static void cready2open(TestContext *context, int argc, char *argv[])
     for (i = 0; i < MAX_CHANNEL_COUNT; i++)
         extra->channels[i].will_open_confirm = will_open_confirm;
 
+    cond_reset(&extra->channel_opened_cond);
+
     write_ack("cready2open success\n");
 }
 
