@@ -56,6 +56,7 @@
 #ifdef HAVE_WINSOCK2_H
 #include <winsock2.h>
 #endif
+#include <inttypes.h>
 
 #include <crystal.h>
 
@@ -2658,8 +2659,8 @@ static void connect_to_bootstraps(ElaCarrier *w)
                   bi->port, id);
         } else {
             vlogT("Carrier: Try to connect to bootstrap "
-                  "[ipv4:%s, ipv6:%s, port:%d, public_key:%s] succeess.",
-                  *bi->ipv4 ? bi->ipv4 : "N/A", *bi->ipv6 ? bi->ipv6 : "N/A",
+                  "[ipv4:%s, ipv6:%s, port:%" PRIu16 ", public_key:%s] succeess.",
+                  bi->ipv4 ? bi->ipv4 : "N/A", bi->ipv6 ? bi->ipv6 : "N/A",
                   bi->port, id);
         }
     }
