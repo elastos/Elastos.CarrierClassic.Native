@@ -46,7 +46,6 @@
 #include "config.h"
 #include "cmd.h"
 #include "robot.h"
-#include "carrier_extension.h"
 
 static ElaFileTransferInfo file_transfer_info;
 static ElaFileTransferCallbacks file_transfer_cbs;
@@ -525,18 +524,6 @@ CarrierContext carrier_context = {
     .extra = &extra
 };
 
-static
-void ext_invite_callback(ElaCarrier *carrier, const char *from,
-                         const void *data, size_t len, void *context)
-{
-    CarrierContextExtra *extra = ((TestContext*)context)->carrier->extra;
-
-    vlogD("Recevied extension friend invite from %s", from);
-    vlogD(" ext_data: %.*s", len, (const char *)data);
-
-    write_ack("ext_data %.*s\n", len, data);
-}
-
 void *carrier_run_entry(void *arg)
 {
     ElaCarrier *w;
@@ -565,17 +552,9 @@ void *carrier_run_entry(void *arg)
     }
 
     carrier_context.carrier = w;
-
-    rc = extension_init(w, ext_invite_callback, &test_context);
-    if (rc != 0) {
-        printf("Error: initializing carrier extension error %d.\n", ela_get_error());
-        ela_kill(w);
-    }
-
     rc = ela_run(w, 10);
     if (rc != 0) {
         printf("Error: start carrier loop error %d.\n", ela_get_error());
-        extension_cleanup(w);
         ela_kill(w);
     }
     carrier_context.carrier = NULL;
