@@ -39,7 +39,7 @@
 #include "ice.h"
 
 #define SDP_MAX_LEN                 2048
-static const char *extension_name = "session";
+static const char *extension_name = "carrier-session";
 
 #if defined(__ANDROID__)
 extern int PJ_JNI_OnLoad(void *vm, void* reserved);
@@ -92,7 +92,7 @@ int ela_session_register_strerror()
 }
 
 static void friend_invite(ElaCarrier *w, const char *from, const char *bundle,
-                          const char *data, size_t len, void *context)
+                          const void *data, size_t len, void *context)
 {
     SessionExtension *ext;
     ElaSessionRequestCallback *callback = NULL;
@@ -154,8 +154,6 @@ static void extension_destroy(void *p)
 {
     SessionExtension *ext = (SessionExtension *)p;
 
-    ext->carrier->extension = NULL;
-
     if (ext->transport) {
         remove_transport(ext->transport);
         ext->transport = NULL;
@@ -202,6 +200,7 @@ static int add_transport(SessionExtension *ext)
 int ela_session_init(ElaCarrier *w)
 {
     SessionExtension *ext;
+    ElaCallbacks callbacks;
     int rc;
 
     if (!w) {
@@ -209,32 +208,27 @@ int ela_session_init(ElaCarrier *w)
         return -1;
     }
 
-    pthread_mutex_lock(&w->ext_mutex);
-    if (w->extension) {
-        ref(w->extension);
-        pthread_mutex_unlock(&w->ext_mutex);
-        vlogD("Session: Session initialized already, ref counter(%d).",
-              nrefs(w->extension));
+    if (carrier_get_extension(w, extension_name)) {
+        vlogD("Session: Aready initialized.");
         return 0;
     }
 
     ext = (SessionExtension *)rc_zalloc(sizeof(SessionExtension),
                                            extension_destroy);
     if (!ext) {
-        pthread_mutex_unlock(&w->ext_mutex);
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return -1;
     }
 
-    ext->carrier = w;
-    ext->friend_invite_cb = friend_invite;
-    ext->friend_invite_context = ext;
+    memset(&callbacks, 0, sizeof(callbacks));
+    callbacks.friend_invite = friend_invite;
+
+    ext->base.carrier = w;
     ext->create_transport = ice_transport_create;
 
     rc = pthread_rwlock_init(&ext->callbacks_lock, NULL);
     if (rc != 0) {
         deref(ext);
-        pthread_mutex_unlock(&w->ext_mutex);
         ela_set_error(ELA_SYS_ERROR(rc));
         return -1;
     }
@@ -242,7 +236,6 @@ int ela_session_init(ElaCarrier *w)
     ext->callbacks = list_create(0, NULL);
     if (!ext->callbacks) {
         deref(ext);
-        pthread_mutex_unlock(&w->ext_mutex);
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return -1;
     }
@@ -250,7 +243,6 @@ int ela_session_init(ElaCarrier *w)
     rc = ids_heap_init((ids_heap_t *)&ext->stream_ids, MAX_STREAM_ID);
     if (rc < 0) {
         deref(ext);
-        pthread_mutex_unlock(&w->ext_mutex);
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return -1;
     }
@@ -258,15 +250,15 @@ int ela_session_init(ElaCarrier *w)
     rc = add_transport(ext);
     if (rc < 0) {
         deref(ext);
-        pthread_mutex_unlock(&w->ext_mutex);
         ela_set_error(rc);
         return -1;
     }
 
-    w->extension = ext;
-    pthread_mutex_unlock(&w->ext_mutex);
-
     ela_register_strerror(ELAF_ICE, ice_strerror);
+
+    rc = carrier_register_extension(w, extension_name, &ext->base, &callbacks);
+    if (rc != 0)
+        deref(ext);
 
     vlogD("Session: Initialize session extension %s.",
           rc == 0 ? "success" : "failed");
@@ -275,7 +267,7 @@ int ela_session_init(ElaCarrier *w)
 }
 
 int ela_session_set_callback(ElaCarrier *w, const char *bundle_prefix,
-        ElaSessionRequestCallback *callback, void *context)
+                             ElaSessionRequestCallback *callback, void *context)
 {
     SessionExtension *ext;
     struct BundledRequestCallback *brc;
@@ -286,7 +278,7 @@ int ela_session_set_callback(ElaCarrier *w, const char *bundle_prefix,
         return -1;
     }
 
-    ext = w->extension;
+    ext = (SessionExtension *)carrier_get_extension(w, extension_name);
     if (!ext) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
         return -1;
@@ -388,21 +380,17 @@ restop_workers:
 
 void ela_session_cleanup(ElaCarrier *w)
 {
+    SessionExtension *ext;
+
     if (!w)
         return;
 
-    pthread_mutex_lock(&w->ext_mutex);
-    if (!w->extension) {
-        pthread_mutex_unlock(&w->ext_mutex);
+    ext = (SessionExtension *)carrier_get_extension(w, extension_name);
+    if (!ext)
         return;
-    }
 
-    if (nrefs(w->extension) > 1) {
-        vlogD("Session: session cleanup, ref counter(%d).", nrefs(w->extension));
-    }
-
-    deref(w->extension);
-    pthread_mutex_unlock(&w->ext_mutex);
+    carrier_unregister_extension(ext->base.carrier, extension_name);
+    deref(ext);
 }
 
 void transport_base_destroy(void *p)
@@ -448,7 +436,7 @@ ElaSession *ela_session_new(ElaCarrier *w, const char *address)
         return NULL;
     }
 
-    ext = w->extension;
+    ext = (SessionExtension *)carrier_get_extension(w, extension_name);
     if (!ext) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
         return NULL;
@@ -623,7 +611,7 @@ int ela_session_request(ElaSession *ws, const char *bundle,
         return -1;
     }
 
-    w = session_get_extension(ws)->carrier;
+    w = session_get_extension(ws)->base.carrier;
     assert(w);
 
     if (list_size(ws->streams) == 0) {
@@ -707,7 +695,7 @@ int ela_session_reply_request(ElaSession *ws, const char *bundle,
         return -1;
     }
 
-    w = session_get_extension(ws)->carrier;
+    w = session_get_extension(ws)->base.carrier;
     assert(w);
 
     ws->offerer = 0;

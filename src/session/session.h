@@ -36,6 +36,7 @@
 
 #include <crystal.h>
 
+#include "carrier_ext.h"
 #include "ela_session.h"
 #include "stream_handler.h"
 
@@ -64,15 +65,6 @@ typedef struct IceTransportOptions {
     const char *turn_realm;
 } IceTransportOptions;
 
-typedef void (*friend_invite_callback)(ElaCarrier *, const char *from,
-              const char *bundle, const char *data, size_t len, void *context);
-
-struct ElaCarrier       {
-    pthread_mutex_t         ext_mutex;
-    void                    *extension;
-    uint8_t                 padding[1]; // the rest fields belong to Carrier self.
-};
-
 struct BundledRequestCallback {
     list_entry_t            le;
     ElaSessionRequestCallback *callback;
@@ -81,10 +73,7 @@ struct BundledRequestCallback {
 };
 
 struct SessionExtension {
-    ElaCarrier              *carrier;
-
-    friend_invite_callback  friend_invite_cb;
-    void                    *friend_invite_context;
+    CarrierExtension        base;
 
     ElaSessionRequestCallback *default_callback;
     void                    *default_context;

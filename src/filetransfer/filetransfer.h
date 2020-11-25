@@ -38,6 +38,7 @@
 #include <crystal.h>
 
 #include <ela_session.h>
+#include <carrier_ext.h>
 #include "ela_filetransfer.h"
 
 #ifdef __cplusplus
@@ -56,15 +57,8 @@ extern "C" {
 typedef struct FileTransferExt          FileTransferExt;
 typedef struct FileTransferItem         FileTransferItem;
 
-struct ElaCarrier       {
-    pthread_mutex_t         ext_mutex;
-    void                    *session;
-    void                    *filetransfer;
-    uint8_t                 padding[1]; // the rest fields belong to Carrier self.
-};
-
 struct FileTransferExt {
-    ElaCarrier              *carrier;
+    CarrierExtension        base;
 
     ElaFileTransferConnectCallback *connect_callback;
     void                    *connect_context;

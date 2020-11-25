@@ -45,7 +45,6 @@
 #include "cmd.h"
 #include "test_context.h"
 #include "test_helper.h"
-#include "carrier_extension.h"
 #include "cond.h"
 
 const char *stream_state_name(ElaStreamState state);
@@ -449,47 +448,13 @@ static void finvite(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 3);
 
-    rc = ela_invite_friend(w, argv[1], NULL, argv[2], strlen(argv[2]) + 1,
+    rc = ela_invite_friend(w, argv[1], NULL, argv[2], strlen(argv[2] + 1),
                                invite_response_callback, NULL);
     if (rc < 0)
         vlogE("Send invite request to friend %s error (0x%x)",
               argv[1], ela_get_error());
     else
         vlogD("Send invite request to friend %s success", argv[1]);
-}
-
-static void extension_invite_response_callback(ElaCarrier *w, const char *friendid,
-                                               int status, const char *reason,
-                                               const void *data, size_t len, void *context)
-{
-    vlogD("Received invite response from friend %s", friendid);
-
-    if (status == 0) {
-        vlogD("Message within response: %.*s", (int)len, (const char *)data);
-        write_ack("ext_freply confirm %s\n", (const char *)data);
-    } else {
-        vlogD("Refused: %s", reason);
-        write_ack("ext_freply refuse %s\n", (const char *)reason);
-    }
-}
-
-/*
- * command format: extfinvite userid data
- */
-static void extfinvite(TestContext *context, int argc, char *argv[])
-{
-    ElaCarrier *w = context->carrier->carrier;
-    int rc;
-
-    CHK_ARGS(argc == 3);
-
-    rc = extension_invite_friend(w, argv[1], argv[2], strlen(argv[2]) + 1,
-                                 extension_invite_response_callback, NULL);
-    if (rc < 0)
-        vlogE("Send extension invite request to friend %s error (0x%x)",
-              argv[1], ela_get_error());
-    else
-        vlogD("Send extension invite request to friend %s success", argv[1]);
 }
 
 /*
@@ -563,39 +528,6 @@ static void freplyinvite_bigdata(TestContext *context, int argc, char *argv[])
 }
 
 /*
- * command format: extfreplyinvite userid [ confirm data ] | [ refuse reason ]
- */
-static void extfreplyinvite(TestContext *context, int argc, char *argv[])
-{
-    ElaCarrier *w = context->carrier->carrier;
-    int rc;
-    int status = 0;
-    const char *reason = NULL;
-    const char *msg = NULL;
-    size_t msg_len = 0;
-
-    CHK_ARGS(argc == 4);
-
-    if (strcmp(argv[2], "confirm") == 0) {
-        msg = argv[3];
-        msg_len = strlen(argv[3]);
-    } else if (strcmp(argv[2], "refuse") == 0) {
-        status = -1; // TODO: fix to correct status code.
-        reason = argv[3];
-    } else {
-        vlogE("Unknown sub command: %s", argv[2]);
-        return;
-    }
-
-    rc = extension_reply_friend_invite(w, argv[1], status, reason, msg, msg ? msg_len + 1 : 0);
-    if (rc < 0)
-        vlogE("Reply extension invite request from friend %s error (0x%x)",
-              argv[1], ela_get_error());
-    else
-        vlogD("Reply extension invite request from friend %s success", argv[1]);
-}
-
-/*
  * command format: kill
  */
 static void wkill(TestContext *context, int argc, char *argv[])
@@ -603,7 +535,6 @@ static void wkill(TestContext *context, int argc, char *argv[])
     ElaCarrier *w = context->carrier->carrier;
 
     vlogI("Kill robot instance.");
-    extension_cleanup(w);
     ela_kill(w);
 }
 
@@ -613,7 +544,6 @@ static void killnode(TestContext *context, int argc, char *argv[])
     ElaCarrier *w = context->carrier->carrier;
 
     vlogI("Kill robot node instance.");
-    extension_cleanup(w);
     ela_kill(w);
 
     pthread_join(extra->tid, NULL);
@@ -1318,8 +1248,6 @@ static void ginvite(TestContext *context, int argc, char *argv[])
     }
 
     write_ack("ginvite succeeded\n");
-
-    cond_wait(wctx->group_cond);
 }
 
 static void gjoin(TestContext *context, int argc, char *argv[])
@@ -1684,10 +1612,8 @@ static struct command {
     { "fmsg",         fmsg         },
     { "fremove",      fremove      },
     { "finvite",      finvite      },
-    { "extfinvite",   extfinvite   },
     { "freplyinvite", freplyinvite },
     { "freplyinvite_bigdata", freplyinvite_bigdata },
-    { "extfreplyinvite", extfreplyinvite },
     { "kill",         wkill        },
     { "killnode",     killnode     },
     { "restartnode",  restartnode  },
