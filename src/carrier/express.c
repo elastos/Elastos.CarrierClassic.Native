@@ -361,8 +361,12 @@ size_t http_read_data(char *buffer, size_t size, size_t nitems, void *userdata)
         return -1;
     }
 
-    task->len -= parsed;
-    memmove(task->data, task->data + parsed, task->len);
+    if (task->len -= parsed)
+        memmove(task->data, task->data + parsed, task->len);
+    else {
+        deref(task->data);
+        task->data = NULL;
+    }
 
     return buf_sz;
 }

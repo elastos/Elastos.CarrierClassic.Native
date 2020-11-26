@@ -343,6 +343,7 @@ int ela_session_set_callback(ElaCarrier *w, const char *bundle_prefix,
 
     brc->le.data = brc;
     list_insert(ext->callbacks, idx, &brc->le);
+    deref(brc);
 
     pthread_rwlock_unlock(&ext->callbacks_lock);
 
