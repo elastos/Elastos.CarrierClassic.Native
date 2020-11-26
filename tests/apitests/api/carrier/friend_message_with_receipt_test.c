@@ -352,6 +352,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, bulkmsg, bulksz,
                                           message_receipt_cb, wctxt);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
+    free(bulkmsg);
 
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
