@@ -197,7 +197,7 @@ void ela_log_init(ElaLogLevel level, const char *log_file,
 static
 int get_friend_number(ElaCarrier *w, const char *friendid, uint32_t *friend_number)
 {
-    uint8_t public_key[DHT_PUBLIC_KEY_SIZE];
+    uint8_t pk[DHT_PUBLIC_KEY_SIZE];
     ssize_t len;
     int rc;
 
@@ -205,13 +205,13 @@ int get_friend_number(ElaCarrier *w, const char *friendid, uint32_t *friend_numb
     assert(friendid);
     assert(friend_number);
 
-    len = base58_decode(friendid, strlen(friendid), public_key, sizeof(public_key));
+    len = base58_decode(friendid, strlen(friendid), pk, sizeof(pk));
     if (len != DHT_PUBLIC_KEY_SIZE) {
-        vlogE("Carrier: friendid %s not base58 encoded.", friendid);
+        vlogE("Carrier: friendid %s is not base58-encoded string", friendid);
         return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
     }
 
-    rc = dht_get_friend_number(&w->dht, public_key, friend_number);
+    rc = dht_get_friend_number(&w->dht, pk, friend_number);
     if (rc < 0) {
         //vlogE("Carrier: friendid %s is not friend yet.", friendid);
         return ELA_GENERAL_ERROR(ELAERR_NOT_EXIST);
@@ -220,7 +220,7 @@ int get_friend_number(ElaCarrier *w, const char *friendid, uint32_t *friend_numb
     return rc;
 }
 
-static void fill_empty_user_desc(ElaCarrier *w)
+static void fill_empty_user_descr(ElaCarrier *w)
 {
     ElaCP *cp;
     uint8_t *data;
@@ -255,7 +255,7 @@ static void fill_empty_user_desc(ElaCarrier *w)
 }
 
 static
-int unpack_user_desc(const uint8_t *desc, size_t desc_len, ElaUserInfo *info,
+int unpack_user_descr(const uint8_t *desc, size_t desc_len, ElaUserInfo *info,
                      bool *changed)
 {
     ElaCP *cp;
@@ -278,13 +278,13 @@ int unpack_user_desc(const uint8_t *desc, size_t desc_len, ElaUserInfo *info,
 
     if (elacp_get_type(cp) != ELACP_TYPE_USERINFO) {
         elacp_free(cp);
-        vlogE("Carrier: Unkown userinfo type format.");
+        vlogE("Carrier: Unkown userinfo type (%d).", elacp_get_type(cp));
         return -1;
     }
 
     has_avatar = elacp_get_has_avatar(cp);
 
-    name   = elacp_get_name(cp)   ? elacp_get_name(cp) : "";
+    name   = elacp_get_name(cp)   ? elacp_get_name(cp)  : "";
     descr  = elacp_get_descr(cp)  ? elacp_get_descr(cp) : "";
     gender = elacp_get_gender(cp) ? elacp_get_gender(cp) : "";
     phone  = elacp_get_phone(cp)  ? elacp_get_phone(cp) : "";
@@ -334,18 +334,14 @@ int unpack_user_desc(const uint8_t *desc, size_t desc_len, ElaUserInfo *info,
     return 0;
 }
 
-static ElaPresenceStatus get_presence_status(int user_status)
+static ElaPresenceStatus normalize_presence_status(int user_status)
 {
-    ElaPresenceStatus presence;
+    if (user_status <= ElaPresenceStatus_None)
+        return ElaPresenceStatus_None;
+    if (user_status >= ElaPresenceStatus_Busy)
+        return ElaPresenceStatus_Busy;
 
-    if (user_status < ElaPresenceStatus_None)
-        presence = ElaPresenceStatus_None;
-    else if (user_status > ElaPresenceStatus_Busy)
-        presence = ElaPresenceStatus_Busy;
-    else
-        presence = (ElaPresenceStatus)user_status;
-
-    return presence;
+    return (ElaPresenceStatus)user_status;
 }
 
 static void get_self_info_cb(const uint8_t *address, const uint8_t *public_key,
@@ -367,12 +363,12 @@ static void get_self_info_cb(const uint8_t *address, const uint8_t *public_key,
     text_len = sizeof(ui->userid);
     base58_encode(public_key, DHT_PUBLIC_KEY_SIZE, ui->userid, &text_len);
 
-    w->presence_status = get_presence_status(user_status);
+    w->presence_status = normalize_presence_status(user_status);
 
     if (desc_len > 0)
-        unpack_user_desc(desc, desc_len, ui, NULL);
+        unpack_user_descr(desc, desc_len, ui, NULL);
     else
-        fill_empty_user_desc(w);
+        fill_empty_user_descr(w);
 
     name_len = dht_self_get_name(&w->dht, (uint8_t *)dht_name,
                                  sizeof(dht_name));
@@ -389,11 +385,11 @@ static void get_self_info_cb(const uint8_t *address, const uint8_t *public_key,
 static bool friends_iterate_cb(uint32_t friend_number,
                                const uint8_t *public_key,
                                int user_status,
-                               const uint8_t *desc, size_t desc_len,
+                               const uint8_t *descr, size_t descr_len,
                                void *context)
 {
-    ElaCarrier *w = (ElaCarrier *)context;
-    FriendInfo *fi;
+    ElaCarrier  *w = (ElaCarrier *)context;
+    FriendInfo  *fi;
     ElaUserInfo *ui;
     size_t _len = sizeof(ui->userid);
     int rc;
@@ -407,22 +403,23 @@ static bool friends_iterate_cb(uint32_t friend_number,
     ui = &fi->info.user_info;
     base58_encode(public_key, DHT_PUBLIC_KEY_SIZE, ui->userid, &_len);
 
-    if (desc_len > 0) {
-        rc = unpack_user_desc(desc, desc_len, ui, NULL);
-        if (rc < 0) {
-            deref(fi);
-            return false;
-        }
+    if (descr_len > 0)
+        rc = unpack_user_descr(descr, descr_len, ui, NULL);
+    else
+        rc = 0;
+
+    if (rc < 0) {
+        deref(fi);
+        return false;
     }
 
     fi->info.status = ElaConnectionStatus_Disconnected;
-    fi->info.presence = get_presence_status(user_status);
+    fi->info.presence = normalize_presence_status(user_status);
     fi->friend_number = friend_number;
 
     // Label will be synched later from data file.
 
     friends_put(w->friends, fi);
-
     deref(fi);
 
     return true;
@@ -1488,15 +1485,16 @@ static void notify_connection_cb(bool connected, void *context)
 }
 
 static
-void notify_friend_description_cb(uint32_t friend_number, const uint8_t *desc,
+void notify_friend_description_cb(uint32_t friend_number, const uint8_t *descr,
                                   size_t length, void *context)
 {
     ElaCarrier *w = (ElaCarrier *)context;
     FriendInfo *fi;
     bool changed = false;
+    ElaFriendInfo _fi;
 
     assert(friend_number != UINT32_MAX);
-    assert(desc);
+    assert(descr);
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
@@ -1512,16 +1510,15 @@ void notify_friend_description_cb(uint32_t friend_number, const uint8_t *desc,
         return;
     }
 
-    unpack_user_desc(desc, length, &fi->info.user_info, &changed);
-
-    if (changed) {
-        ElaFriendInfo _fi;
-
-        memcpy(&_fi, &fi->info, sizeof(_fi));
-
-        if (w->callbacks.friend_info)
-            w->callbacks.friend_info(w, _fi.user_info.userid, &_fi, w->context);
+    unpack_user_descr(descr, length, &fi->info.user_info, &changed);
+    if (!changed) {
+        deref(fi);
+        return;
     }
+
+    memcpy(&_fi, &fi->info, sizeof(_fi));
+    if (w->callbacks.friend_info)
+        w->callbacks.friend_info(w, _fi.user_info.userid, &_fi, w->context);
 
     deref(fi);
 }
