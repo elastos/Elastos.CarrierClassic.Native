@@ -20,13 +20,13 @@
  * SOFTWARE.
  */
 
-#ifndef __MSG_OTF_H__
-#define __MSG_OTF_H__
+#ifndef __UNCONFIRMED_MSGS_H__
+#define __UNCONFIRMED_MSGS_H__
 
 #include <crystal.h>
 #include "ela_carrier.h"
 
-typedef struct MessageOnTheFly {
+typedef struct UnconfirmedMsg {
     hash_entry_t he;
 
     char to[ELA_MAX_ID_LEN + 1];
@@ -38,56 +38,55 @@ typedef struct MessageOnTheFly {
 
     size_t size;
     uint8_t data[0];
-} MessageOnTheFly;
+} UnconfirmedMsg;
 
 static inline
-hashtable_t *motfs_create()
+hashtable_t *unconfirmed_create()
 {
     return hashtable_create(0, 0, NULL, NULL);
 }
 
 static inline
-MessageOnTheFly *motf_get(hashtable_t *motfs, int64_t msgid)
+UnconfirmedMsg *unconfirmed_get(hashtable_t *msgs, int64_t msgid)
 {
-    assert(motfs);
+    assert(msgs);
     assert(msgid);
 
-    return hashtable_get(motfs, &msgid, sizeof(msgid));
+    return hashtable_get(msgs, &msgid, sizeof(msgid));
 }
 
 static inline
-void motf_put(hashtable_t *motfs, MessageOnTheFly *motf)
+void unconfirmed_put(hashtable_t *msgs, UnconfirmedMsg *item)
 {
-    assert(motfs);
-    assert(motf);
+    assert(msgs);
+    assert(item);
 
-    motf->he.data = motf;
-    motf->he.key = &motf->msgid;
-    motf->he.keylen = sizeof(motf->msgid);
+    item->he.data = item;
+    item->he.key = &item->msgid;
+    item->he.keylen = sizeof(item->msgid);
 
-    hashtable_put(motfs, &motf->he);
+    hashtable_put(msgs, &item->he);
 }
 
 static inline
-MessageOnTheFly *motf_remove(hashtable_t *motfs, int64_t msgid)
+UnconfirmedMsg *unconfirmed_remove(hashtable_t *msgs, int64_t msgid)
 {
-    assert(motfs);
-
-    return hashtable_remove(motfs, &msgid, sizeof(msgid));
+    assert(msgs);
+    return hashtable_remove(msgs, &msgid, sizeof(msgid));
 }
 
 static inline
-hashtable_iterator_t *motfs_iterate(hashtable_t *motfs,
-                                    hashtable_iterator_t *iterator)
+hashtable_iterator_t *unconfirmed_iterate(hashtable_t *msgs,
+                                          hashtable_iterator_t *iterator)
 {
-    assert(motfs);
+    assert(msgs);
     assert(iterator);
 
-    return hashtable_iterate(motfs, iterator);
+    return hashtable_iterate(msgs, iterator);
 }
 
 static inline
-int motfs_iterator_next(hashtable_iterator_t *iterator, MessageOnTheFly **item)
+int unconfirmed_iterator_next(hashtable_iterator_t *iterator, UnconfirmedMsg **item)
 {
     assert(item);
     assert(iterator);
@@ -96,17 +95,17 @@ int motfs_iterator_next(hashtable_iterator_t *iterator, MessageOnTheFly **item)
 }
 
 static inline
-int motfs_iterator_has_next(hashtable_iterator_t *iterator)
+int unconfirmed_iterator_has_next(hashtable_iterator_t *iterator)
 {
     assert(iterator);
     return hashtable_iterator_has_next(iterator);
 }
 
 static inline
-int motfs_iterator_remove(hashtable_iterator_t *iterator)
+int unconfirmed_iterator_remove(hashtable_iterator_t *iterator)
 {
     assert(iterator);
     return hashtable_iterator_remove(iterator);
 }
 
-#endif // __MSG_OTF_H__
+#endif // __UNCONFIRMED_MSGS_H__
