@@ -243,6 +243,7 @@ static void sender_state_changed(ElaFileTransfer *ft, ElaStreamState state)
 {
     char bundle[sizeof(ElaFileTransferInfo) + 64] = {0};
     FileTransferItem *item = &ft->files[0];
+    bool standby;
     int rc;
 
     assert(ft->session);
@@ -289,14 +290,14 @@ static void sender_state_changed(ElaFileTransfer *ft, ElaStreamState state)
         vlogD(TAG "sender filetransfer connection state changed to be "
               "connected, ready to carry filetransfering.", ft->address);
 
-        bool has_initial_item = item->state == FileTransferState_standby;
+        standby = (item->state == FileTransferState_standby);
 
         notify_state_changed(ft, FileTransferConnection_connected);
 
         if (ft->state >= FileTransferConnection_closed)
             return;
 
-        if (!has_initial_item)
+        if (!standby)
             return;
 
         sprintf(bundle, "%s %s %s %llu", bundle_prefix, item->filename,
