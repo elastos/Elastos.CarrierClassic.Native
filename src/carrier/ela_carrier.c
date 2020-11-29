@@ -78,7 +78,7 @@
 #include "express.h"
 #include "extensions.h"
 #include "carrier_ext.h"
-#include "msg_otf.h"
+#include "unconfirmed_msgs.h"
 #include "utility.h"
 
 #define TASSEMBLY_TIMEOUT               (60) //60s.
@@ -1109,10 +1109,10 @@ static void ela_destroy(void *argv)
     if (w->bulkmsgs)
         deref(w->bulkmsgs);
 
-    if (w->motfs)
-        deref(w->motfs);
-    pthread_mutex_destroy(&w->motfs_lock);
-    pthread_cond_destroy(&w->motfs_cond);
+    if (w->unconfirmed)
+        deref(w->unconfirmed);
+    pthread_mutex_destroy(&w->unconfirmed_lock);
+    pthread_cond_destroy(&w->unconfirmed_cond);
 
     if (w->thistory)
         deref(w->thistory);
@@ -1340,28 +1340,28 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         return NULL;
     }
 
-    rc = pthread_mutex_init(&w->motfs_lock, NULL);
+    rc = pthread_mutex_init(&w->unconfirmed_lock, NULL);
     if (rc) {
         free_persistence_data(&data);
         deref(w);
         ela_set_error(ELA_SYS_ERROR(rc));
         return NULL;
     }
-    rc = pthread_cond_init(&w->motfs_cond, NULL);
+    rc = pthread_cond_init(&w->unconfirmed_cond, NULL);
     if (rc) {
         free_persistence_data(&data);
         deref(w);
         ela_set_error(ELA_SYS_ERROR(rc));
         return NULL;
     }
-    w->motfs = motfs_create();
-    if (!w->motfs) {
+    w->unconfirmed = unconfirmed_create();
+    if (!w->unconfirmed) {
         free_persistence_data(&data);
         deref(w);
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return NULL;
     }
-    w->motfs_is_consistent = true;
+    w->unconfirmed_consistency = true;
 
     w->exts = extensions_create(8);
     if (!w->exts) {
@@ -1545,18 +1545,18 @@ static void notify_friend_connection(ElaCarrier *w, const char *friendid,
     if (status == ElaConnectionStatus_Connected)
         return;
 
-    pthread_mutex_lock(&w->motfs_lock);
+    pthread_mutex_lock(&w->unconfirmed_lock);
 redo_check:
-    motfs_iterate(w->motfs, &it);
-    while (motfs_iterator_has_next(&it)) {
-        MessageOnTheFly *item;
+    unconfirmed_iterate(w->unconfirmed, &it);
+    while (unconfirmed_iterator_has_next(&it)) {
+        UnconfirmedMsg *item;
         ElaReceiptState state;
         char *userid;
         char *ext_name;
         char *addr;
         int rc;
 
-        rc = motfs_iterator_next(&it, &item);
+        rc = unconfirmed_iterator_next(&it, &item);
         if (rc == 0)
             break;
         else if (rc == -1)
@@ -1574,19 +1574,19 @@ redo_check:
         rc = w->connector ? send_express_message(w, userid, item->msgid,
                                                  item->data, item->size, ext_name) : -1;
         if (rc < 0) {
-            motfs_iterator_remove(&it);
-            pthread_mutex_unlock(&w->motfs_lock);
+            unconfirmed_iterator_remove(&it);
+            pthread_mutex_unlock(&w->unconfirmed_lock);
             if (item->callback)
                 item->callback(item->msgid, ElaReceipt_Error, item->context);
             deref(item);
-            pthread_mutex_lock(&w->motfs_lock);
+            pthread_mutex_lock(&w->unconfirmed_lock);
             continue;
         }
 
         item->msgch = MSGCH_EXPRESS;
         deref(item);
     }
-    pthread_mutex_unlock(&w->motfs_lock);
+    pthread_mutex_unlock(&w->unconfirmed_lock);
 }
 
 static void trigger_pull_offmsg_instantly(ElaCarrier *w)
@@ -1764,18 +1764,18 @@ static void handle_remove_friend_cb(EventBase *event, ElaCarrier *w)
     if (w->callbacks.friend_removed)
         w->callbacks.friend_removed(w, ev->fi.user_info.userid, w->context);
 
-    pthread_mutex_lock(&w->motfs_lock);
+    pthread_mutex_lock(&w->unconfirmed_lock);
 redo_check:
-    motfs_iterate(w->motfs, &it);
-    while (motfs_iterator_has_next(&it)) {
-        MessageOnTheFly *item;
+    unconfirmed_iterate(w->unconfirmed, &it);
+    while (unconfirmed_iterator_has_next(&it)) {
+        UnconfirmedMsg *item;
         ElaReceiptState state;
         char *userid;
         char *ext_name;
         char *addr;
         int rc;
 
-        rc = motfs_iterator_next(&it, &item);
+        rc = unconfirmed_iterator_next(&it, &item);
         if (rc == 0)
             break;
         else if (rc == -1)
@@ -1789,14 +1789,14 @@ redo_check:
             continue;
         }
 
-        motfs_iterator_remove(&it);
-        pthread_mutex_unlock(&w->motfs_lock);
+        unconfirmed_iterator_remove(&it);
+        pthread_mutex_unlock(&w->unconfirmed_lock);
         if (item->callback)
             item->callback(item->msgid, ElaReceipt_Error, item->context);
         deref(item);
-        pthread_mutex_lock(&w->motfs_lock);
+        pthread_mutex_lock(&w->unconfirmed_lock);
     }
-    pthread_mutex_unlock(&w->motfs_lock);
+    pthread_mutex_unlock(&w->unconfirmed_lock);
 }
 
 static void notify_friend_changed(ElaCarrier *w, ElaFriendInfo *fi,
@@ -2418,21 +2418,21 @@ void notify_friend_read_receipt_cb(uint32_t friend_number, uint32_t dht_msgid,
                                    void *context)
 {
     ElaCarrier *w = (ElaCarrier *)context;
-    MessageOnTheFly *motf;
+    UnconfirmedMsg *item;
     int64_t msgid = generate_msgid(dht_msgid, friend_number, true);
 
-    pthread_mutex_lock(&w->motfs_lock);
-    while (!w->motfs_is_consistent)
-        pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
-    motf = motf_remove(w->motfs, msgid);
-    pthread_mutex_unlock(&w->motfs_lock);
-    if (!motf)
+    pthread_mutex_lock(&w->unconfirmed_lock);
+    while (!w->unconfirmed_consistency)
+        pthread_cond_wait(&w->unconfirmed_cond, &w->unconfirmed_lock);
+    item = unconfirmed_remove(w->unconfirmed, msgid);
+    pthread_mutex_unlock(&w->unconfirmed_lock);
+    if (!item)
         return;
 
-    if (motf->callback)
-        motf->callback(motf->msgid, ElaReceipt_ByFriend, motf->context);
+    if (item->callback)
+        item->callback(item->msgid, ElaReceipt_ByFriend, item->context);
 
-    deref(motf);
+    deref(item);
 }
 
 static
@@ -3640,7 +3640,7 @@ static void notify_offreq_received(ElaCarrier *w, const char *from,
 static void handle_offline_message_receipt_cb(EventBase *base, ElaCarrier *w)
 {
     MsgidEvent *event = (MsgidEvent *)base;
-    MessageOnTheFly *motf;
+    UnconfirmedMsg *item;
     ElaReceiptState state;
 
     if(event->errcode < 0) {
@@ -3650,18 +3650,18 @@ static void handle_offline_message_receipt_cb(EventBase *base, ElaCarrier *w)
         state = ElaReceipt_Offline;
     }
 
-    pthread_mutex_lock(&w->motfs_lock);
-    while (!w->motfs_is_consistent)
-        pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
-    motf = motf_remove(w->motfs, event->msgid);
-    pthread_mutex_unlock(&w->motfs_lock);
-    if (!motf)
+    pthread_mutex_lock(&w->unconfirmed_lock);
+    while (!w->unconfirmed_consistency)
+        pthread_cond_wait(&w->unconfirmed_cond, &w->unconfirmed_lock);
+    item = unconfirmed_remove(w->unconfirmed, event->msgid);
+    pthread_mutex_unlock(&w->unconfirmed_lock);
+    if (!item)
         return;
 
-    if (motf->callback)
-        motf->callback(motf->msgid, state, motf->context);
+    if (item->callback)
+        item->callback(item->msgid, state, item->context);
 
-    deref(motf);
+    deref(item);
 }
 
 static void notify_offreceipt_received(ElaCarrier *w, const char *to,
@@ -3700,46 +3700,46 @@ int64_t send_message_with_receipt_internal(ElaCarrier *w, const char *to,
                                 bool *is_offline)
 {
     int64_t msgid;
-    MessageOnTheFly *motf;
+    UnconfirmedMsg *item;
     struct timeval expire_interval;
     bool offline = false;
 
-    motf = (MessageOnTheFly *)rc_zalloc(sizeof(MessageOnTheFly) + len, NULL);
-    if (!motf) {
+    item = (UnconfirmedMsg *)rc_zalloc(sizeof(UnconfirmedMsg) + len, NULL);
+    if (!item) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return -1;
     }
 
-    strcpy(motf->to, to);
-    motf->callback = cb;
-    motf->context  = context;
-    motf->size     = len;
-    memcpy(motf->data, msg, len);
+    strcpy(item->to, to);
+    item->callback = cb;
+    item->context  = context;
+    item->size     = len;
+    memcpy(item->data, msg, len);
 
-    pthread_mutex_lock(&w->motfs_lock);
-    while (!w->motfs_is_consistent)
-        pthread_cond_wait(&w->motfs_cond, &w->motfs_lock);
-    w->motfs_is_consistent = false;
-    pthread_mutex_unlock(&w->motfs_lock);
+    pthread_mutex_lock(&w->unconfirmed_lock);
+    while (!w->unconfirmed_consistency)
+        pthread_cond_wait(&w->unconfirmed_cond, &w->unconfirmed_lock);
+    w->unconfirmed_consistency = false;
+    pthread_mutex_unlock(&w->unconfirmed_lock);
 
     msgid = send_friend_message_internal(w, to, msg, len, &offline);
     if (msgid < 0) {
-        pthread_mutex_lock(&w->motfs_lock);
-        w->motfs_is_consistent = true;
-        pthread_cond_broadcast(&w->motfs_cond);
-        pthread_mutex_unlock(&w->motfs_lock);
-        deref(motf);
+        pthread_mutex_lock(&w->unconfirmed_lock);
+        w->unconfirmed_consistency = true;
+        pthread_cond_broadcast(&w->unconfirmed_cond);
+        pthread_mutex_unlock(&w->unconfirmed_lock);
+        deref(item);
         return -1;
     }
 
-    pthread_mutex_lock(&w->motfs_lock);
-    motf->msgch = offline ? MSGCH_EXPRESS : MSGCH_DHT;
-    motf->msgid = msgid;
-    motf_put(w->motfs, motf);
-    deref(motf);
-    w->motfs_is_consistent = true;
-    pthread_cond_broadcast(&w->motfs_cond);
-    pthread_mutex_unlock(&w->motfs_lock);
+    pthread_mutex_lock(&w->unconfirmed_lock);
+    item->msgch = offline ? MSGCH_EXPRESS : MSGCH_DHT;
+    item->msgid = msgid;
+    unconfirmed_put(w->unconfirmed, item);
+    deref(item);
+    w->unconfirmed_consistency = true;
+    pthread_cond_broadcast(&w->unconfirmed_cond);
+    pthread_mutex_unlock(&w->unconfirmed_lock);
 
     if (is_offline)
         *is_offline = offline;
