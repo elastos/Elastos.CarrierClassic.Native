@@ -140,10 +140,10 @@ struct ElaCarrier {
 
     hashtable_t *bulkmsgs;
 
-    pthread_mutex_t motfs_lock;
-    pthread_cond_t motfs_cond;
-    hashtable_t *motfs;
-    bool motfs_is_consistent;
+    pthread_mutex_t unconfirmed_lock;
+    pthread_cond_t unconfirmed_cond;
+    hashtable_t *unconfirmed;
+    bool unconfirmed_consistency;
 
     hashtable_t *exts;
     pthread_t main_thread;
