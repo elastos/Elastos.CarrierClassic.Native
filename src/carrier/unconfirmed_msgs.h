@@ -30,8 +30,8 @@ typedef struct UnconfirmedMsg {
     hash_entry_t he;
 
     char to[ELA_MAX_ID_LEN + 1];
-    MsgCh msgch;
-    int64_t msgid;
+    uint32_t msgid;
+    int offline_sending;
 
     ElaFriendMessageReceiptCallback *callback;
     void *context;
