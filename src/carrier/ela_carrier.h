@@ -1347,40 +1347,6 @@ int ela_remove_friend(ElaCarrier *carrier, const char *userid);
 
 /**
  * \~English
- * Send a message to a friend.
- * Notice: this API will be deprecated next major release.
- *
- * The message length may not exceed ELA_MAX_BULK_MESSAGE_LEN. Larger messages
- * must be split by application and sent as separate fragments. Other carrier
- * nodes can reassemble the fragments.
- *
- * Message may not be empty or NULL.
- * @param
- *      carrier     [in] A handle to the Carrier node instance.
- * @param
- *      to          [in] The target userid.
- * @param
- *      message     [in] The message content defined by application.
- * @param
- *      len         [in] The message length in bytes.
- * @param
- *      offline     [out] The pointer to store the value that the message was
- *                        sent as offline message or online message. The value
- *                        of true means the message was sent as offline
- *                        message, otherwise, the message was sent as online
- *                        message. This pointer also can be set as NULL.
- *
- * @return
- *      0 if the text message successfully sent.
- *      Otherwise, return -1, and a specific error code can be
- *      retrieved by calling ela_get_error().
- */
-CARRIER_API
-int ela_send_friend_message(ElaCarrier *carrier, const char *to,
-                            const void *message, size_t len, bool *offline);
-
-/**
- * \~English
  * Carrier message receipt status to Carrier network.
  */
 typedef enum ElaReceiptState {
@@ -1420,7 +1386,7 @@ typedef enum ElaReceiptState {
  *      Return true to continue iterate next friend user info,
  *      false to stop iterate.
  */
-typedef void ElaFriendMessageReceiptCallback(int64_t msgid,
+typedef void ElaFriendMessageReceiptCallback(uint32_t msgid,
                                              ElaReceiptState state,
                                              void *context);
 
@@ -1453,10 +1419,10 @@ typedef void ElaFriendMessageReceiptCallback(int64_t msgid,
  *      retrieved by calling ela_get_error().
  */
 CARRIER_API
-int64_t ela_send_message_with_receipt(ElaCarrier *carrier, const char *to,
-                                      const void *message, size_t len,
-                                      ElaFriendMessageReceiptCallback *cb,
-                                      void *context);
+int ela_send_friend_message(ElaCarrier *carrier, const char *to,
+                                const void *message, size_t len,
+                                uint32_t *msgid,
+                                ElaFriendMessageReceiptCallback *cb, void *context);
 
 /**
  * \~English

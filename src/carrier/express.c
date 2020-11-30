@@ -719,7 +719,7 @@ static int enqueue_speedmeter_tasklet(ExpressConnector *connector)
 
 static int enqueue_post_tasklet(ExpressConnector *connector, const char *to,
                                 ExpressMessageType type,
-                                const void *data, size_t size, int64_t msgid)
+                                const void *data, size_t size, uint32_t msgid)
 {
     int rc;
     ExpSendTasklet *task;
@@ -742,7 +742,7 @@ static int enqueue_post_tasklet(ExpressConnector *connector, const char *to,
     strcpy(task->to, to);
 
     task->type = type;
-    task->msgid = msgid;
+    task->msgid = (int64_t)msgid;
     memcpy(task->data, data, size);
     task->data_size = size;
 
@@ -909,7 +909,7 @@ int express_enqueue_post_request(ExpressConnector *connector,
 int express_enqueue_post_message_with_receipt(ExpressConnector *connector,
                                               const char *friendid,
                                               const void *data, size_t size,
-                                              int64_t msgid)
+                                              uint32_t msgid)
 {
     uint8_t shared_key[SYMMETRIC_KEY_BYTES];
     uint8_t *crypted_data;

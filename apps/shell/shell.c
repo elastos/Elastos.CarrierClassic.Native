@@ -849,7 +849,6 @@ static void friend_removed_callback(ElaCarrier *w, const char *friendid,
 
 static void send_message(ElaCarrier *w, int argc, char *argv[])
 {
-    bool is_offline;
     int rc;
 
     if (argc != 3) {
@@ -858,9 +857,9 @@ static void send_message(ElaCarrier *w, int argc, char *argv[])
     }
 
     rc = ela_send_friend_message(w, argv[1], argv[2], strlen(argv[2]) + 1,
-                                 &is_offline);
+                                 NULL, NULL, NULL);
     if (rc == 0)
-        output("Send %s message success.\n", is_offline ? "offline" : "online");
+        output("Send message success.\n");
     else
         output("Send message failed(0x%x).\n", ela_get_error());
 }
@@ -900,7 +899,7 @@ static void send_bulk_message(ElaCarrier *w, int argc, char *argv[])
         strcpy(msg, argv[3]);
         strcat(msg, index);
 
-        rc = ela_send_friend_message(w, argv[1], msg, strlen(msg) + 1, NULL);
+        rc = ela_send_friend_message(w, argv[1], msg, strlen(msg) + 1, NULL, NULL, NULL);
         if (rc < 0) {
             output("x(0x%x)", ela_get_error());
             failed_count++;
@@ -915,7 +914,7 @@ static void send_bulk_message(ElaCarrier *w, int argc, char *argv[])
     output("  failed: %d\n", failed_count);
 }
 
-static void receipt_message_callback(int64_t msgid,  ElaReceiptState state,
+static void receipt_message_callback(uint32_t msgid,  ElaReceiptState state,
                                      void *context)
 {
     const char* state_str;
@@ -937,23 +936,24 @@ static void receipt_message_callback(int64_t msgid,  ElaReceiptState state,
             break;
     }
 
-    output("Messages receipted. msgid:0x%llx, state:%s, ecode:%x\n",
+    output("Messages receipted. msgid:0x%lx, state:%s, ecode:%x\n",
            msgid, state_str, errcode);
 }
 
 static void send_receipt_message(ElaCarrier *w, int argc, char *argv[])
 {
-    int64_t msgid;
+    uint32_t msgid;
+    int rc;
 
     if (argc != 3) {
         output("Invalid command syntax.\n");
         return;
     }
 
-    msgid = ela_send_message_with_receipt(w, argv[1], argv[2], strlen(argv[2]) + 1,
-                                          receipt_message_callback, NULL);
-    if (msgid >= 0)
-        output("Sending receipt message. msgid:0x%llx\n", msgid);
+    rc = ela_send_friend_message(w, argv[1], argv[2], strlen(argv[2]) + 1, &msgid,
+                                 receipt_message_callback, NULL);
+    if (rc == 0)
+        output("Sending receipt message. msgid:0x%lx\n", msgid);
     else
         output("Send message failed(0x%x).\n", ela_get_error());
 }
@@ -963,6 +963,7 @@ static void send_receipt_bulkmessage(ElaCarrier *w, int argc, char *argv[])
     int rc;
     int datalen = ELA_MAX_APP_BULKMSG_LEN;
     char *data;
+    uint32_t msgid;
     int idx;
 
     if (argc != 2) {
@@ -976,11 +977,11 @@ static void send_receipt_bulkmessage(ElaCarrier *w, int argc, char *argv[])
     }
     memcpy(data + datalen - 5, "end", 4);
 
-    int64_t msgid = ela_send_message_with_receipt(w, argv[1], data, strlen(data) + 1,
-                                                  receipt_message_callback, NULL);
+    rc = ela_send_friend_message(w, argv[1], data, strlen(data) + 1, &msgid,
+                                 receipt_message_callback, NULL);
     free(data);
-    if (msgid >= 0)
-        output("Sending receipt message. msgid:0x%llx\n", msgid);
+    if (rc == 0)
+        output("Sending receipt message. msgid:0x%lx\n", msgid);
     else
         output("Send message failed(0x%x).\n", ela_get_error());
 }
@@ -1019,7 +1020,7 @@ static void bigmsg_benchmark_initialize(ElaCarrier *w, int argc, char *argv[])
     bigmsg_benchmark.totalsz = totalsz << 20;
 
     rc = sprintf(ctlsig, "bigmsgbenchmark request %s", argv[2]);
-    rc = ela_send_friend_message(w, argv[1], ctlsig, rc, NULL);
+    rc = ela_send_friend_message(w, argv[1], ctlsig, rc, NULL, NULL, NULL);
     if (rc < 0) {
         output("Send bigmessage benchmark request error.\n");
         bigmsg_benchmark.state = IDLE;
@@ -1040,7 +1041,7 @@ static void *bigmsg_benchmark_write_thread(void *arg)
         if (len > ELA_MAX_APP_BULKMSG_LEN)
             len = ELA_MAX_APP_BULKMSG_LEN;
 
-        rc = ela_send_friend_message(w, bigmsg_benchmark.peer, buf, len, NULL);
+        rc = ela_send_friend_message(w, bigmsg_benchmark.peer, buf, len, NULL, NULL, NULL);
         if (rc < 0) {
             usleep(100000);
             continue;
@@ -1149,7 +1150,7 @@ static void bigmsg_benchmark_accept(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_send_friend_message(w, bigmsg_benchmark.peer, ctlsig, strlen(ctlsig), NULL);
+    rc = ela_send_friend_message(w, bigmsg_benchmark.peer, ctlsig, strlen(ctlsig), NULL, NULL, NULL);
     if (rc < 0) {
         output("Failed to send bigmsgbenchmark accept signal.\n");
         return;
@@ -1172,7 +1173,7 @@ static int bigmsg_benchmark_send_reject(ElaCarrier *w, const char *to)
 {
     const char *ctlsig = "bigmsgbenchmark reject";
 
-    return ela_send_friend_message(w, to, ctlsig, strlen(ctlsig), NULL);
+    return ela_send_friend_message(w, to, ctlsig, strlen(ctlsig), NULL, NULL, NULL);
 }
 
 static void bigmsg_benchmark_reject(ElaCarrier *w, int argc, char *argv[])
