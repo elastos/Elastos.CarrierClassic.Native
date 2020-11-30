@@ -139,11 +139,7 @@ struct ElaCarrier {
     hashtable_t *tassembly_irsps;
 
     hashtable_t *bulkmsgs;
-
-    pthread_mutex_t unconfirmed_lock;
-    pthread_cond_t unconfirmed_cond;
     hashtable_t *unconfirmed;
-    bool unconfirmed_consistency;
 
     hashtable_t *exts;
     pthread_t main_thread;

@@ -58,7 +58,7 @@ int express_enqueue_post_request(ExpressConnector *connector,
 int express_enqueue_post_message_with_receipt(ExpressConnector *connector,
                                               const char *friendid,
                                               const void *data, size_t size,
-                                              int64_t msgid);
+                                              uint32_t msgid);
 
 int express_enqueue_pull_messages(ExpressConnector *connector);
 

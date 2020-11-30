@@ -279,7 +279,6 @@ static void friend_removed_callback(ElaCarrier *w, const char *friendid,
 
 static void send_message(ElaCarrier *w, int argc, char *argv[])
 {
-    bool is_offline;
     int rc;
 
     if (argc != 2) {
@@ -287,9 +286,9 @@ static void send_message(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_send_friend_message(w, argv[0], argv[1], strlen(argv[1]) + 1, &is_offline);
+    rc = ela_send_friend_message(w, argv[0], argv[1], strlen(argv[1]) + 1, NULL, NULL, NULL);
     if (rc == 0)
-        output("Send %s message successfully.\n", is_offline ? "offline" : "online");
+        output("Send message successfully.\n");
     else
         output("Send message unsuccessfully(0x%x).\n", ela_get_error());
 }
