@@ -93,7 +93,7 @@ typedef struct {
 
     char to[ELA_MAX_ADDRESS_LEN + 1];
     ExpressMessageType type;
-    int64_t msgid;
+    uint32_t msgid;
     size_t data_size;
     uint8_t data[0];
 } ExpSendTasklet;
@@ -742,7 +742,7 @@ static int enqueue_post_tasklet(ExpressConnector *connector, const char *to,
     strcpy(task->to, to);
 
     task->type = type;
-    task->msgid = (int64_t)msgid;
+    task->msgid = msgid;
     memcpy(task->data, data, size);
     task->data_size = size;
 

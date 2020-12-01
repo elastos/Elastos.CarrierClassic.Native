@@ -47,7 +47,7 @@ hashtable_t *unconfirmed_create()
 }
 
 static inline
-UnconfirmedMsg *unconfirmed_get(hashtable_t *msgs, int64_t msgid)
+UnconfirmedMsg *unconfirmed_get(hashtable_t *msgs, uint32_t msgid)
 {
     assert(msgs);
     assert(msgid);
@@ -69,7 +69,7 @@ void unconfirmed_put(hashtable_t *msgs, UnconfirmedMsg *item)
 }
 
 static inline
-UnconfirmedMsg *unconfirmed_remove(hashtable_t *msgs, int64_t msgid)
+UnconfirmedMsg *unconfirmed_remove(hashtable_t *msgs, int32_t msgid)
 {
     assert(msgs);
     return hashtable_remove(msgs, &msgid, sizeof(msgid));

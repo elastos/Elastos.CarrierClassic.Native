@@ -1127,9 +1127,9 @@ static void ela_destroy(void *argv)
     dht_kill(&w->dht);
 }
 
-static void notify_offmsg_received(ElaCarrier *w, const char *, const uint8_t *, size_t, int64_t);
-static void notify_offreq_received(ElaCarrier *w, const char *, const uint8_t *, size_t, int64_t);
-static void notify_offreceipt_received(ElaCarrier *w, const char *, ExpressMessageType, int64_t, int);
+static void notify_offmsg_received(ElaCarrier *w, const char *, const uint8_t *, size_t, uint64_t);
+static void notify_offreq_received(ElaCarrier *w, const char *, const uint8_t *, size_t, uint64_t);
+static void notify_offreceipt_received(ElaCarrier *w, const char *, ExpressMessageType, uint32_t, int);
 ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
                     void *context)
 {
@@ -3285,7 +3285,6 @@ static int send_general_message(ElaCarrier *w, uint32_t friend_number,
     ElaCP *cp;
     uint8_t *data;
     size_t data_len;
-    uint32_t _msgid;
     int rc;
 
     cp = elacp_create(ELACP_TYPE_MESSAGE, ext_name);
@@ -3300,7 +3299,7 @@ static int send_general_message(ElaCarrier *w, uint32_t friend_number,
     if (!data)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-    rc = dht_friend_message(&w->dht, friend_number, data, data_len, &_msgid);
+    rc = dht_friend_message(&w->dht, friend_number, data, data_len, &msgid);
     free(data);
 
     return rc;
@@ -3330,7 +3329,6 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
     char *pos = (char *)msg;
     size_t left = len;
     int index = 0;
-    uint32_t _msgid;
     int rc;
 
     tid = generate_tid();
@@ -3362,7 +3360,7 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
         if (!data)
             return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-        rc = dht_friend_message(&w->dht, friend_number, data, data_len, &_msgid);
+        rc = dht_friend_message(&w->dht, friend_number, data, data_len, &msgid);
         free(data);
 
     } while (left > 0 && !rc);
@@ -3523,7 +3521,7 @@ static void handle_offline_friend_message_cb(EventBase *base, ElaCarrier *w)
 
 static void notify_offmsg_received(ElaCarrier *w, const char *from,
                                    const uint8_t *msg, size_t len,
-                                   int64_t timestamp)
+                                   uint64_t timestamp)
 {
     OfflineEvent *event;
 
@@ -3563,7 +3561,7 @@ static void handle_offline_friend_request_cb(EventBase *base, ElaCarrier *w)
 
 static void notify_offreq_received(ElaCarrier *w, const char *from,
                                    const uint8_t *greeting, size_t len,
-                                   int64_t timestamp)
+                                   uint64_t timestamp)
 {
     OfflineEvent *event;
 
@@ -3609,7 +3607,7 @@ static void handle_offline_message_receipt_cb(EventBase *base, ElaCarrier *w)
 
 static void notify_offreceipt_received(ElaCarrier *w, const char *to,
                                        ExpressMessageType type,
-                                       int64_t msgid, int errcode)
+                                       uint32_t msgid, int errcode)
 {
     MsgidEvent *event;
 
@@ -3637,8 +3635,8 @@ static void notify_offreceipt_received(ElaCarrier *w, const char *to,
 
 static uint32_t generate_msgid(ElaCarrier *w)
 {
-    // TODO;
-    return 0;
+    static uint32_t msg_id = 0;
+    return msg_id++;
 }
 
 static
@@ -3672,11 +3670,15 @@ int send_message_with_receipt_internal(ElaCarrier *w, const char *to,
 
     rc = send_friend_message_internal(w, to, msg, len, _msgid);
     deref(item);
+    if (rc < 0) {
+        deref(unconfirmed_remove(w->unconfirmed, _msgid));
+        return -1;
+    }
 
     if (msgid)
         *msgid = _msgid;
 
-    return rc;
+    return 0;
 }
 
 int ela_send_friend_message(ElaCarrier *w, const char *to,
