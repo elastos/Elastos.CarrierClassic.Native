@@ -39,10 +39,10 @@ typedef struct ExpConnector     ExpressConnector;
 typedef void (*ExpressOnRecvCallback)(ElaCarrier *carrier,
                                       const char *from,
                                       const uint8_t *data, size_t size,
-                                      int64_t timestamp);
+                                      uint64_t timestamp);
 typedef void (*ExpressOnStatCallback)(ElaCarrier *carrier,
                                       const char *from, ExpressMessageType type,
-                                      int64_t msgid, int errcode);
+                                      uint32_t msgid, int errcode);
 
 ExpressConnector *express_connector_create(ElaCarrier *carrier,
                                            ExpressOnRecvCallback on_msg_cb,
