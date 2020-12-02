@@ -90,7 +90,7 @@ int dht_friend_add_norequest(DHT *dht, const uint8_t *public_key,
                              uint32_t *friend_number);
 
 int dht_friend_message(DHT *dht, uint32_t friend_number,
-                       const uint8_t *data, size_t length, const uint32_t *msgid);
+                       const uint8_t *data, size_t length, uint32_t *msgid);
 
 int dht_friend_delete(DHT *dht, uint32_t friend_number);
 
