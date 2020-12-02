@@ -139,7 +139,6 @@ static void send_offmsg_to_friend(int count, int timeout)
     char buf[2][32] = {0};
     char ack[32] = {0};
     char out[32] = {0};
-    bool offline = false;
     int rc;
     int i;
 
@@ -172,9 +171,8 @@ static void send_offmsg_to_friend(int count, int timeout)
     for (i = 0; i < count; i++) {
         memset(out, 0, sizeof(out));
         sprintf(out, "%s%d", prefix, (count > 1) ? (i + 1) : i);
-        rc = ela_send_friend_message(wctxt->carrier, robotid, out, strlen(out), &offline);
+        rc = ela_send_friend_message(wctxt->carrier, robotid, out, strlen(out), NULL, NULL, NULL);
         CU_ASSERT_EQUAL_FATAL(rc, 0);
-        CU_ASSERT_EQUAL(offline, true);
     }
 
     usleep(5000000);

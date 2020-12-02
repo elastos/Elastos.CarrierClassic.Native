@@ -936,7 +936,7 @@ static void receipt_message_callback(uint32_t msgid,  ElaReceiptState state,
             break;
     }
 
-    output("Messages receipted. msgid:0x%lx, state:%s, ecode:%x\n",
+    output("Messages receipted. msgid:0x%" PRIx32 ", state:%s, ecode:%x\n",
            msgid, state_str, errcode);
 }
 
