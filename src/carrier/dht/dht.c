@@ -1167,7 +1167,7 @@ int dht_friend_add_norequest(DHT *dht, const uint8_t *public_key,
 }
 
 int dht_friend_message(DHT *dht, uint32_t friend_number, const uint8_t *data,
-                       size_t length, const uint32_t *msgid)
+                       size_t length, uint32_t *msgid)
 {
     Tox *tox = dht->tox;
     TOX_ERR_FRIEND_SEND_MESSAGE error;
