@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -40,7 +41,7 @@ struct CarrierContextExtra {
     char* from;
     char* msg;
     int len;
-    int64_t msgid;
+    uint32_t msgid;
     int state;
 };
 
@@ -154,14 +155,14 @@ static TestContext test_context = {
     .context_reset = test_context_reset
 };
 
-static void message_receipt_cb(int64_t msgid,  ElaReceiptState state,
+static void message_receipt_cb(uint32_t msgid,  ElaReceiptState state,
                                void *context)
 {
     CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
     extra->msgid  = msgid;
     extra->state  = state;
 
-    vlogD("message receipt callback invoked (msgid: %llx, stat: %d)" , msgid, state);
+    vlogD("message receipt callback invoked (msgid: %" PRIx32 ", stat: %d)" , msgid, state);
     cond_signal(((CarrierContext *)context)->receipts_cond);
 }
 
@@ -171,7 +172,7 @@ static void test_send_message_with_receipt(void)
     CarrierContextExtra *extra = wctxt->extra;
     char msg[1024] = {0};
     char in[1024] = {0};
-    int64_t msgid = 0;
+    uint32_t msgid = 0;
     bool wakeup;
     int rc;
 
@@ -182,8 +183,9 @@ static void test_send_message_with_receipt(void)
     CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
 
     memset(msg, 'm', sizeof(msg) -1);
-    msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, msg, sizeof(msg),
-                                          message_receipt_cb, wctxt);
+    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg),
+                                 &msgid, message_receipt_cb, wctxt);
+    CU_ASSERT_TRUE_FATAL(!rc);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
@@ -202,7 +204,7 @@ static void test_send_bulkmsg_with_receipt(void)
     CarrierContextExtra *extra = wctxt->extra;
     size_t bulksz = 10000;
     char *bulkmsg;
-    int64_t msgid = 0;
+    uint32_t msgid = 0;
     int size;
     char buf[32] = {0};
     bool wakeup;
@@ -221,8 +223,9 @@ static void test_send_bulkmsg_with_receipt(void)
     }
     memset(bulkmsg, 'b', bulksz - 1);
 
-    msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, bulkmsg, bulksz,
-                                          message_receipt_cb, wctxt);
+    rc = ela_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz,
+                                 &msgid, message_receipt_cb, wctxt);
+    CU_ASSERT_TRUE_FATAL(!rc);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
@@ -246,7 +249,7 @@ static void test_send_offmsg_with_receipt(void)
     char buf[2][32] = {0};
     char ack[32] = {0};
     char msg[32] = {0};
-    int64_t msgid = 0;
+    uint32_t msgid = 0;
     bool wakeup;
     int rc;
 
@@ -278,8 +281,9 @@ static void test_send_offmsg_with_receipt(void)
 
 
     sprintf(msg, "%s%s", prefix, "receipt");
-    msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, msg, strlen(msg),
-                                          message_receipt_cb, wctxt);
+    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, strlen(msg),
+                                 &msgid, message_receipt_cb, wctxt);
+    CU_ASSERT_TRUE_FATAL(!rc);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
@@ -307,7 +311,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     CarrierContextExtra *extra = wctxt->extra;
     size_t bulksz = 10000;
     char *bulkmsg;
-    int64_t msgid = 0;
+    uint32_t msgid = 0;
     int size;
     char prefix[32] = {0};
     char buf[2][32] = {0};
@@ -349,8 +353,9 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     sprintf(bulkmsg, "%s", prefix);
     memset(bulkmsg + strlen(prefix), 'b', bulksz - strlen(prefix) -1);
 
-    msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, bulkmsg, bulksz,
-                                          message_receipt_cb, wctxt);
+    rc = ela_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz,
+                                 &msgid, message_receipt_cb, wctxt);
+    CU_ASSERT_TRUE_FATAL(!rc);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
     free(bulkmsg);
 
@@ -381,7 +386,7 @@ static void test_send_msg_with_receipt_in_edge_case(void)
     char buf[2][32] = {0};
     char ack[32] = {0};
     char msg[32] = {0};
-    int64_t msgid = 0;
+    uint32_t msgid = 0;
     bool wakeup;
     int rc;
 
@@ -410,8 +415,9 @@ static void test_send_msg_with_receipt_in_edge_case(void)
 
 
     sprintf(msg, "%s%s", prefix, "receipt");
-    msgid = ela_send_message_with_receipt(wctxt->carrier, robotid, msg, strlen(msg),
-                                          message_receipt_cb, wctxt);
+    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, strlen(msg),
+                                 &msgid, message_receipt_cb, wctxt);
+    CU_ASSERT_TRUE_FATAL(!rc);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,

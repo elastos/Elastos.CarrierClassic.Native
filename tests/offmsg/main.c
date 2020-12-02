@@ -112,12 +112,11 @@ static void try_send_offmsg(ElaCarrier *w, TestCtx *ctx)
 send_msg:
     while (msg_cnt-- > 0) {
         const char *msg = "hello";
-        bool is_offline;
         int ret = 0;
 
         ret = ela_send_friend_message(w, ctx->remote_userid, msg, strlen(msg) + 1,
-                                      &is_offline);
-        if (ret < 0 || !is_offline) {
+                                      NULL, NULL, NULL);
+        if (ret < 0) {
             vlogE("Error: Send offline message error: 0x%x", ela_get_error());
             error |= 1;
         }

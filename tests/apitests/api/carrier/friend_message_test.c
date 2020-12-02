@@ -144,7 +144,7 @@ static void test_send_message_to_friend(void)
 
     memset(msg, 'm', sizeof(msg) -1 );
     rc = ela_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg),
-                                 &is_offline);
+                                 NULL, NULL, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_EQUAL_FATAL(is_offline, false);
 
@@ -200,7 +200,7 @@ static void test_send_message_to_stranger(void)
     CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
 
     memset(msg, '0', sizeof(msg) -1);
-    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg), NULL);
+    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg), NULL, NULL, NULL);
     CU_ASSERT_EQUAL(rc, -1);
     CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
 }
@@ -219,7 +219,7 @@ static void test_send_message_to_self(void)
     (void)ela_get_nodeid(wctxt->carrier, nodeid, sizeof(nodeid));
 
     memset(msg, 'm', sizeof(msg) -1 );
-    rc = ela_send_friend_message(wctxt->carrier, userid, msg, sizeof(msg), NULL);
+    rc = ela_send_friend_message(wctxt->carrier, userid, msg, sizeof(msg), NULL, NULL, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, -1);
     CU_ASSERT_EQUAL_FATAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
 }
@@ -246,7 +246,7 @@ static void test_send_bulkmsg_to_friend(void)
     }
     memset(bulkmsg, 'b', bulksz - 1);
 
-    rc = ela_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz, NULL);
+    rc = ela_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz, NULL, NULL, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     rc = read_ack("%31s %d", buf, &size);
