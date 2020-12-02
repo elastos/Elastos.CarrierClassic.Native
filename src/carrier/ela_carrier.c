@@ -3360,7 +3360,7 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
         if (!data)
             return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-        rc = dht_friend_message(&w->dht, friend_number, data, data_len, &msgid);
+        rc = dht_friend_message(&w->dht, friend_number, data, data_len, !left ? &msgid : NULL);
         free(data);
 
     } while (left > 0 && !rc);
