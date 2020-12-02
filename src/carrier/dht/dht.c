@@ -1169,7 +1169,6 @@ int dht_friend_add_norequest(DHT *dht, const uint8_t *public_key,
 int dht_friend_message(DHT *dht, uint32_t friend_number, const uint8_t *data,
                        size_t length, const uint32_t *msgid)
 {
-    uint32_t rc;
     Tox *tox = dht->tox;
     TOX_ERR_FRIEND_SEND_MESSAGE error;
 
@@ -1177,8 +1176,8 @@ int dht_friend_message(DHT *dht, uint32_t friend_number, const uint8_t *data,
     assert(friend_number != UINT32_MAX);
     assert(data && length > 0);
 
-    rc = tox_friend_send_message(tox, friend_number, TOX_MESSAGE_TYPE_NORMAL,
-                                 data, length, &error);
+    tox_friend_send_message(tox, friend_number, msgid, TOX_MESSAGE_TYPE_NORMAL,
+                            data, length, &error);
     if (error != TOX_ERR_FRIEND_SEND_MESSAGE_OK) {
         //vlogW("DHT: send friend message to %u error (%d).", friend_number,
         //      error);

@@ -8,9 +8,9 @@ ExternalProject_Add(
     toxcore0
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
-    URL "https://github.com/elastos/c-toxcore/archive/v0.2.12-carrier.tar.gz"
-    URL_HASH SHA256=fa336cee3763a7275bcc7b270f65baa1a1c7f4951741f443a96b72ee84713351
-    DOWNLOAD_NAME "c-toxcore-0.2.12-carrier.tar.gz"
+    URL "https://github.com/elastos/c-toxcore/archive/carrier.zip"
+    URL_HASH SHA256=280f7cbdf0f4e0766de0867c61e2f0ea9a5ef9b42be86d4696a4052c6b19fcc1
+    DOWNLOAD_NAME "c-toxcore-carrier.zip"
     DOWNLOAD_DIR ${CARRIER_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1
 

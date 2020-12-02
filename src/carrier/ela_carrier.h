@@ -1420,9 +1420,9 @@ typedef void ElaFriendMessageReceiptCallback(uint32_t msgid,
  */
 CARRIER_API
 int ela_send_friend_message(ElaCarrier *carrier, const char *to,
-                                const void *message, size_t len,
-                                uint32_t *msgid,
-                                ElaFriendMessageReceiptCallback *cb, void *context);
+                            const void *message, size_t len,
+                            uint32_t *msgid,
+                            ElaFriendMessageReceiptCallback *cb, void *context);
 
 /**
  * \~English
