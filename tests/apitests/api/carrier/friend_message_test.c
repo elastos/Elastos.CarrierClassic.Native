@@ -133,7 +133,6 @@ static void test_send_message_to_friend(void)
     CarrierContext *wctxt = test_context.carrier;
     char msg[1024] = {0};
     char buf[1024] = {0};
-    bool is_offline;
     int rc;
 
     test_context.context_reset(&test_context);
@@ -146,7 +145,6 @@ static void test_send_message_to_friend(void)
     rc = ela_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg),
                                  NULL, NULL, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_EQUAL_FATAL(is_offline, false);
 
     rc = read_ack("%1023s", buf);
     CU_ASSERT_EQUAL(rc, 1);
