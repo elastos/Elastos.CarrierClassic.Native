@@ -3299,7 +3299,7 @@ static int send_general_message(ElaCarrier *w, uint32_t friend_number,
     if (!data)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-    rc = dht_friend_message(&w->dht, friend_number, data, data_len, &msgid);
+    rc = dht_friend_message(&w->dht, friend_number, data, data_len, msgid);
     free(data);
 
     return rc;
@@ -3360,7 +3360,7 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
         if (!data)
             return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-        rc = dht_friend_message(&w->dht, friend_number, data, data_len, !left ? &msgid : NULL);
+        rc = dht_friend_message(&w->dht, friend_number, data, data_len, !left ? msgid : 0);
         free(data);
 
     } while (left > 0 && !rc);
@@ -3636,7 +3636,7 @@ static void notify_offreceipt_received(ElaCarrier *w, const char *to,
 static uint32_t generate_msgid(ElaCarrier *w)
 {
     static uint32_t msg_id = 0;
-    return msg_id++;
+    return ++msg_id == 0 ? ++msg_id : msg_id;
 }
 
 static
@@ -3816,7 +3816,7 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
             deref(tcb);
         }
 
-        rc = dht_friend_message(&w->dht, friend_number, _data, _data_len, NULL);
+        rc = dht_friend_message(&w->dht, friend_number, _data, _data_len, 0);
         free(_data);
 
         if (rc < 0) {
@@ -3953,7 +3953,7 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
             return -1;
         }
 
-        rc = dht_friend_message(&w->dht, friend_number, _data, _data_len, NULL);
+        rc = dht_friend_message(&w->dht, friend_number, _data, _data_len, 0);
         free(_data);
 
         if (rc < 0) {
