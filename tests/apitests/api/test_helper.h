@@ -23,8 +23,8 @@
 #ifndef __TEST_HELPER_H__
 #define __TEST_HELPER_H__
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include "carrier.h"
+#include "carrier_session.h"
 
 #include "test_context.h"
 

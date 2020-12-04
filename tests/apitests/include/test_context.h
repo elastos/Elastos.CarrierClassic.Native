@@ -23,9 +23,9 @@
 #ifndef __TEST_CONTEXT_H__
 #define __TEST_CONTEXT_H__
 
-#include "ela_carrier.h"
-#include "ela_session.h"
-#include "ela_filetransfer.h"
+#include "carrier.h"
+#include "carrier_session.h"
+#include "carrier_filetransfer.h"
 
 #include "cond.h"
 #include "status_cond.h"

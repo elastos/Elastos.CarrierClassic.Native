@@ -27,7 +27,7 @@
 #include <sys/time.h>
 #endif
 
-#include "ela_carrier.h"
+#include "carrier.h"
 
 #ifdef __cplusplus
 extern "C" {

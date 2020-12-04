@@ -25,13 +25,13 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
-#include "ela_filetransfer.h"
+#include "carrier.h"
+#include "carrier_filetransfer.h"
+#include "carrier_easyfile.h"
 
 #include "config.h"
 #include "cond.h"
 #include "test_helper.h"
-#include "easyfile.h"
 
 static inline void wakeup(void* context)
 {

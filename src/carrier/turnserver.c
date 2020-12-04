@@ -12,10 +12,10 @@
 #define O_BINARY 0
 #endif
 
-#include "ela_carrier.h"
-#include "ela_error.h"
-#include "ela_turnserver.h"
-#include "ela_carrier_impl.h"
+#include "carrier.h"
+#include "carrier_impl.h"
+#include "carrier_error.h"
+#include "carrier_turnserver.h"
 #include "dht.h"
 
 #define TURN_SERVER_PORT                ((uint16_t)3478)

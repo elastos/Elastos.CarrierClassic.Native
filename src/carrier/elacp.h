@@ -20,12 +20,12 @@
  * SOFTWARE.
  */
 
-#ifndef __ELACP_H__
-#define __ELACP_H__
+#ifndef __CARRIER_CONTROL_PACKET_H__
+#define __CARRIER_CONTROL_PACKET_H__
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "ela_carrier.h"
+#include "carrier.h"
 
 typedef struct ElaCP ElaCP;
 
@@ -126,4 +126,4 @@ typedef struct ElaCPPullMsg {
 } ElaCPPullMsg;
 int elacp_decode_pullmsg(const uint8_t *buf, ElaCPPullMsg *pullmsg);
 
-#endif /* __ELACP_H__ */
+#endif /* __CARRIER_CONTROL_PACKET_H__ */

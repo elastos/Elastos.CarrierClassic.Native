@@ -33,7 +33,7 @@
 
 #include <crystal.h>
 
-#include "ela_session.h"
+#include "carrier_session.h"
 #include "session.h"
 #include "channels.h"
 #include "portforwardings.h"

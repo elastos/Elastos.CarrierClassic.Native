@@ -37,8 +37,6 @@
 
 #include <crystal.h>
 
-#include "ela_session.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -24,7 +24,7 @@
 
 #include <CUnit/Basic.h>
 
-#include <ela_carrier.h>
+#include <carrier.h>
 
 static void test_id_valid(void)
 {

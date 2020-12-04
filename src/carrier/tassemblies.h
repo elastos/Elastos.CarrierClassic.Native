@@ -20,13 +20,13 @@
  * SOFTWARE.
  */
 
-#ifndef __TASSEMBLIES_H__
-#define __TASSEMBLIES_H__
+#ifndef __CARRIER_TASSEMBLIES_H__
+#define __CARRIER_TASSEMBLIES_H__
 
 #include <string.h>
 #include <crystal.h>
 
-#include "ela_carrier_impl.h"
+#include "carrier_impl.h"
 
 typedef struct TransactedAssembly {
     char ext[ELA_MAX_EXTENSION_NAME_LEN + 1];
@@ -111,4 +111,4 @@ int tassemblies_iterator_remove(hashtable_iterator_t *iterator)
     return hashtable_iterator_remove(iterator);
 }
 
-#endif /* __TASSEMBLIES_H__ */
+#endif /* __CARRIER_TASSEMBLIES_H__ */

@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include "carrier.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,7 +40,7 @@ extern "C" {
 #include "dht.h"
 
 #include "express.h"
-#include "carrier_ext.h"
+#include "carrier_extension.h"
 
 #define BOOTSTRAP_DEFAULT_PORT 33445
 

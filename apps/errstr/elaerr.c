@@ -33,8 +33,7 @@
 #endif
 
 #include <crystal.h>
-
-#include <ela_carrier.h>
+#include <carrier.h>
 
 extern void ela_session_register_strerror();
 

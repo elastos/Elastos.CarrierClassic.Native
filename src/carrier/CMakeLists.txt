@@ -63,14 +63,14 @@ set(SRC
     http_client.c
     dht/dht.c
     elacp.c
-    ela_carrier.c
+    carrier.c
     error.c
     extension.c
     express.c
     turnserver.c)
 
 set(HEADERS
-    ela_carrier.h)
+    carrier.h)
 
 add_custom_command(
     OUTPUT elacp_generated.h
@@ -127,40 +127,40 @@ endif()
 
 add_definitions(-DCARRIER_BUILD)
 
-add_custom_target(ela-carrier)
+add_custom_target(carrier0)
 
 if(ENABLE_STATIC)
-    add_library(elacarrier-static STATIC ${SRC})
+    add_library(carrier-static STATIC ${SRC})
 
-    target_compile_definitions(elacarrier-static PRIVATE CARRIER_STATIC CRYSTAL_STATIC)
-    set_target_properties(elacarrier-static PROPERTIES OUTPUT_NAME elacarrier)
+    target_compile_definitions(carrier-static PRIVATE CARRIER_STATIC CRYSTAL_STATIC)
+    set_target_properties(carrier-static PROPERTIES OUTPUT_NAME carrier)
     if(WIN32)
-        set_target_properties(elacarrier-static PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
+        set_target_properties(carrier-static PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
     endif()
-    add_dependencies(elacarrier-static elacp_generated_h)
+    add_dependencies(carrier-static elacp_generated_h)
 
-    add_dependencies(ela-carrier elacarrier-static)
+    add_dependencies(carrier0 carrier-static)
 
-    install(TARGETS elacarrier-static
+    install(TARGETS carrier-static
         RUNTIME DESTINATION "bin"
         ARCHIVE DESTINATION "lib"
         LIBRARY DESTINATION "lib")
 endif()
 
 if(ENABLE_SHARED)
-    add_library(elacarrier-shared SHARED ${SRC})
+    add_library(carrier-shared SHARED ${SRC})
 
-    target_compile_definitions(elacarrier-shared PRIVATE CARRIER_DYNAMIC CRYSTAL_DYNAMIC)
-    set_target_properties(elacarrier-shared PROPERTIES OUTPUT_NAME elacarrier)
+    target_compile_definitions(carrier-shared PRIVATE CARRIER_DYNAMIC CRYSTAL_DYNAMIC)
+    set_target_properties(carrier-shared PROPERTIES OUTPUT_NAME carrier)
     if(WIN32)
-        set_target_properties(elacarrier-shared PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
+        set_target_properties(carrier-shared PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
     endif()
-    target_link_libraries(elacarrier-shared ${LIBS} ${SYSTEM_LIBS})
-    add_dependencies(elacarrier-shared elacp_generated_h)
+    target_link_libraries(carrier-shared ${LIBS} ${SYSTEM_LIBS})
+    add_dependencies(carrier-shared elacp_generated_h)
 
-    add_dependencies(ela-carrier elacarrier-shared)
+    add_dependencies(carrier0 carrier-shared)
 
-    install(TARGETS elacarrier-shared
+    install(TARGETS carrier-shared
         RUNTIME DESTINATION "bin"
         ARCHIVE DESTINATION "lib"
         LIBRARY DESTINATION "lib")

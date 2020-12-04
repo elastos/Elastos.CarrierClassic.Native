@@ -37,7 +37,7 @@ add_subdirectory(src)
 if(ENABLE_APPS OR ENABLE_TESTS)
     add_submodule(checkconfig
         DIRECTORY config
-        DEPENDS libcrystal libconfig ela-carrier ela-session)
+        DEPENDS libcrystal libconfig carrier0 carrier-session)
 endif()
 
 if(ENABLE_APPS)

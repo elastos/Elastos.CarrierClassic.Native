@@ -29,7 +29,7 @@
 #include <crystal.h>
 #include <CUnit/Basic.h>
 
-#include "ela_carrier.h"
+#include "carrier.h"
 #include "cond.h"
 #include "test_helper.h"
 

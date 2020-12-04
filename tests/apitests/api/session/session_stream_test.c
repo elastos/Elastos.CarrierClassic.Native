@@ -43,8 +43,8 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include "carrier.h"
+#include "carrier_session.h"
 
 #include "cond.h"
 #include "test_helper.h"

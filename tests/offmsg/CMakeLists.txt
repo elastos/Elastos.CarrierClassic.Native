@@ -39,12 +39,12 @@ else()
 endif()
 
 set(LIBS
-    elacarrier
+    carrier
     crystal
     pthread)
 
 set(DEPS
-    ela-carrier
+    carrier0
     libcrystal
     libconfig)
 

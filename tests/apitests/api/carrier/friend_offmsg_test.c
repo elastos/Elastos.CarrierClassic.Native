@@ -31,7 +31,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include "carrier.h"
 
 #include "cond.h"
 #include "test_helper.h"

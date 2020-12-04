@@ -31,8 +31,6 @@
 #include <sys/time.h>
 #endif
 
-#include "ela_filetransfer.h"
-
 #define FILE_TRANSFER_REQUEST_EXPIRE_INTERVAL (5 * 60) // 5m
 
 typedef struct FileRequest {

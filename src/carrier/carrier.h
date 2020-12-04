@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __ELA_CARRIER_H__
-#define __ELA_CARRIER_H__
+#ifndef __ELASTOS_CARRIER_H__
+#define __ELASTOS_CARRIER_H__
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -2053,4 +2053,4 @@ char *ela_get_strerror(int errnum, char *buf, size_t len);
 #pragma GCC diagnostic pop
 #endif
 
-#endif /* __ELA_CARRIER_H_ */
+#endif /* __ELASTOS_CARRIER_H__ */

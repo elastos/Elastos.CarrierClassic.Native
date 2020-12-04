@@ -26,7 +26,7 @@
 #include <limits.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include "carrier.h"
 
 #define CARRIER_MAX_SERVER_URI_LEN 127
 

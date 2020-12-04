@@ -20,12 +20,12 @@
  * SOFTWARE.
  */
 
-#ifndef __EASYFILE_H__
-#define __EASYFILE_H__
+#ifndef __CARRIER_EASYFILE_H__
+#define __CARRIER_EASYFILE_H__
 
 #include <stdint.h>
 
-#include "ela_filetransfer.h"
+#include "carrier_filetransfer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,4 +103,4 @@ void ela_set_error(int error);
 }
 #endif
 
-#endif /* __EASYFILE_H__ */
+#endif /* __CARRIER_EASYFILE_H__ */

@@ -27,7 +27,7 @@
 #endif
 
 #include <crystal.h>
-#include <ela_carrier.h>
+#include <carrier.h>
 
 #include "carrier_config.h"
 

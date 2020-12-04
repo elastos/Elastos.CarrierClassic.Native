@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-#ifndef __EXTENSION_APIS_H__
-#define __EXTENSION_APIS_H__
+#ifndef __CARRIER_EXTENSION_APIS_H__
+#define __CARRIER_EXTENSION_APIS_H__
 
 #include <assert.h>
 #include <string.h>
-#include "ela_carrier.h"
-#include "ela_carrier_impl.h"
-#include "carrier_ext.h"
+#include "carrier.h"
+#include "carrier_impl.h"
+#include "carrier_extension.h"
 
 static
 bool extension_is_friend(CarrierExtension *ext, const char *address)
@@ -111,4 +111,4 @@ int extension_reply_friend_invite(CarrierExtension *ext, const char *address,
                                    data, len);
 }
 
-#endif //__EXTENSION_APIS_H__
+#endif //__CARRIER_EXTENSION_APIS_H__

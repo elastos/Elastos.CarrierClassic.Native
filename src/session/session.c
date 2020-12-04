@@ -28,8 +28,8 @@
 #include <crystal.h>
 #include <pjmedia.h>
 
-#include "ela_session.h"
-#include "ela_turnserver.h"
+#include "carrier_session.h"
+#include "carrier_turnserver.h"
 #include "portforwarding.h"
 #include "services.h"
 #include "session.h"

@@ -20,11 +20,11 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_EXT_H__
-#define __CARRIER_EXT_H__
+#ifndef __CARRIER_EXTENSION_H__
+#define __CARRIER_EXTENSION_H__
 
 #include <stdint.h>
-#include "ela_carrier.h"
+#include "carrier.h"
 
 #if defined(__APPLE__)
 #pragma GCC diagnostic push
@@ -232,4 +232,4 @@ void ela_set_error(int err);
 #pragma GCC diagnostic pop
 #endif
 
-#endif /* __CARRIER_EXT_H__ */
+#endif /* __CARRIER_EXTENSION_H__ */

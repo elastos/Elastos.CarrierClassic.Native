@@ -35,10 +35,10 @@
 #endif
 #include <crystal.h>
 
-#include "ela_carrier.h"
-#include "ela_session.h"
-#include "ela_filetransfer.h"
-#include "easyfile.h"
+#include "carrier.h"
+#include "carrier_session.h"
+#include "carrier_filetransfer.h"
+#include "carrier_easyfile.h"
 
 #include "cond.h"
 #include "robot.h"

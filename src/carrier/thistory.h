@@ -20,15 +20,15 @@
  * SOFTWARE.
  */
 
-#ifndef __THISTORY_H__
-#define __THISTORY_H__
+#ifndef __CARRIER_TRANSACTION_HISTROY_H__
+#define __CARRIER_TRANSACTION_HISTROY_H__
 
 #include <string.h>
 #include <assert.h>
 
 #include <crystal.h>
-#include "ela_carrier_impl.h"
-#include "ela_carrier.h"
+#include "carrier_impl.h"
+#include "carrier.h"
 
 typedef struct HistoryItem {
     hash_entry_t he;
@@ -109,4 +109,4 @@ void transaction_history_remove_invite(hashtable_t *thistory, const char *userid
     deref(hashtable_remove(thistory, key, strlen(key)));
 }
 
-#endif /* __THISTORY_H__ */
+#endif /* __CARRIER_TRANSACTION_HISTROY_H__ */

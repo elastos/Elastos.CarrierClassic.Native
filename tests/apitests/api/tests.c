@@ -33,7 +33,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include "carrier.h"
 
 #include "config.h"
 #include "suites.h"

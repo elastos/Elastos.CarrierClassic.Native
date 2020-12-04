@@ -65,9 +65,10 @@
 #endif
 
 #include "version.h"
-#include "ela_carrier.h"
-#include "ela_error.h"
-#include "ela_carrier_impl.h"
+#include "carrier.h"
+#include "carrier_error.h"
+#include "carrier_impl.h"
+#include "carrier_extension.h"
 #include "friends.h"
 #include "tcallbacks.h"
 #include "thistory.h"
@@ -77,7 +78,6 @@
 #include "bulkmsgs.h"
 #include "express.h"
 #include "extensions.h"
-#include "carrier_ext.h"
 #include "unconfirmed_msgs.h"
 #include "utility.h"
 

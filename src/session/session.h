@@ -36,8 +36,9 @@
 
 #include <crystal.h>
 
-#include "carrier_ext.h"
-#include "ela_session.h"
+#include "carrier_extension.h"
+#include "carrier_session.h"
+#include "carrier_error.h"
 #include "stream_handler.h"
 
 #ifdef __cplusplus
@@ -230,10 +231,6 @@ TransportWorker *session_get_worker(ElaSession *session)
 {
     return session->worker;
 }
-
-void ela_set_error(int error);
-
-int ela_register_strerror(int facility, int (*strerr)(int, char *, size_t));
 
 CARRIER_API
 int ela_session_register_strerror();

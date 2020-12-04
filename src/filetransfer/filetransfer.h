@@ -37,9 +37,9 @@
 
 #include <crystal.h>
 
-#include <ela_session.h>
-#include <carrier_ext.h>
-#include "ela_filetransfer.h"
+#include <carrier_extension.h>
+#include <carrier_session.h>
+#include "carrier_filetransfer.h"
 
 #ifdef __cplusplus
 extern "C" {

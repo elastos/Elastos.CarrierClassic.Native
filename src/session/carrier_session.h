@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-#ifndef __ELA_SESSION_H__
-#define __ELA_SESSION_H__
+#ifndef __CARRIER_SESSION_H__
+#define __CARRIER_SESSION_H__
 
 #include <stddef.h>
 #include <stdbool.h>
 #include <sys/types.h>
 
-#include <ela_carrier.h>
+#include <carrier.h>
 
 #if defined(__APPLE__)
 #pragma GCC diagnostic push

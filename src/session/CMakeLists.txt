@@ -1,4 +1,4 @@
-project(ela-session C)
+project(carrier-session C)
 cmake_policy(SET CMP0054 NEW)
 
 include(CarrierDefaults)
@@ -68,7 +68,7 @@ set(SRC
     pseudotcp/gqueue.c)
 
 set(HEADERS
-    ela_session.h)
+    carrier_session.h)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(SYSTEM_LIBS pthread m)
@@ -113,26 +113,26 @@ endif()
 
 add_definitions(-DCARRIER_BUILD)
 
-add_custom_target(ela-session)
+add_custom_target(carrier-session)
 
 if(ENABLE_STATIC)
-    add_library(elasession-static STATIC ${SRC})
-    target_compile_definitions(elasession-static PRIVATE CARRIER_STATIC CRYSTAL_STATIC)
-    set_target_properties(elasession-static PROPERTIES OUTPUT_NAME elasession)
+    add_library(carriersession-static STATIC ${SRC})
+    target_compile_definitions(carriersession-static PRIVATE CARRIER_STATIC CRYSTAL_STATIC)
+    set_target_properties(carriersession-static PROPERTIES OUTPUT_NAME carriersession)
 
-    add_dependencies(ela-session elasession-static)
+    add_dependencies(carrier-session carriersession-static)
 
-    install(TARGETS elasession-static
+    install(TARGETS carriersession-static
         RUNTIME DESTINATION "bin"
         ARCHIVE DESTINATION "lib"
         LIBRARY DESTINATION "lib")
 endif()
 
 if(ENABLE_SHARED)
-    add_library(elasession-shared SHARED ${SRC})
-    target_compile_definitions(elasession-shared PRIVATE CARRIER_DYNAMIC CRYSTAL_DYNAMIC)
-    set_target_properties(elasession-shared PROPERTIES OUTPUT_NAME elasession)
-    target_link_libraries(elasession-shared elacarrier-shared ${LIBS} ${SYSTEM_LIBS})
+    add_library(carriersession-shared SHARED ${SRC})
+    target_compile_definitions(carriersession-shared PRIVATE CARRIER_DYNAMIC CRYSTAL_DYNAMIC)
+    set_target_properties(carriersession-shared PROPERTIES OUTPUT_NAME carriersession)
+    target_link_libraries(carriersession-shared carrier-shared ${LIBS} ${SYSTEM_LIBS})
 
     if(IOS)
         string(CONCAT LINK_FLAGS
@@ -141,12 +141,12 @@ if(ENABLE_SHARED)
             "-framework CFNetwork "
             "-framework Foundation")
 
-        set_target_properties(elasession-shared PROPERTIES LINK_FLAGS ${LINK_FLAGS})
+        set_target_properties(carriersession-shared PROPERTIES LINK_FLAGS ${LINK_FLAGS})
     endif()
 
-    add_dependencies(ela-session elasession-shared)
+    add_dependencies(carrier-session carriersession-shared)
 
-    install(TARGETS elasession-shared
+    install(TARGETS carriersession-shared
         RUNTIME DESTINATION "bin"
         ARCHIVE DESTINATION "lib"
         LIBRARY DESTINATION "lib")

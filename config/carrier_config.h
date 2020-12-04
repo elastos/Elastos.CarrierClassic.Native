@@ -23,7 +23,7 @@
 #ifndef __CARRIER_CONFIG_H__
 #define __CARRIER_CONFIG_H__
 
-#include <ela_carrier.h>
+#include <carrier.h>
 
 ElaOptions *carrier_config_load(const char *config_file,
             int (*extra_config_handle)(void *cfg, ElaOptions *options),

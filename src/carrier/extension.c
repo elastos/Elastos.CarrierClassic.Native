@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#include "ela_carrier.h"
-#include "ela_error.h"
+#include "carrier.h"
+#include "carrier_error.h"
 #include "extension_apis.h"
 #include "extensions.h"
 

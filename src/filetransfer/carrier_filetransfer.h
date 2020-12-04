@@ -20,13 +20,13 @@
  * SOFTWARE.
  */
 
-#ifndef __ELA_FILETRANSFER_H__
-#define __ELA_FILETRANSFER_H__
+#ifndef __CARRIER_FILETRANSFER_H__
+#define __CARRIER_FILETRANSFER_H__
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <limits.h>
-#include <ela_carrier.h>
+#include <carrier.h>
 
 #if defined(__APPLE__)
 #pragma GCC diagnostic push
@@ -611,4 +611,4 @@ void *ela_filetransfer_get_userdata(ElaFileTransfer *ft, const char *fileid);
 #pragma GCC diagnostic pop
 #endif
 
-#endif /* __ELA_FILETRANSFER_H__ */
+#endif /* __CARRIER_FILETRANSFER_H__ */

@@ -57,8 +57,8 @@ else()
 endif()
 
 set(LIBS
-    elacarrier
-    elasession
+    carrier
+    carriersession
     crystal)
 
 if(WIN32)

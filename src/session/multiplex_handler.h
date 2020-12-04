@@ -30,7 +30,6 @@
 
 #include "flex_buffer.h"
 #include "session.h"
-#include "ela_session.h"
 
 #ifdef __cplusplus
 extern "C" {
