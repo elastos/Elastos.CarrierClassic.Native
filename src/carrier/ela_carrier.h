@@ -1408,17 +1408,19 @@ typedef void ElaFriendMessageReceiptCallback(uint32_t msgid,
  * @param
  *      len         [in] The message length in bytes.
  * @param
+ *      msgid       [out] The message ID.
+ * @param
  *      cb          [in] The pointer to callback which will be called when the
  *                        receipt is received or failed to send message.
  * @param
  *      content     [in] The user context in callback.
  *
  * @return
- *      > 0 message id if the text message successfully add to send task list.
- *      Otherwise, return <0, and a specific error code can be
+ *      0 if the text message successfully sent.
+ *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling ela_get_error().
  */
-CARRIER_API
+ CARRIER_API
 int ela_send_friend_message(ElaCarrier *carrier, const char *to,
                             const void *message, size_t len,
                             uint32_t *msgid,
