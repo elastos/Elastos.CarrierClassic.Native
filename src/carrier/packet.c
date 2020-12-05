@@ -25,22 +25,19 @@
 #include <limits.h>
 #include <assert.h>
 
-//#include <crystal.h>
-
-#include "elacp.h"
-#include "elacp_generated.h"
+#include "packet.h"
+#include "packet_generated.h"
 #include "flatcc/support/hexdump.h"
-//#include "carrier.h"
 
 #pragma pack(push, 1)
 
-struct ElaCP {
+struct Packet {
     uint8_t type;
     const char *ext;
 };
 
-struct ElaCPUserInfo {
-    ElaCP header;
+struct PacketUserInfo {
+    Packet header;
     bool has_avatar;
     const char *name;
     const char *descr;
@@ -50,21 +47,21 @@ struct ElaCPUserInfo {
     const char *region;
 };
 
-struct ElaCPFriendReq {
-    ElaCP header;
+struct PacketFriendReq {
+    Packet header;
     const char *name;
     const char *descr;
     const char *hello;
 };
 
-struct ElaCPFriendMsg {
-    ElaCP headr;
+struct PacketFriendMsg {
+    Packet headr;
     size_t len;
     const uint8_t *msg;
 };
 
-struct ElaCPInviteReq {
-    ElaCP header;
+struct PacketInviteReq {
+    Packet header;
     int64_t tid;
     const char *bundle;
     size_t totalsz;
@@ -72,8 +69,8 @@ struct ElaCPInviteReq {
     const uint8_t *data;
 };
 
-struct ElaCPInviteRsp {
-    ElaCP header;
+struct PacketInviteRsp {
+    Packet header;
     int64_t tid;
     const char *bundle;
     size_t totalsz;
@@ -83,8 +80,8 @@ struct ElaCPInviteRsp {
     const uint8_t *data;
 };
 
-struct ElaCPBulkMsg {
-    ElaCP headr;
+struct PacketBulkMsg {
+    Packet headr;
     int64_t tid;
     size_t totalsz;
     size_t len;
@@ -109,57 +106,57 @@ struct ElaCPBulkMsg {
 
 struct elacp_packet_t {
     union {
-        struct ElaCP          *cp;
-        struct ElaCPUserInfo  *pkt_info;
-        struct ElaCPFriendReq *pkt_freq;
-        struct ElaCPFriendMsg *pkt_fmsg;
-        struct ElaCPInviteReq *pkt_ireq;
-        struct ElaCPInviteRsp *pkt_irsp;
-        struct ElaCPBulkMsg   *pkt_bmsg;
+        struct Packet         *cp;
+        struct PacketUserInfo  *pkt_info;
+        struct PacketFriendReq *pkt_freq;
+        struct PacketFriendMsg *pkt_fmsg;
+        struct PacketInviteReq *pkt_ireq;
+        struct PacketInviteRsp *pkt_irsp;
+        struct PacketBulkMsg   *pkt_bmsg;
     } u;
 };
 
 struct elacp_table_t {
     union {
-        elacp_userinfo_table_t  tbl_info;
-        elacp_friendreq_table_t tbl_freq;
-        elacp_friendmsg_table_t tbl_fmsg;
-        elacp_invitereq_table_t tbl_ireq;
-        elacp_invitersp_table_t tbl_irsp;
-        elacp_bulkmsg_table_t   tbl_bmsg;
+        carrier_userinfo_table_t  tbl_info;
+        carrier_friendreq_table_t tbl_freq;
+        carrier_friendmsg_table_t tbl_fmsg;
+        carrier_invitereq_table_t tbl_ireq;
+        carrier_invitersp_table_t tbl_irsp;
+        carrier_bulkmsg_table_t   tbl_bmsg;
     } u;
 };
 
-ElaCP *elacp_create(uint8_t type, const char *ext_name)
+Packet *packet_create(uint8_t type, const char *ext_name)
 {
-    ElaCP *cp;
+    Packet *cp;
     size_t len;
 
     switch(type) {
-    case ELACP_TYPE_USERINFO:
-        len = sizeof(struct ElaCPUserInfo);
+    case PACKET_TYPE_USERINFO:
+        len = sizeof(struct PacketUserInfo);
         break;
-    case ELACP_TYPE_FRIEND_REQUEST:
-        len = sizeof(struct ElaCPFriendReq);
+    case PACKET_TYPE_FRIEND_REQUEST:
+        len = sizeof(struct PacketFriendReq);
         break;
-    case ELACP_TYPE_MESSAGE:
-        len = sizeof(struct ElaCPFriendMsg);
+    case PACKET_TYPE_MESSAGE:
+        len = sizeof(struct PacketFriendMsg);
         break;
-    case ELACP_TYPE_INVITE_REQUEST:
-        len = sizeof(struct ElaCPInviteReq);
+    case PACKET_TYPE_INVITE_REQUEST:
+        len = sizeof(struct PacketInviteReq);
         break;
-    case ELACP_TYPE_INVITE_RESPONSE:
-        len = sizeof(struct ElaCPInviteRsp);
+    case PACKET_TYPE_INVITE_RESPONSE:
+        len = sizeof(struct PacketInviteRsp);
         break;
-    case ELACP_TYPE_BULKMSG:
-        len = sizeof(struct ElaCPBulkMsg);
+    case PACKET_TYPE_BULKMSG:
+        len = sizeof(struct PacketBulkMsg);
         break;
     default:
         assert(0);
         return NULL;
     }
 
-    cp = (ElaCP *)calloc(1, len);
+    cp = (Packet *)calloc(1, len);
     if (!cp)
         return NULL;
 
@@ -169,27 +166,27 @@ ElaCP *elacp_create(uint8_t type, const char *ext_name)
     return cp;
 }
 
-void elacp_free(ElaCP *cp)
+void packet_free(Packet *cp)
 {
     if (cp)
         free(cp);
 }
 
-int elacp_get_type(ElaCP *cp)
+int packet_get_type(Packet *cp)
 {
     assert(cp);
 
     return cp->type;
 }
 
-const char *elacp_get_extension(ElaCP *cp)
+const char *packet_get_extension(Packet *cp)
 {
     assert(cp);
 
     return cp->ext;
 }
 
-const char *elacp_get_name(ElaCP *cp)
+const char *packet_get_name(Packet *cp)
 {
     struct elacp_packet_t pkt;
     const char *name = NULL;
@@ -198,10 +195,10 @@ const char *elacp_get_name(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         name = pktinfo->name;
         break;
-    case ELACP_TYPE_FRIEND_REQUEST:
+    case PACKET_TYPE_FRIEND_REQUEST:
         name = pktfreq->name;
         break;
     default:
@@ -212,7 +209,7 @@ const char *elacp_get_name(ElaCP *cp)
     return name;
 }
 
-const char *elacp_get_descr(ElaCP *cp)
+const char *packet_get_descr(Packet *cp)
 {
     struct elacp_packet_t pkt;
     const char *descr = NULL;
@@ -221,10 +218,10 @@ const char *elacp_get_descr(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         descr = pktinfo->descr;
         break;
-    case ELACP_TYPE_FRIEND_REQUEST:
+    case PACKET_TYPE_FRIEND_REQUEST:
         descr = pktfreq->descr;
         break;
     default:
@@ -235,7 +232,7 @@ const char *elacp_get_descr(ElaCP *cp)
     return descr;
 }
 
-const char *elacp_get_gender(ElaCP *cp)
+const char *packet_get_gender(Packet *cp)
 {
     struct elacp_packet_t pkt;
     const char *gender = NULL;
@@ -244,7 +241,7 @@ const char *elacp_get_gender(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         gender = pktinfo->gender;
         break;
     default:
@@ -255,7 +252,7 @@ const char *elacp_get_gender(ElaCP *cp)
     return gender;
 }
 
-const char *elacp_get_phone(ElaCP *cp)
+const char *packet_get_phone(Packet *cp)
 {
     struct elacp_packet_t pkt;
     const char *phone = NULL;
@@ -264,7 +261,7 @@ const char *elacp_get_phone(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         phone = pktinfo->phone;
         break;
     default:
@@ -275,7 +272,7 @@ const char *elacp_get_phone(ElaCP *cp)
     return phone;
 }
 
-const char *elacp_get_email(ElaCP *cp)
+const char *packet_get_email(Packet *cp)
 {
     struct elacp_packet_t pkt;
     const char *email = NULL;
@@ -284,7 +281,7 @@ const char *elacp_get_email(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         email = pktinfo->email;
         break;
     default:
@@ -295,7 +292,7 @@ const char *elacp_get_email(ElaCP *cp)
     return email;
 }
 
-const char *elacp_get_region(ElaCP *cp)
+const char *packet_get_region(Packet *cp)
 {
     struct elacp_packet_t pkt;
     const char *region = NULL;
@@ -304,7 +301,7 @@ const char *elacp_get_region(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         region = pktinfo->region;
         break;
     default:
@@ -315,7 +312,7 @@ const char *elacp_get_region(ElaCP *cp)
     return region;
 }
 
-bool elacp_get_has_avatar(ElaCP *cp)
+bool packet_get_has_avatar(Packet *cp)
 {
     struct elacp_packet_t pkt;
     bool has_avatar = 0;
@@ -324,7 +321,7 @@ bool elacp_get_has_avatar(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         has_avatar = pktinfo->has_avatar;
         break;
     default:
@@ -335,7 +332,7 @@ bool elacp_get_has_avatar(ElaCP *cp)
     return has_avatar;
 }
 
-const char *elacp_get_hello(ElaCP *cp)
+const char *packet_get_hello(Packet *cp)
 {
     struct elacp_packet_t pkt;
     const char *hello = NULL;
@@ -344,7 +341,7 @@ const char *elacp_get_hello(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_FRIEND_REQUEST:
+    case PACKET_TYPE_FRIEND_REQUEST:
         hello = pktfreq->hello;
         break;
     default:
@@ -355,7 +352,7 @@ const char *elacp_get_hello(ElaCP *cp)
     return hello;
 }
 
-int64_t elacp_get_tid(ElaCP *cp)
+int64_t packet_get_tid(Packet *cp)
 {
     struct elacp_packet_t pkt;
     int64_t tid = 0;
@@ -364,13 +361,13 @@ int64_t elacp_get_tid(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_INVITE_REQUEST:
+    case PACKET_TYPE_INVITE_REQUEST:
         tid = pktireq->tid;
         break;
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         tid = pktirsp->tid;
         break;
-    case ELACP_TYPE_BULKMSG:
+    case PACKET_TYPE_BULKMSG:
         tid = pktbmsg->tid;
         break;
     default:
@@ -381,7 +378,7 @@ int64_t elacp_get_tid(ElaCP *cp)
     return tid;
 }
 
-size_t elacp_get_totalsz(ElaCP *cp)
+size_t packet_get_totalsz(Packet *cp)
 {
     struct elacp_packet_t pkt;
     size_t totalsz = 0;
@@ -390,13 +387,13 @@ size_t elacp_get_totalsz(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_INVITE_REQUEST:
+    case PACKET_TYPE_INVITE_REQUEST:
         totalsz = pktireq->totalsz;
         break;
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         totalsz = pktirsp->totalsz;
         break;
-    case ELACP_TYPE_BULKMSG:
+    case PACKET_TYPE_BULKMSG:
         totalsz = pktbmsg->totalsz;
         break;
     default:
@@ -407,7 +404,7 @@ size_t elacp_get_totalsz(ElaCP *cp)
     return totalsz;
 }
 
-int elacp_get_status(ElaCP *cp)
+int packet_get_status(Packet *cp)
 {
     struct elacp_packet_t pkt;
     int status = 0;
@@ -416,7 +413,7 @@ int elacp_get_status(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         status = pktirsp->status;
         break;
     default:
@@ -427,7 +424,7 @@ int elacp_get_status(ElaCP *cp)
     return status;
 }
 
-const void *elacp_get_raw_data(ElaCP *cp)
+const void *packet_get_raw_data(Packet *cp)
 {
     struct elacp_packet_t pkt;
     const void *data = NULL;
@@ -436,16 +433,16 @@ const void *elacp_get_raw_data(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_MESSAGE:
+    case PACKET_TYPE_MESSAGE:
         data = pktfmsg->msg;
         break;
-    case ELACP_TYPE_INVITE_REQUEST:
+    case PACKET_TYPE_INVITE_REQUEST:
         data = pktireq->data;
         break;
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         data = pktirsp->data;
         break;
-    case ELACP_TYPE_BULKMSG:
+    case PACKET_TYPE_BULKMSG:
         data = pktbmsg->data;
         break;
     default:
@@ -456,7 +453,7 @@ const void *elacp_get_raw_data(ElaCP *cp)
     return data;
 }
 
-size_t elacp_get_raw_data_length(ElaCP *cp)
+size_t packet_get_raw_data_length(Packet *cp)
 {
     struct elacp_packet_t pkt;
     size_t len = 0;
@@ -465,16 +462,16 @@ size_t elacp_get_raw_data_length(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_MESSAGE:
+    case PACKET_TYPE_MESSAGE:
         len = pktfmsg->len;
         break;
-    case ELACP_TYPE_INVITE_REQUEST:
+    case PACKET_TYPE_INVITE_REQUEST:
         len = pktireq->len;
         break;
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         len = pktirsp->len;
         break;
-    case ELACP_TYPE_BULKMSG:
+    case PACKET_TYPE_BULKMSG:
         len = pktbmsg->len;
         break;
     default:
@@ -485,7 +482,7 @@ size_t elacp_get_raw_data_length(ElaCP *cp)
     return len;
 }
 
-const char *elacp_get_bundle(ElaCP *cp)
+const char *packet_get_bundle(Packet *cp)
 {
      struct elacp_packet_t pkt;
      const char *bundle = NULL;
@@ -494,10 +491,10 @@ const char *elacp_get_bundle(ElaCP *cp)
      pkt.u.cp = cp;
 
      switch(cp->type) {
-     case ELACP_TYPE_INVITE_REQUEST:
+     case PACKET_TYPE_INVITE_REQUEST:
          bundle = pktireq->bundle;
          break;
-     case ELACP_TYPE_INVITE_RESPONSE:
+     case PACKET_TYPE_INVITE_RESPONSE:
          bundle = pktirsp->bundle;
          break;
      default:
@@ -508,7 +505,7 @@ const char *elacp_get_bundle(ElaCP *cp)
      return bundle;
  }
 
-const char *elacp_get_reason(ElaCP *cp)
+const char *packet_get_reason(Packet *cp)
 {
     struct elacp_packet_t pkt;
     const char *reason = NULL;
@@ -517,7 +514,7 @@ const char *elacp_get_reason(ElaCP *cp)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         reason = pktirsp->reason;
         break;
     default:
@@ -528,7 +525,7 @@ const char *elacp_get_reason(ElaCP *cp)
     return reason;
 }
 
-void elacp_set_name(ElaCP *cp, const char *name)
+void packet_set_name(Packet *cp, const char *name)
 {
     struct elacp_packet_t pkt;
 
@@ -538,10 +535,10 @@ void elacp_set_name(ElaCP *cp, const char *name)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         pktinfo->name = name;
         break;
-    case ELACP_TYPE_FRIEND_REQUEST:
+    case PACKET_TYPE_FRIEND_REQUEST:
         pktfreq->name = name;
         break;
     default:
@@ -550,7 +547,7 @@ void elacp_set_name(ElaCP *cp, const char *name)
     }
 }
 
-void elacp_set_descr(ElaCP *cp, const char *descr)
+void packet_set_descr(Packet *cp, const char *descr)
 {
     struct elacp_packet_t pkt;
 
@@ -560,10 +557,10 @@ void elacp_set_descr(ElaCP *cp, const char *descr)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         pktinfo->descr = descr;
         break;
-    case ELACP_TYPE_FRIEND_REQUEST:
+    case PACKET_TYPE_FRIEND_REQUEST:
         pktfreq->descr = descr;
         break;
     default:
@@ -572,7 +569,7 @@ void elacp_set_descr(ElaCP *cp, const char *descr)
     }
 }
 
-void elacp_set_gender(ElaCP *cp, const char *gender)
+void packet_set_gender(Packet *cp, const char *gender)
 {
     struct elacp_packet_t pkt;
 
@@ -582,7 +579,7 @@ void elacp_set_gender(ElaCP *cp, const char *gender)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         pktinfo->gender = gender;
         break;
     default:
@@ -591,7 +588,7 @@ void elacp_set_gender(ElaCP *cp, const char *gender)
     }
 }
 
-void elacp_set_phone(ElaCP *cp, const char *phone)
+void packet_set_phone(Packet *cp, const char *phone)
 {
     struct elacp_packet_t pkt;
 
@@ -601,7 +598,7 @@ void elacp_set_phone(ElaCP *cp, const char *phone)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         pktinfo->phone = phone;
         break;
     default:
@@ -610,7 +607,7 @@ void elacp_set_phone(ElaCP *cp, const char *phone)
     }
 }
 
-void elacp_set_email(ElaCP *cp, const char *email)
+void packet_set_email(Packet *cp, const char *email)
 {
     struct elacp_packet_t pkt;
 
@@ -620,7 +617,7 @@ void elacp_set_email(ElaCP *cp, const char *email)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         pktinfo->email = email;
         break;
     default:
@@ -629,7 +626,7 @@ void elacp_set_email(ElaCP *cp, const char *email)
     }
 }
 
-void elacp_set_region(ElaCP *cp, const char *region)
+void packet_set_region(Packet *cp, const char *region)
 {
     struct elacp_packet_t pkt;
 
@@ -639,7 +636,7 @@ void elacp_set_region(ElaCP *cp, const char *region)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         pktinfo->region = region;
         break;
     default:
@@ -648,7 +645,7 @@ void elacp_set_region(ElaCP *cp, const char *region)
     }
 }
 
-void elacp_set_has_avatar(ElaCP *cp, int has_avatar)
+void packet_set_has_avatar(Packet *cp, int has_avatar)
 {
     struct elacp_packet_t pkt;
 
@@ -656,7 +653,7 @@ void elacp_set_has_avatar(ElaCP *cp, int has_avatar)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
+    case PACKET_TYPE_USERINFO:
         pktinfo->has_avatar = !!has_avatar;
         break;
     default:
@@ -665,7 +662,7 @@ void elacp_set_has_avatar(ElaCP *cp, int has_avatar)
     }
 }
 
-void elacp_set_hello(ElaCP *cp, const char *hello)
+void packet_set_hello(Packet *cp, const char *hello)
 {
     struct elacp_packet_t pkt;
 
@@ -675,7 +672,7 @@ void elacp_set_hello(ElaCP *cp, const char *hello)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_FRIEND_REQUEST:
+    case PACKET_TYPE_FRIEND_REQUEST:
         pktfreq->hello = hello;
         break;
     default:
@@ -684,7 +681,7 @@ void elacp_set_hello(ElaCP *cp, const char *hello)
     }
 }
 
-void elacp_set_tid(ElaCP *cp, int64_t *tid)
+void packet_set_tid(Packet *cp, int64_t *tid)
 {
     struct elacp_packet_t pkt;
 
@@ -694,13 +691,13 @@ void elacp_set_tid(ElaCP *cp, int64_t *tid)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_INVITE_REQUEST:
+    case PACKET_TYPE_INVITE_REQUEST:
         pktireq->tid = *tid;
         break;
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         pktirsp->tid = *tid;
         break;
-    case ELACP_TYPE_BULKMSG:
+    case PACKET_TYPE_BULKMSG:
         pktbmsg->tid = *tid;
         break;
     default:
@@ -709,7 +706,7 @@ void elacp_set_tid(ElaCP *cp, int64_t *tid)
     }
 }
 
-void elacp_set_totalsz(ElaCP *cp, size_t totalsz)
+void packet_set_totalsz(Packet *cp, size_t totalsz)
 {
     struct elacp_packet_t pkt;
 
@@ -718,13 +715,13 @@ void elacp_set_totalsz(ElaCP *cp, size_t totalsz)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_INVITE_REQUEST:
+    case PACKET_TYPE_INVITE_REQUEST:
         pktireq->totalsz = totalsz;
         break;
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         pktirsp->totalsz = totalsz;
         break;
-    case ELACP_TYPE_BULKMSG:
+    case PACKET_TYPE_BULKMSG:
         pktbmsg->totalsz = totalsz;
         break;
     default:
@@ -733,7 +730,7 @@ void elacp_set_totalsz(ElaCP *cp, size_t totalsz)
     }
 }
 
-void elacp_set_status(ElaCP *cp, int status)
+void packet_set_status(Packet *cp, int status)
 {
     struct elacp_packet_t pkt;
 
@@ -741,7 +738,7 @@ void elacp_set_status(ElaCP *cp, int status)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         pktirsp->status = status;
         break;
     default:
@@ -750,7 +747,7 @@ void elacp_set_status(ElaCP *cp, int status)
     }
 }
 
-void elacp_set_raw_data(ElaCP *cp, const void *data, size_t len)
+void packet_set_raw_data(Packet *cp, const void *data, size_t len)
 {
     struct elacp_packet_t pkt;
 
@@ -761,19 +758,19 @@ void elacp_set_raw_data(ElaCP *cp, const void *data, size_t len)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_MESSAGE:
+    case PACKET_TYPE_MESSAGE:
         pktfmsg->msg = data;
         pktfmsg->len = len;
         break;
-    case ELACP_TYPE_INVITE_REQUEST:
+    case PACKET_TYPE_INVITE_REQUEST:
         pktireq->data = data;
         pktireq->len = len;
         break;
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         pktirsp->data = data;
         pktirsp->len = len;
         break;
-    case ELACP_TYPE_BULKMSG:
+    case PACKET_TYPE_BULKMSG:
         pktbmsg->data = data;
         pktbmsg->len = len;
         break;
@@ -783,7 +780,7 @@ void elacp_set_raw_data(ElaCP *cp, const void *data, size_t len)
     }
 }
 
-void elacp_set_bundle(ElaCP *cp, const char *bundle)
+void packet_set_bundle(Packet *cp, const char *bundle)
  {
      struct elacp_packet_t pkt;
      assert(cp);
@@ -791,10 +788,10 @@ void elacp_set_bundle(ElaCP *cp, const char *bundle)
      pkt.u.cp = cp;
 
      switch(cp->type) {
-     case ELACP_TYPE_INVITE_REQUEST:
+     case PACKET_TYPE_INVITE_REQUEST:
          pktireq->bundle = bundle;
          break;
-     case ELACP_TYPE_INVITE_RESPONSE:
+     case PACKET_TYPE_INVITE_RESPONSE:
          pktirsp->bundle = bundle;
          break;
      default:
@@ -803,7 +800,7 @@ void elacp_set_bundle(ElaCP *cp, const char *bundle)
      }
 }
 
-void elacp_set_reason(ElaCP *cp, const char *reason)
+void packet_set_reason(Packet *cp, const char *reason)
 {
     struct elacp_packet_t pkt;
 
@@ -813,7 +810,7 @@ void elacp_set_reason(ElaCP *cp, const char *reason)
     pkt.u.cp = cp;
 
     switch(cp->type) {
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         pktirsp->reason = reason;
         break;
     default:
@@ -822,14 +819,14 @@ void elacp_set_reason(ElaCP *cp, const char *reason)
     }
 }
 
-uint8_t *elacp_encode(ElaCP *cp, size_t *encoded_len)
+uint8_t *packet_encode(Packet *cp, size_t *encoded_len)
 {
     struct elacp_packet_t pkt;
     flatcc_builder_t builder;
     flatcc_builder_ref_t str;
     flatbuffers_uint8_vec_ref_t vec;
     flatbuffers_ref_t ref;
-    elacp_anybody_union_ref_t body;
+    carrier_anybody_union_ref_t body;
     uint8_t *encoded_data;
 
     assert(cp);
@@ -840,100 +837,100 @@ uint8_t *elacp_encode(ElaCP *cp, size_t *encoded_len)
     flatcc_builder_init(&builder);
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
-        elacp_userinfo_start(&builder);
+    case PACKET_TYPE_USERINFO:
+        carrier_userinfo_start(&builder);
         if (pktinfo->name) {
             str = flatcc_builder_create_string_str(&builder, pktinfo->name);
-            elacp_userinfo_name_add(&builder, str);
+            carrier_userinfo_name_add(&builder, str);
         }
         str = flatcc_builder_create_string_str(&builder, pktinfo->descr);
-        elacp_userinfo_descr_add(&builder, str);
+        carrier_userinfo_descr_add(&builder, str);
         str = flatcc_builder_create_string_str(&builder, pktinfo->gender);
-        elacp_userinfo_gender_add(&builder, str);
+        carrier_userinfo_gender_add(&builder, str);
         str = flatcc_builder_create_string_str(&builder, pktinfo->phone);
-        elacp_userinfo_phone_add(&builder, str);
+        carrier_userinfo_phone_add(&builder, str);
         str = flatcc_builder_create_string_str(&builder, pktinfo->email);
-        elacp_userinfo_email_add(&builder, str);
+        carrier_userinfo_email_add(&builder, str);
         str = flatcc_builder_create_string_str(&builder, pktinfo->region);
-        elacp_userinfo_region_add(&builder, str);
-        elacp_userinfo_avatar_add(&builder, pktinfo->has_avatar);
-        ref = elacp_userinfo_end(&builder);
+        carrier_userinfo_region_add(&builder, str);
+        carrier_userinfo_avatar_add(&builder, pktinfo->has_avatar);
+        ref = carrier_userinfo_end(&builder);
         break;
 
-    case ELACP_TYPE_FRIEND_REQUEST:
-        elacp_friendreq_start(&builder);
+    case PACKET_TYPE_FRIEND_REQUEST:
+        carrier_friendreq_start(&builder);
         str = flatcc_builder_create_string_str(&builder, pktfreq->name);
-        elacp_friendreq_name_add(&builder, str);
+        carrier_friendreq_name_add(&builder, str);
         str = flatcc_builder_create_string_str(&builder, pktfreq->descr);
-        elacp_friendreq_descr_add(&builder, str);
+        carrier_friendreq_descr_add(&builder, str);
         str = flatcc_builder_create_string_str(&builder, pktfreq->hello);
-        elacp_friendreq_hello_add(&builder, str);
-        ref = elacp_friendreq_end(&builder);
+        carrier_friendreq_hello_add(&builder, str);
+        ref = carrier_friendreq_end(&builder);
         break;
 
-    case ELACP_TYPE_MESSAGE:
-        elacp_friendmsg_start(&builder);
+    case PACKET_TYPE_MESSAGE:
+        carrier_friendmsg_start(&builder);
         if (cp->ext) {
             str = flatcc_builder_create_string_str(&builder, cp->ext);
-            elacp_friendmsg_ext_add(&builder, str);
+            carrier_friendmsg_ext_add(&builder, str);
         }
 
         vec = flatbuffers_uint8_vec_create(&builder, pktfmsg->msg, pktfmsg->len);
-        elacp_friendmsg_msg_add(&builder, vec);
-        ref = elacp_friendmsg_end(&builder);
+        carrier_friendmsg_msg_add(&builder, vec);
+        ref = carrier_friendmsg_end(&builder);
         break;
 
-    case ELACP_TYPE_INVITE_REQUEST:
-        elacp_invitereq_start(&builder);
+    case PACKET_TYPE_INVITE_REQUEST:
+        carrier_invitereq_start(&builder);
         if (cp->ext) {
             str = flatcc_builder_create_string_str(&builder, cp->ext);
-            elacp_invitereq_ext_add(&builder, str);
+            carrier_invitereq_ext_add(&builder, str);
         }
-        elacp_invitereq_tid_add(&builder, pktireq->tid);
-        elacp_invitereq_totalsz_add(&builder, pktireq->totalsz);
+        carrier_invitereq_tid_add(&builder, pktireq->tid);
+        carrier_invitereq_totalsz_add(&builder, pktireq->totalsz);
         if (pktireq->bundle) {
              str = flatcc_builder_create_string_str(&builder, pktireq->bundle);
-             elacp_invitereq_bundle_add(&builder, str);
+             carrier_invitereq_bundle_add(&builder, str);
         }
         vec = flatbuffers_uint8_vec_create(&builder, pktireq->data, pktireq->len);
-        elacp_invitereq_data_add(&builder, vec);
-        ref = elacp_invitereq_end(&builder);
+        carrier_invitereq_data_add(&builder, vec);
+        ref = carrier_invitereq_end(&builder);
         break;
 
-    case ELACP_TYPE_INVITE_RESPONSE:
-        elacp_invitersp_start(&builder);
+    case PACKET_TYPE_INVITE_RESPONSE:
+        carrier_invitersp_start(&builder);
         if (cp->ext) {
             str = flatcc_builder_create_string_str(&builder, cp->ext);
-            elacp_invitersp_ext_add(&builder, str);
+            carrier_invitersp_ext_add(&builder, str);
         }
-        elacp_invitersp_tid_add(&builder, pktirsp->tid);
-        elacp_invitersp_totalsz_add(&builder, pktirsp->totalsz);
+        carrier_invitersp_tid_add(&builder, pktirsp->tid);
+        carrier_invitersp_totalsz_add(&builder, pktirsp->totalsz);
         if (pktirsp->bundle) {
              str = flatcc_builder_create_string_str(&builder, pktirsp->bundle);
-             elacp_invitersp_bundle_add(&builder, str);
+             carrier_invitersp_bundle_add(&builder, str);
         }
-        elacp_invitersp_status_add(&builder, pktirsp->status);
+        carrier_invitersp_status_add(&builder, pktirsp->status);
         if (pktirsp->status && pktirsp->reason) {
             str = flatcc_builder_create_string_str(&builder, pktirsp->reason);
-            elacp_invitersp_reason_add(&builder, str);
+            carrier_invitersp_reason_add(&builder, str);
         } else {
             vec = flatbuffers_uint8_vec_create(&builder, pktirsp->data, pktirsp->len);
-            elacp_invitersp_data_add(&builder, vec);
+            carrier_invitersp_data_add(&builder, vec);
         }
-        ref = elacp_invitersp_end(&builder);
+        ref = carrier_invitersp_end(&builder);
         break;
 
-    case ELACP_TYPE_BULKMSG:
-        elacp_bulkmsg_start(&builder);
+    case PACKET_TYPE_BULKMSG:
+        carrier_bulkmsg_start(&builder);
         if (cp->ext) {
             str = flatcc_builder_create_string_str(&builder, cp->ext);
-            elacp_bulkmsg_ext_add(&builder, str);
+            carrier_bulkmsg_ext_add(&builder, str);
         }
-        elacp_bulkmsg_tid_add(&builder, pktbmsg->tid);
-        elacp_bulkmsg_totalsz_add(&builder, pktbmsg->totalsz);
+        carrier_bulkmsg_tid_add(&builder, pktbmsg->tid);
+        carrier_bulkmsg_totalsz_add(&builder, pktbmsg->totalsz);
         vec = flatbuffers_uint8_vec_create(&builder, pktbmsg->data, pktbmsg->len);
-        elacp_bulkmsg_data_add(&builder, vec);
-        ref = elacp_bulkmsg_end(&builder);
+        carrier_bulkmsg_data_add(&builder, vec);
+        ref = carrier_bulkmsg_end(&builder);
         break;
 
     default:
@@ -948,33 +945,33 @@ uint8_t *elacp_encode(ElaCP *cp, size_t *encoded_len)
     }
 
     switch(cp->type) {
-    case ELACP_TYPE_USERINFO:
-        body = elacp_anybody_as_userinfo(ref);
+    case PACKET_TYPE_USERINFO:
+        body = carrier_anybody_as_userinfo(ref);
         break;
-    case ELACP_TYPE_FRIEND_REQUEST:
-        body = elacp_anybody_as_friendreq(ref);
+    case PACKET_TYPE_FRIEND_REQUEST:
+        body = carrier_anybody_as_friendreq(ref);
         break;
-    case ELACP_TYPE_MESSAGE:
-        body = elacp_anybody_as_friendmsg(ref);
+    case PACKET_TYPE_MESSAGE:
+        body = carrier_anybody_as_friendmsg(ref);
         break;
-    case ELACP_TYPE_INVITE_REQUEST:
-        body = elacp_anybody_as_invitereq(ref);
+    case PACKET_TYPE_INVITE_REQUEST:
+        body = carrier_anybody_as_invitereq(ref);
         break;
-    case ELACP_TYPE_INVITE_RESPONSE:
-        body = elacp_anybody_as_invitersp(ref);
+    case PACKET_TYPE_INVITE_RESPONSE:
+        body = carrier_anybody_as_invitersp(ref);
         break;
-    case ELACP_TYPE_BULKMSG:
-        body = elacp_anybody_as_bulkmsg(ref);
+    case PACKET_TYPE_BULKMSG:
+        body = carrier_anybody_as_bulkmsg(ref);
         break;
     default:
         assert(0);
         return NULL;
     }
 
-    elacp_packet_start_as_root(&builder);
-    elacp_packet_type_add(&builder, cp->type);
-    elacp_packet_body_add(&builder, body);
-    if (!elacp_packet_end_as_root(&builder)) {
+    carrier_packet_start_as_root(&builder);
+    carrier_packet_type_add(&builder, cp->type);
+    carrier_packet_body_add(&builder, body);
+    if (!carrier_packet_end_as_root(&builder)) {
         flatcc_builder_clear(&builder);
         return NULL;
     }
@@ -985,108 +982,108 @@ uint8_t *elacp_encode(ElaCP *cp, size_t *encoded_len)
     return encoded_data;
 }
 
-ElaCP *elacp_decode(const uint8_t *data, size_t len)
+Packet *packet_decode(const uint8_t *data, size_t len)
 {
-    ElaCP *cp;
+    Packet *cp;
     struct elacp_packet_t pkt;
     struct elacp_table_t  tbl;
-    elacp_packet_table_t packet;
+    carrier_packet_table_t packet;
     flatbuffers_uint8_vec_t vec;
     uint8_t type;
 
-    packet = elacp_packet_as_root(data);
+    packet = carrier_packet_as_root(data);
     if (!packet)
         return NULL;
 
-    type = elacp_packet_type(packet);
+    type = carrier_packet_type(packet);
     switch(type) {
-    case ELACP_TYPE_USERINFO:
-    case ELACP_TYPE_FRIEND_REQUEST:
-    case ELACP_TYPE_MESSAGE:
-    case ELACP_TYPE_INVITE_REQUEST:
-    case ELACP_TYPE_INVITE_RESPONSE:
-    case ELACP_TYPE_BULKMSG:
+    case PACKET_TYPE_USERINFO:
+    case PACKET_TYPE_FRIEND_REQUEST:
+    case PACKET_TYPE_MESSAGE:
+    case PACKET_TYPE_INVITE_REQUEST:
+    case PACKET_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_BULKMSG:
         break;
     default:
         //TODO: clean resource for 'packet'; (how ?)
         return NULL;
     }
 
-    cp = elacp_create(type, NULL);
+    cp = packet_create(type, NULL);
     if (!cp) {
         //TODO: clean resource for 'packet'; (how ?)
         return NULL;
     }
     pkt.u.cp = cp;
 
-    if (!elacp_packet_body_is_present(packet)) {
-        elacp_free(cp);
+    if (!carrier_packet_body_is_present(packet)) {
+        packet_free(cp);
         return NULL;
     }
 
     switch(type) {
-    case ELACP_TYPE_USERINFO:
-        tblinfo = elacp_packet_body(packet);
-        if (elacp_userinfo_name_is_present(tblinfo))
-            pktinfo->name = elacp_userinfo_name(tblinfo);
-        pktinfo->descr  = elacp_userinfo_descr(tblinfo);
-        pktinfo->gender = elacp_userinfo_gender(tblinfo);
-        pktinfo->phone  = elacp_userinfo_phone(tblinfo);
-        pktinfo->email  = elacp_userinfo_email(tblinfo);
-        pktinfo->region = elacp_userinfo_region(tblinfo);
-        pktinfo->has_avatar = elacp_userinfo_avatar(tblinfo);
+    case PACKET_TYPE_USERINFO:
+        tblinfo = carrier_packet_body(packet);
+        if (carrier_userinfo_name_is_present(tblinfo))
+            pktinfo->name = carrier_userinfo_name(tblinfo);
+        pktinfo->descr  = carrier_userinfo_descr(tblinfo);
+        pktinfo->gender = carrier_userinfo_gender(tblinfo);
+        pktinfo->phone  = carrier_userinfo_phone(tblinfo);
+        pktinfo->email  = carrier_userinfo_email(tblinfo);
+        pktinfo->region = carrier_userinfo_region(tblinfo);
+        pktinfo->has_avatar = carrier_userinfo_avatar(tblinfo);
         break;
 
-    case ELACP_TYPE_FRIEND_REQUEST:
-        tblfreq = elacp_packet_body(packet);
-        pktfreq->name  = elacp_friendreq_name(tblfreq);
-        pktfreq->descr = elacp_friendreq_descr(tblfreq);
-        pktfreq->hello = elacp_friendreq_hello(tblfreq);
+    case PACKET_TYPE_FRIEND_REQUEST:
+        tblfreq = carrier_packet_body(packet);
+        pktfreq->name  = carrier_friendreq_name(tblfreq);
+        pktfreq->descr = carrier_friendreq_descr(tblfreq);
+        pktfreq->hello = carrier_friendreq_hello(tblfreq);
         break;
 
-    case ELACP_TYPE_MESSAGE:
-        tblfmsg = elacp_packet_body(packet);
-        pktfmsg->msg = vec = elacp_friendmsg_msg(tblfmsg);
+    case PACKET_TYPE_MESSAGE:
+        tblfmsg = carrier_packet_body(packet);
+        pktfmsg->msg = vec = carrier_friendmsg_msg(tblfmsg);
         pktfmsg->len = flatbuffers_uint8_vec_len(vec);
-        if (elacp_friendmsg_ext_is_present(tblfmsg))
-            cp->ext = elacp_friendmsg_ext(tblfmsg);
+        if (carrier_friendmsg_ext_is_present(tblfmsg))
+            cp->ext = carrier_friendmsg_ext(tblfmsg);
         break;
 
-    case ELACP_TYPE_INVITE_REQUEST:
-        tblireq = elacp_packet_body(packet);
-        pktireq->tid = elacp_invitereq_tid(tblireq);
-        pktireq->totalsz = elacp_invitereq_totalsz(tblireq);
-        if (elacp_invitereq_bundle_is_present(tblireq))
-             pktireq->bundle = elacp_invitereq_bundle(tblireq);
-        pktireq->data = vec = elacp_invitereq_data(tblireq);
+    case PACKET_TYPE_INVITE_REQUEST:
+        tblireq = carrier_packet_body(packet);
+        pktireq->tid = carrier_invitereq_tid(tblireq);
+        pktireq->totalsz = carrier_invitereq_totalsz(tblireq);
+        if (carrier_invitereq_bundle_is_present(tblireq))
+             pktireq->bundle = carrier_invitereq_bundle(tblireq);
+        pktireq->data = vec = carrier_invitereq_data(tblireq);
         pktireq->len = flatbuffers_uint8_vec_len(vec);
-        if (elacp_invitereq_ext_is_present(tblireq))
-            cp->ext = elacp_invitereq_ext(tblireq);
+        if (carrier_invitereq_ext_is_present(tblireq))
+            cp->ext = carrier_invitereq_ext(tblireq);
         break;
 
-    case ELACP_TYPE_INVITE_RESPONSE:
-        tblirsp = elacp_packet_body(packet);
-        pktirsp->tid = elacp_invitersp_tid(tblirsp);
-        pktireq->totalsz = elacp_invitersp_totalsz(tblirsp);
-        if (elacp_invitersp_bundle_is_present(tblirsp))
-             pktirsp->bundle = elacp_invitersp_bundle(tblirsp);
-        pktirsp->status = elacp_invitersp_status(tblirsp);
+    case PACKET_TYPE_INVITE_RESPONSE:
+        tblirsp = carrier_packet_body(packet);
+        pktirsp->tid = carrier_invitersp_tid(tblirsp);
+        pktireq->totalsz = carrier_invitersp_totalsz(tblirsp);
+        if (carrier_invitersp_bundle_is_present(tblirsp))
+             pktirsp->bundle = carrier_invitersp_bundle(tblirsp);
+        pktirsp->status = carrier_invitersp_status(tblirsp);
         if (pktirsp->status)
-            pktirsp->reason = elacp_invitersp_reason(tblirsp);
+            pktirsp->reason = carrier_invitersp_reason(tblirsp);
         else {
-            pktirsp->data = vec = elacp_invitersp_data(tblirsp);
+            pktirsp->data = vec = carrier_invitersp_data(tblirsp);
             pktirsp->len = flatbuffers_uint8_vec_len(vec);
         }
-        if (elacp_invitersp_ext_is_present(tblirsp))
-            cp->ext = elacp_invitersp_ext(tblirsp);
+        if (carrier_invitersp_ext_is_present(tblirsp))
+            cp->ext = carrier_invitersp_ext(tblirsp);
         break;
 
-    case ELACP_TYPE_BULKMSG:
-        tblbmsg = elacp_packet_body(packet);
-        pktbmsg->tid = elacp_bulkmsg_tid(tblbmsg);
-        pktbmsg->data = vec = elacp_bulkmsg_data(tblbmsg);
+    case PACKET_TYPE_BULKMSG:
+        tblbmsg = carrier_packet_body(packet);
+        pktbmsg->tid = carrier_bulkmsg_tid(tblbmsg);
+        pktbmsg->data = vec = carrier_bulkmsg_data(tblbmsg);
         pktbmsg->len = flatbuffers_uint8_vec_len(vec);
-        pktbmsg->totalsz = elacp_bulkmsg_totalsz(tblbmsg);
+        pktbmsg->totalsz = carrier_bulkmsg_totalsz(tblbmsg);
         break;
 
     default:
@@ -1097,24 +1094,24 @@ ElaCP *elacp_decode(const uint8_t *data, size_t len)
     return cp;
 }
 
-int elacp_decode_pullmsg(const uint8_t *data, ElaCPPullMsg *pullmsg)
+int packet_decode_pullmsg(const uint8_t *data, PacketPullMsg *pullmsg)
 {
-    elacp_pullmsg_table_t pmsg_tbl;
+    carrier_pullmsg_table_t pmsg_tbl;
     flatbuffers_uint8_vec_t vec;
 
     assert(data && pullmsg);
     memset(pullmsg, 0, sizeof(*pullmsg));
 
-    pmsg_tbl = elacp_pullmsg_as_root(data);
+    pmsg_tbl = carrier_pullmsg_as_root(data);
     if (!pmsg_tbl)
         return -1;
 
-    pullmsg->id = elacp_pullmsg_id(pmsg_tbl);
-    pullmsg->from = elacp_pullmsg_from(pmsg_tbl);
-    pullmsg->type = elacp_pullmsg_type(pmsg_tbl);
-    pullmsg->timestamp = elacp_pullmsg_timestamp(pmsg_tbl);
-    pullmsg->address = elacp_pullmsg_address(pmsg_tbl);
-    pullmsg->payload = vec = elacp_pullmsg_payload(pmsg_tbl);
+    pullmsg->id = carrier_pullmsg_id(pmsg_tbl);
+    pullmsg->from = carrier_pullmsg_from(pmsg_tbl);
+    pullmsg->type = carrier_pullmsg_type(pmsg_tbl);
+    pullmsg->timestamp = carrier_pullmsg_timestamp(pmsg_tbl);
+    pullmsg->address = carrier_pullmsg_address(pmsg_tbl);
+    pullmsg->payload = vec = carrier_pullmsg_payload(pmsg_tbl);
     pullmsg->payload_sz = flatbuffers_uint8_vec_len(vec);
 
     return 0;

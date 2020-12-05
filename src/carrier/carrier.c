@@ -78,7 +78,7 @@
 #include "hashtable_bulkmsgs.h"
 #include "hashtable_extensions.h"
 
-#include "elacp.h"
+#include "packet.h"
 #include "dht.h"
 #include "express.h"
 
@@ -224,28 +224,28 @@ int get_friend_number(ElaCarrier *w, const char *friendid, uint32_t *friend_numb
 
 static void fill_empty_user_descr(ElaCarrier *w)
 {
-    ElaCP *cp;
+    Packet *cp;
     uint8_t *data;
     size_t data_len;
 
     assert(w);
 
-    cp = elacp_create(ELACP_TYPE_USERINFO, NULL);
+    cp = packet_create(PACKET_TYPE_USERINFO, NULL);
     if (!cp) {
         vlogE("Carrier: Out of memory!!!");
         return;
     }
 
-    elacp_set_has_avatar(cp, false);
-    elacp_set_name(cp, "");
-    elacp_set_descr(cp, "");
-    elacp_set_gender(cp, "");
-    elacp_set_phone(cp, "");
-    elacp_set_email(cp, "");
-    elacp_set_region(cp, "");
+    packet_set_has_avatar(cp, false);
+    packet_set_name(cp, "");
+    packet_set_descr(cp, "");
+    packet_set_gender(cp, "");
+    packet_set_phone(cp, "");
+    packet_set_email(cp, "");
+    packet_set_region(cp, "");
 
-    data = elacp_encode(cp, &data_len);
-    elacp_free(cp);
+    data = packet_encode(cp, &data_len);
+    packet_free(cp);
 
     if (!data) {
         vlogE("Carrier: Encode user desc to packet error");
@@ -260,7 +260,7 @@ static
 int unpack_user_descr(const uint8_t *desc, size_t desc_len, ElaUserInfo *info,
                      bool *changed)
 {
-    ElaCP *cp;
+    Packet *cp;
     const char *name;
     const char *descr;
     const char *gender;
@@ -274,24 +274,24 @@ int unpack_user_descr(const uint8_t *desc, size_t desc_len, ElaUserInfo *info,
     assert(desc_len > 0);
     assert(info);
 
-    cp = elacp_decode(desc, desc_len);
+    cp = packet_decode(desc, desc_len);
     if (!cp)
         return -1;
 
-    if (elacp_get_type(cp) != ELACP_TYPE_USERINFO) {
-        elacp_free(cp);
-        vlogE("Carrier: Unkown userinfo type (%d).", elacp_get_type(cp));
+    if (packet_get_type(cp) != PACKET_TYPE_USERINFO) {
+        packet_free(cp);
+        vlogE("Carrier: Unkown userinfo type (%d).", packet_get_type(cp));
         return -1;
     }
 
-    has_avatar = elacp_get_has_avatar(cp);
+    has_avatar = packet_get_has_avatar(cp);
 
-    name   = elacp_get_name(cp)   ? elacp_get_name(cp)  : "";
-    descr  = elacp_get_descr(cp)  ? elacp_get_descr(cp) : "";
-    gender = elacp_get_gender(cp) ? elacp_get_gender(cp) : "";
-    phone  = elacp_get_phone(cp)  ? elacp_get_phone(cp) : "";
-    email  = elacp_get_email(cp)  ? elacp_get_email(cp) : "";
-    region = elacp_get_region(cp) ? elacp_get_region(cp) : "";
+    name   = packet_get_name(cp)   ? packet_get_name(cp)  : "";
+    descr  = packet_get_descr(cp)  ? packet_get_descr(cp) : "";
+    gender = packet_get_gender(cp) ? packet_get_gender(cp) : "";
+    phone  = packet_get_phone(cp)  ? packet_get_phone(cp) : "";
+    email  = packet_get_email(cp)  ? packet_get_email(cp) : "";
+    region = packet_get_region(cp) ? packet_get_region(cp) : "";
 
     if (strcmp(info->name, name)) {
         strcpy(info->name, name);
@@ -328,7 +328,7 @@ int unpack_user_descr(const uint8_t *desc, size_t desc_len, ElaUserInfo *info,
         did_changed = true;
     }
 
-    elacp_free(cp);
+    packet_free(cp);
 
     if (changed)
         *changed = did_changed;
@@ -1671,7 +1671,7 @@ void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* greeting
 {
     ElaCarrier *w = (ElaCarrier *)context;
     uint32_t friend_number;
-    ElaCP* cp;
+    Packet* cp;
     ElaUserInfo ui;
     size_t _len = sizeof(ui.userid);
     const char *name;
@@ -1689,24 +1689,24 @@ void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* greeting
         return;
     }
 
-    cp = elacp_decode(greeting, length);
+    cp = packet_decode(greeting, length);
     if (!cp) {
         vlogE("Carrier: Inavlid friend request, dropped this request.");
         return;
     }
 
-    if (elacp_get_type(cp) != ELACP_TYPE_FRIEND_REQUEST) {
+    if (packet_get_type(cp) != PACKET_TYPE_FRIEND_REQUEST) {
         vlogE("Carrier: Invalid friend request, dropped this request.");
-        elacp_free(cp);
+        packet_free(cp);
         return;
     }
 
     memset(&ui, 0, sizeof(ui));
     base58_encode(public_key, DHT_PUBLIC_KEY_SIZE, ui.userid, &_len);
 
-    name  = elacp_get_name(cp)  ? elacp_get_name(cp)  : "";
-    desc  = elacp_get_descr(cp) ? elacp_get_descr(cp) : "";
-    hello = elacp_get_hello(cp) ? elacp_get_hello(cp) : "";
+    name  = packet_get_name(cp)  ? packet_get_name(cp)  : "";
+    desc  = packet_get_descr(cp) ? packet_get_descr(cp) : "";
+    hello = packet_get_hello(cp) ? packet_get_hello(cp) : "";
 
     assert(strlen(name) < sizeof(ui.name));
     assert(strlen(desc) < sizeof(ui.description));
@@ -1717,7 +1717,7 @@ void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* greeting
     if (w->callbacks.friend_request)
         w->callbacks.friend_request(w, ui.userid, &ui, hello, w->context);
 
-    elacp_free(cp);
+    packet_free(cp);
 }
 
 static void handle_add_friend_cb(EventBase *event, ElaCarrier *w)
@@ -1957,7 +1957,7 @@ static inline int64_t current_timestamp(void)
 }
 
 static
-void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
+void handle_friend_message(ElaCarrier *w, uint32_t friend_number, Packet *cp)
 {
     FriendInfo *fi;
     char friendid[ELA_MAX_ID_LEN + 1];
@@ -1968,7 +1968,7 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     assert(w);
     assert(cp);
     assert(friend_number != UINT32_MAX);
-    assert(elacp_get_type(cp) == ELACP_TYPE_MESSAGE);
+    assert(packet_get_type(cp) == PACKET_TYPE_MESSAGE);
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
@@ -1980,9 +1980,9 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     strcpy(friendid, fi->info.user_info.userid);
     deref(fi);
 
-    name = elacp_get_extension(cp);
-    msg  = elacp_get_raw_data(cp);
-    len  = elacp_get_raw_data_length(cp);
+    name = packet_get_extension(cp);
+    msg  = packet_get_raw_data(cp);
+    len  = packet_get_raw_data_length(cp);
 
     if (name && *name) {
         ExtensionHolder *ext;
@@ -2001,7 +2001,7 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
 }
 
 static
-void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
+void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, Packet *cp)
 {
     FriendInfo *fi;
     char friendid[ELA_MAX_ID_LEN + 1];
@@ -2016,7 +2016,7 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     assert(w);
     assert(friend_number != UINT32_MAX);
     assert(cp);
-    assert(elacp_get_type(cp) == ELACP_TYPE_BULKMSG);
+    assert(packet_get_type(cp) == PACKET_TYPE_BULKMSG);
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
@@ -2028,11 +2028,11 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     strcpy(friendid, fi->info.user_info.userid);
     deref(fi);
 
-    name = elacp_get_extension(cp);
-    data = elacp_get_raw_data(cp);
-    len  = elacp_get_raw_data_length(cp);
-    tid  = elacp_get_tid(cp);
-    totalsz = elacp_get_totalsz(cp);
+    name = packet_get_extension(cp);
+    data = packet_get_raw_data(cp);
+    len  = packet_get_raw_data_length(cp);
+    tid  = packet_get_tid(cp);
+    totalsz = packet_get_totalsz(cp);
 
     msg = bulkmsgs_get(w->bulkmsgs, &tid);
     if (!msg) {
@@ -2100,7 +2100,7 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
 }
 
 static
-void handle_invite_request(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
+void handle_invite_request(ElaCarrier *w, uint32_t friend_number, Packet *cp)
 {
     FriendInfo *fi;
     char friendid[ELA_MAX_ID_LEN + 1];
@@ -2118,7 +2118,7 @@ void handle_invite_request(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     assert(w);
     assert(friend_number != UINT32_MAX);
     assert(cp);
-    assert(elacp_get_type(cp) == ELACP_TYPE_INVITE_REQUEST);
+    assert(packet_get_type(cp) == PACKET_TYPE_INVITE_REQUEST);
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
@@ -2130,13 +2130,13 @@ void handle_invite_request(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     strcpy(friendid, fi->info.user_info.userid);
     deref(fi);
 
-    bundle = elacp_get_bundle(cp);
+    bundle = packet_get_bundle(cp);
     bundle_len = bundle ? strlen(bundle) + 1 : 0;
-    name = elacp_get_extension(cp);
-    data = elacp_get_raw_data(cp);
-    len  = elacp_get_raw_data_length(cp);
-    tid  = elacp_get_tid(cp);
-    totalsz = elacp_get_totalsz(cp);
+    name = packet_get_extension(cp);
+    data = packet_get_raw_data(cp);
+    len  = packet_get_raw_data_length(cp);
+    tid  = packet_get_tid(cp);
+    totalsz = packet_get_totalsz(cp);
 
     ireq = tassemblies_get(w->tassembly_ireqs, &tid);
     if (!ireq) {
@@ -2218,7 +2218,7 @@ void handle_invite_request(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
 }
 
 static
-void handle_invite_response(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
+void handle_invite_response(ElaCarrier *w, uint32_t friend_number, Packet *cp)
 {
     FriendInfo *fi;
     char friendid[ELA_MAX_ID_LEN + 1];
@@ -2241,7 +2241,7 @@ void handle_invite_response(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     assert(w);
     assert(friend_number != UINT32_MAX);
     assert(cp);
-    assert(elacp_get_type(cp) == ELACP_TYPE_INVITE_RESPONSE);
+    assert(packet_get_type(cp) == PACKET_TYPE_INVITE_RESPONSE);
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
@@ -2253,24 +2253,24 @@ void handle_invite_response(ElaCarrier *w, uint32_t friend_number, ElaCP *cp)
     strcpy(friendid, fi->info.user_info.userid);
     deref(fi);
 
-    tid = elacp_get_tid(cp);
+    tid = packet_get_tid(cp);
     tcb = transacted_callbacks_get(w->tcallbacks, tid);
     if (!tcb) {
         vlogE("Carrier: No transaction to handle invite response.");
         return;
     }
 
-    bundle = elacp_get_bundle(cp);
+    bundle = packet_get_bundle(cp);
     bundle_len = bundle ? strlen(bundle) + 1 : 0;
-    name = elacp_get_extension(cp);
-    totalsz = elacp_get_totalsz(cp);
-    status = elacp_get_status(cp);
+    name = packet_get_extension(cp);
+    totalsz = packet_get_totalsz(cp);
+    status = packet_get_status(cp);
     if (status) {
-        reason = elacp_get_reason(cp);
+        reason = packet_get_reason(cp);
         reason_len = strlen(reason) + 1;
     } else {
-        data = elacp_get_raw_data(cp);
-        data_len = elacp_get_raw_data_length(cp);
+        data = packet_get_raw_data(cp);
+        data_len = packet_get_raw_data_length(cp);
     }
 
     irsp = tassemblies_get(w->tassembly_irsps, &tid);
@@ -2353,25 +2353,25 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
                               size_t length, void *context)
 {
     ElaCarrier *w = (ElaCarrier *)context;
-    ElaCP *cp;
+    Packet *cp;
 
-    cp = elacp_decode(message, length);
+    cp = packet_decode(message, length);
     if (!cp) {
         vlogE("Carrier: Invalid DHT message, dropped.");
         return;
     }
 
-    switch(elacp_get_type(cp)) {
-    case ELACP_TYPE_MESSAGE:
+    switch(packet_get_type(cp)) {
+    case PACKET_TYPE_MESSAGE:
         handle_friend_message(w, friend_number, cp);
         break;
-    case ELACP_TYPE_INVITE_REQUEST:
+    case PACKET_TYPE_INVITE_REQUEST:
         handle_invite_request(w, friend_number, cp);
         break;
-    case ELACP_TYPE_INVITE_RESPONSE:
+    case PACKET_TYPE_INVITE_RESPONSE:
         handle_invite_response(w, friend_number, cp);
         break;
-    case ELACP_TYPE_BULKMSG:
+    case PACKET_TYPE_BULKMSG:
         handle_friend_bulkmsg(w, friend_number, cp);
         break;
     default:
@@ -2379,7 +2379,7 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
         break;
     }
 
-    elacp_free(cp);
+    packet_free(cp);
 }
 
 static
@@ -2783,7 +2783,7 @@ int ela_get_self_nospam(ElaCarrier *w, uint32_t *nospam)
 
 int ela_set_self_info(ElaCarrier *w, const ElaUserInfo *info)
 {
-    ElaCP *cp;
+    Packet *cp;
     uint8_t *data;
     size_t data_len;
     bool did_changed = false;
@@ -2798,7 +2798,7 @@ int ela_set_self_info(ElaCarrier *w, const ElaUserInfo *info)
         return -1;
     }
 
-    cp = elacp_create(ELACP_TYPE_USERINFO, NULL);
+    cp = packet_create(PACKET_TYPE_USERINFO, NULL);
     if (!cp) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return -1;
@@ -2813,7 +2813,7 @@ int ela_set_self_info(ElaCarrier *w, const ElaUserInfo *info)
         strcmp(info->region, w->me.region)) {
         did_changed = true;
     } else {
-        elacp_free(cp);
+        packet_free(cp);
     }
 
     if (did_changed) {
@@ -2821,22 +2821,22 @@ int ela_set_self_info(ElaCarrier *w, const ElaUserInfo *info)
             int rc = dht_self_set_name(&w->dht, (uint8_t *)info->name,
                                        strlen(info->name) + 1);
             if (rc) {
-                elacp_free(cp);
+                packet_free(cp);
                 ela_set_error(rc);
                 return -1;
             }
         }
 
-        elacp_set_has_avatar(cp, !!info->has_avatar);
-        elacp_set_name(cp, info->name);
-        elacp_set_descr(cp, info->description);
-        elacp_set_gender(cp, info->gender);
-        elacp_set_phone(cp, info->phone);
-        elacp_set_email(cp, info->email);
-        elacp_set_region(cp, info->region);
+        packet_set_has_avatar(cp, !!info->has_avatar);
+        packet_set_name(cp, info->name);
+        packet_set_descr(cp, info->description);
+        packet_set_gender(cp, info->gender);
+        packet_set_phone(cp, info->phone);
+        packet_set_email(cp, info->email);
+        packet_set_region(cp, info->region);
 
-        data = elacp_encode(cp, &data_len);
-        elacp_free(cp);
+        data = packet_encode(cp, &data_len);
+        packet_free(cp);
 
         if (!data) {
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
@@ -3053,7 +3053,7 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
     uint32_t friend_number;
     FriendInfo *fi;
     uint8_t addr[DHT_ADDRESS_SIZE];
-    ElaCP *cp;
+    Packet *cp;
     uint8_t *data;
     size_t data_len;
     size_t _len;
@@ -3081,18 +3081,18 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
 
     base58_decode(address, strlen(address), addr, sizeof(addr));
 
-    cp = elacp_create(ELACP_TYPE_FRIEND_REQUEST, NULL);
+    cp = packet_create(PACKET_TYPE_FRIEND_REQUEST, NULL);
     if (!cp) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
         return -1;
     }
 
-    elacp_set_name(cp, w->me.name);
-    elacp_set_descr(cp, w->me.description);
-    elacp_set_hello(cp, hello);
+    packet_set_name(cp, w->me.name);
+    packet_set_descr(cp, w->me.description);
+    packet_set_hello(cp, hello);
 
-    data = elacp_encode(cp, &data_len);
-    elacp_free(cp);
+    data = packet_encode(cp, &data_len);
+    packet_free(cp);
 
     if (!data) {
         ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
@@ -3283,19 +3283,19 @@ static int send_general_message(ElaCarrier *w, uint32_t friend_number,
                                     const char *ext_name,
                                     uint32_t msgid)
 {
-    ElaCP *cp;
+    Packet *cp;
     uint8_t *data;
     size_t data_len;
     int rc;
 
-    cp = elacp_create(ELACP_TYPE_MESSAGE, ext_name);
+    cp = packet_create(PACKET_TYPE_MESSAGE, ext_name);
     if (!cp)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-    elacp_set_raw_data(cp, msg, len);
+    packet_set_raw_data(cp, msg, len);
 
-    data = elacp_encode(cp, &data_len);
-    elacp_free(cp);
+    data = packet_encode(cp, &data_len);
+    packet_free(cp);
 
     if (!data)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
@@ -3323,7 +3323,7 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
                                  const char *ext_name,
                                  uint32_t msgid)
 {
-    ElaCP *cp;
+    Packet *cp;
     int64_t tid;
     uint8_t *data;
     size_t data_len;
@@ -3337,11 +3337,11 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
     do {
         size_t send_len;
 
-        cp = elacp_create(ELACP_TYPE_BULKMSG, ext_name);
+        cp = packet_create(PACKET_TYPE_BULKMSG, ext_name);
         if (!cp)
             return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-        elacp_set_tid(cp, &tid);
+        packet_set_tid(cp, &tid);
         ++index;
 
         if (left < ELA_MAX_APP_MESSAGE_LEN)
@@ -3349,14 +3349,14 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
         else
             send_len = ELA_MAX_APP_MESSAGE_LEN;
 
-        elacp_set_totalsz(cp, (index == 1)? left : 0);
-        elacp_set_raw_data(cp, pos, send_len);
+        packet_set_totalsz(cp, (index == 1)? left : 0);
+        packet_set_raw_data(cp, pos, send_len);
 
         pos  += send_len;
         left -= send_len;
 
-        data = elacp_encode(cp, &data_len);
-        elacp_free(cp);
+        data = packet_encode(cp, &data_len);
+        packet_free(cp);
 
         if (!data)
             return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
@@ -3373,21 +3373,21 @@ static int send_express_message(ElaCarrier *w, const char *userid,
                                 uint32_t msgid, const void *msg, size_t len,
                                 const char *ext_name)
 {
-    ElaCP *cp;
+    Packet *cp;
     uint8_t *data;
     size_t data_len;
     int rc;
 
     assert(w->connector);
 
-    cp = elacp_create(ELACP_TYPE_MESSAGE, ext_name);
+    cp = packet_create(PACKET_TYPE_MESSAGE, ext_name);
     if (!cp)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
 
-    elacp_set_raw_data(cp, msg, len);
+    packet_set_raw_data(cp, msg, len);
 
-    data = elacp_encode(cp, &data_len);
-    elacp_free(cp);
+    data = packet_encode(cp, &data_len);
+    packet_free(cp);
 
     if (!data)
         return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
@@ -3481,7 +3481,7 @@ static int send_friend_message_internal(ElaCarrier *w, const char *to,
 static void handle_offline_friend_message_cb(EventBase *base, ElaCarrier *w)
 {
     OfflineEvent* event = (OfflineEvent *)base;
-    ElaCP *cp;
+    Packet *cp;
     const char* name;
     const void* data;
     size_t len;
@@ -3494,21 +3494,21 @@ static void handle_offline_friend_message_cb(EventBase *base, ElaCarrier *w)
         return;
     }
 
-    cp = elacp_decode(event->data, event->length);
+    cp = packet_decode(event->data, event->length);
     if (!cp) {
         vlogE("Carrier: Decode offline message content failed, dropped");
         return;
     }
 
-    if (elacp_get_type(cp) != ELACP_TYPE_MESSAGE) {
-        elacp_free(cp);
+    if (packet_get_type(cp) != PACKET_TYPE_MESSAGE) {
+        packet_free(cp);
         vlogE("Carrier: Invalid offline message type, dropped");
         return;
     }
 
-    name = elacp_get_extension(cp);
-    data = elacp_get_raw_data(cp);
-    len  = elacp_get_raw_data_length(cp);
+    name = packet_get_extension(cp);
+    data = packet_get_raw_data(cp);
+    len  = packet_get_raw_data_length(cp);
 
     assert(data);
     assert(len > 0);
@@ -3517,7 +3517,7 @@ static void handle_offline_friend_message_cb(EventBase *base, ElaCarrier *w)
         w->callbacks.friend_message(w, event->from, data, len, event->timestamp,
                                     true, w->context);
 
-    elacp_free(cp);
+    packet_free(cp);
 }
 
 static void notify_offmsg_received(ElaCarrier *w, const char *from,
@@ -3697,7 +3697,7 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
 {
     char *addr, *userid, *ext_name;
     uint32_t friend_number;
-    ElaCP *cp;
+    Packet *cp;
     int rc;
     int64_t tid;
     int index = 0;
@@ -3754,13 +3754,13 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
         uint8_t *_data;
         size_t _data_len;
 
-        cp = elacp_create(ELACP_TYPE_INVITE_REQUEST, ext_name);
+        cp = packet_create(PACKET_TYPE_INVITE_REQUEST, ext_name);
         if (!cp) {
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
             return -1;
         }
 
-        elacp_set_tid(cp, &tid);
+        packet_set_tid(cp, &tid);
         ++index;
 
         if (len > 0) {
@@ -3771,21 +3771,21 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
                     send_len = INVITE_DATA_UNIT - bundle_len;
 
                 if (index == 1) {
-                    elacp_set_bundle(cp, bundle);
+                    packet_set_bundle(cp, bundle);
                     bundle_len = 0;
                 }
             } else {
                 send_len = (len > INVITE_DATA_UNIT) ? INVITE_DATA_UNIT : len;
             }
 
-            elacp_set_totalsz(cp, (index == 1 ? len : 0));
-            elacp_set_raw_data(cp, pos, send_len);
+            packet_set_totalsz(cp, (index == 1 ? len : 0));
+            packet_set_raw_data(cp, pos, send_len);
             pos += send_len;
             len -= send_len;
         }
 
-        _data = elacp_encode(cp, &_data_len);
-        elacp_free(cp);
+        _data = packet_encode(cp, &_data_len);
+        packet_free(cp);
 
         if (!_data) {
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
@@ -3844,7 +3844,7 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
     int reason_len = reason ? strlen(reason) : 0;
     char *pos = (char*)data;
     size_t send_len;
-    ElaCP *cp;
+    Packet *cp;
     int rc;
 
     if (!w || (bundle && (!*bundle || bundle_len > ELA_MAX_BUNDLE_LEN))) {
@@ -3910,22 +3910,22 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
         uint8_t *_data;
         size_t _data_len;
 
-        cp = elacp_create(ELACP_TYPE_INVITE_RESPONSE, ext_name);
+        cp = packet_create(PACKET_TYPE_INVITE_RESPONSE, ext_name);
         if (!cp) {
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
             return -1;
         }
 
-        elacp_set_tid(cp, &tid);
-        elacp_set_status(cp, status);
+        packet_set_tid(cp, &tid);
+        packet_set_status(cp, status);
         ++index;
 
         if (index == 1) {
             if (bundle)
-                elacp_set_bundle(cp, bundle);
+                packet_set_bundle(cp, bundle);
 
             if (status)
-                elacp_set_reason(cp, reason);
+                packet_set_reason(cp, reason);
         }
 
         if (!status && pos && len > 0) {
@@ -3939,15 +3939,15 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
                 }
             }
 
-            elacp_set_totalsz(cp, (index == 1 ? len : 0));
-            elacp_set_raw_data(cp, pos, send_len);
+            packet_set_totalsz(cp, (index == 1 ? len : 0));
+            packet_set_raw_data(cp, pos, send_len);
 
             pos += send_len;
             len -= send_len;
         }
 
-        _data = elacp_encode(cp, &_data_len);
-        elacp_free(cp);
+        _data = packet_encode(cp, &_data_len);
+        packet_free(cp);
 
         if (!_data) {
             ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));

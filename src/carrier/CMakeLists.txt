@@ -61,7 +61,7 @@ configure_file(
 
 set(SRC
     dht/dht.c
-    elacp.c
+    packet.c
     carrier.c
     carrier_error.c
     carrier_extension.c
@@ -73,14 +73,14 @@ set(HEADERS
     carrier.h)
 
 add_custom_command(
-    OUTPUT elacp_generated.h
+    OUTPUT packet_generated.h
     COMMAND ${CARRIER_HOST_TOOLS_DIR}/bin/flatcc${CMAKE_EXECUTABLE_SUFFIX}
-        --outfile elacp_generated.h
-        -a "${CMAKE_CURRENT_LIST_DIR}/elacp.fbs"
-    DEPENDS "${CMAKE_CURRENT_LIST_DIR}/elacp.fbs" flatcc-parser)
+        --outfile packet_generated.h
+        -a "${CMAKE_CURRENT_LIST_DIR}/packet.fbs"
+    DEPENDS "${CMAKE_CURRENT_LIST_DIR}/packet.fbs" flatcc-parser)
 
-add_custom_target(elacp_generated_h
-    DEPENDS elacp_generated.h)
+add_custom_target(packet_generated_h
+    DEPENDS packet_generated.h)
 
 if(WIN32)
     set(SYSTEM_LIBS Ws2_32 Iphlpapi)
@@ -137,7 +137,7 @@ if(ENABLE_STATIC)
     if(WIN32)
         set_target_properties(carrier-static PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
     endif()
-    add_dependencies(carrier-static elacp_generated_h)
+    add_dependencies(carrier-static packet_generated_h)
 
     add_dependencies(carrier0 carrier-static)
 
@@ -156,7 +156,7 @@ if(ENABLE_SHARED)
         set_target_properties(carrier-shared PROPERTIES LINK_FLAGS /FORCE:MULTIPLE)
     endif()
     target_link_libraries(carrier-shared ${LIBS} ${SYSTEM_LIBS})
-    add_dependencies(carrier-shared elacp_generated_h)
+    add_dependencies(carrier-shared packet_generated_h)
 
     add_dependencies(carrier0 carrier-shared)
 

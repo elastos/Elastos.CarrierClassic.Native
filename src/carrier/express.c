@@ -43,11 +43,11 @@
 #include <cjson/cJSON.h>
 #include <crystal.h>
 
-#include "dht.h"
+//#include "dht.h"
 #include "carrier.h"
 #include "carrier_error.h"
 #include "carrier_impl.h"
-#include "elacp.h"
+#include "packet.h"
 #include "express.h"
 #include "http_client.h"
 
@@ -191,9 +191,9 @@ static int process_message(ExpressConnector *connector,
                            uint64_t last_ts, uint64_t *timestamp)
 {
     int rc;
-    ElaCPPullMsg pmsg;
+    PacketPullMsg pmsg;
 
-    rc = elacp_decode_pullmsg(data, &pmsg);
+    rc = packet_decode_pullmsg(data, &pmsg);
     if (rc < 0) {
         vlogE("Express: decode pullmsg flatbuffer failed.(%x)", rc);
         return ELA_EXPRESS_ERROR(ELAERR_BAD_FLATBUFFER);
