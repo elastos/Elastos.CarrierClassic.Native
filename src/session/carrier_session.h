@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_SESSION_H__
-#define __CARRIER_SESSION_H__
+#ifndef __ELASTOS_CARRIER_SESSION_H__
+#define __ELASTOS_CARRIER_SESSION_H__
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -1083,4 +1083,4 @@ int ela_stream_close_port_forwarding(ElaSession *session, int stream,
 #pragma GCC diagnostic pop
 #endif
 
-#endif /* __ELA_SESSION_H__ */
+#endif /* __ELASTOS_CARRIER_SESSION_H__ */

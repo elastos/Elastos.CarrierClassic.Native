@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_TURNSERVER_H__
-#define __CARRIER_TURNSERVER_H__
+#ifndef __ELASTOS_CARRIER_TURNSERVER_H__
+#define __ELASTOS_CARRIER_TURNSERVER_H__
 
 #include "carrier.h"
 
@@ -49,4 +49,4 @@ int ela_get_turn_server(ElaCarrier *carrier, ElaTurnServer *turn_server);
 }
 #endif
 
-#endif // __CARRIER_TURNSERVER_H__
+#endif // __ELASTOS_CARRIER_TURNSERVER_H__

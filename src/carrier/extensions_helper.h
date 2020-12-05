@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_EXTENSION_APIS_H__
-#define __CARRIER_EXTENSION_APIS_H__
+#ifndef __EXTENSIONS_HELPER_H__
+#define __EXTENSIONS_HELPER_H__
 
 #include <assert.h>
 #include <string.h>
@@ -111,4 +111,4 @@ int extension_reply_friend_invite(CarrierExtension *ext, const char *address,
                                    data, len);
 }
 
-#endif //__CARRIER_EXTENSION_APIS_H__
+#endif //__EXTENSIONS_HELPER_H__

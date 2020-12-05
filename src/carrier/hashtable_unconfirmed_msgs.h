@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __UNCONFIRMED_MSGS_H__
-#define __UNCONFIRMED_MSGS_H__
+#ifndef __CARRIER_UNCONFIRMED_MSGS_H__
+#define __CARRIER_UNCONFIRMED_MSGS_H__
 
 #include <crystal.h>
 #include "carrier.h"
@@ -108,4 +108,4 @@ int unconfirmed_iterator_remove(hashtable_iterator_t *iterator)
     return hashtable_iterator_remove(iterator);
 }
 
-#endif // __UNCONFIRMED_MSGS_H__
+#endif // __CARRIER_UNCONFIRMED_MSGS_H__

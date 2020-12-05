@@ -69,17 +69,18 @@
 #include "carrier_error.h"
 #include "carrier_impl.h"
 #include "carrier_extension.h"
-#include "friends.h"
-#include "tcallbacks.h"
-#include "thistory.h"
+
+#include "hashtable_friends.h"
+#include "hashtable_transacted_callbacks.h"
+#include "hashtable_transacted_history.h"
+#include "hashtable_transacted_assembly.h"
+#include "hashtable_unconfirmed_msgs.h"
+#include "hashtable_bulkmsgs.h"
+#include "hashtable_extensions.h"
+
 #include "elacp.h"
 #include "dht.h"
-#include "tassemblies.h"
-#include "bulkmsgs.h"
 #include "express.h"
-#include "extensions.h"
-#include "unconfirmed_msgs.h"
-#include "utility.h"
 
 #define TASSEMBLY_TIMEOUT               (60) //60s.
 

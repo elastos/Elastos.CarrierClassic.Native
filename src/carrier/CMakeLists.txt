@@ -60,14 +60,14 @@ configure_file(
     "@ONLY")
 
 set(SRC
-    http_client.c
     dht/dht.c
     elacp.c
     carrier.c
-    error.c
-    extension.c
-    express.c
-    turnserver.c)
+    carrier_error.c
+    carrier_extension.c
+    carrier_turnserver.c
+    http_client.c
+    express.c)
 
 set(HEADERS
     carrier.h)

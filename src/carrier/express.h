@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef __ELASTOS_CARRIER_EXPRESS__
-#define __ELASTOS_CARRIER_EXPRESS__
+#ifndef __CARRIER_EXPRESS__
+#define __CARRIER_EXPRESS__
 
 #include <stdint.h>
 
@@ -66,4 +66,4 @@ int express_enqueue_pull_messages(ExpressConnector *connector);
 } // extern "C"
 #endif
 
-#endif //__ELASTOS_CARRIER_EXPRESS__
+#endif //__CARRIER_EXPRESS__

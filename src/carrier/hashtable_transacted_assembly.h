@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_TASSEMBLIES_H__
-#define __CARRIER_TASSEMBLIES_H__
+#ifndef __CARRIER_TRANSACTED_ASSEMBLIES_H__
+#define __CARRIER_TRANSACTED_ASSEMBLIES_H__
 
 #include <string.h>
 #include <crystal.h>
@@ -111,4 +111,4 @@ int tassemblies_iterator_remove(hashtable_iterator_t *iterator)
     return hashtable_iterator_remove(iterator);
 }
 
-#endif /* __CARRIER_TASSEMBLIES_H__ */
+#endif /* __CARRIER_TRANSACTED_ASSEMBLIES_H__ */

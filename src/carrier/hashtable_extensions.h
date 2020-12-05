@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __EXTENSIONS_H__
-#define __EXTENSIONS_H__
+#ifndef __CARRIER_EXTENSIONS_H__
+#define __CARRIER_EXTENSIONS_H__
 
 #include <string.h>
 #include <assert.h>
@@ -117,4 +117,4 @@ int extensions_iterator_has_next(hashtable_iterator_t *iterator)
     return hashtable_iterator_has_next(iterator);
 }
 
-#endif /* __EXTENSIONS_H__ */
+#endif /* __CARRIER_EXTENSIONS_H__ */

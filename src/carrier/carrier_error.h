@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_ERROR_H__
-#define __CARRIER_ERROR_H__
+#ifndef __ELASTOS_CARRIER_ERROR_H__
+#define __ELASTOS_CARRIER_ERROR_H__
 
 #include "carrier.h"
 
@@ -41,4 +41,4 @@ int ela_register_strerror(int facility, strerror_t strerr);
 }
 #endif
 
-#endif /* __CARRIER_ERROR_H__ */
+#endif /* __ELASTOS_CARRIER_ERROR_H__ */

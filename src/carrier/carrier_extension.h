@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_EXTENSION_H__
-#define __CARRIER_EXTENSION_H__
+#ifndef __ELASTOS_CARRIER_EXTENSION_H__
+#define __ELASTOS_CARRIER_EXTENSION_H__
 
 #include <stdint.h>
 #include "carrier.h"
@@ -232,4 +232,4 @@ void ela_set_error(int err);
 #pragma GCC diagnostic pop
 #endif
 
-#endif /* __CARRIER_EXTENSION_H__ */
+#endif /* __ELASTOS_CARRIER_EXTENSION_H__ */

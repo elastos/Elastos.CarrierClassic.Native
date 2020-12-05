@@ -22,8 +22,8 @@
 
 #include "carrier.h"
 #include "carrier_error.h"
-#include "extension_apis.h"
-#include "extensions.h"
+#include "extensions_helper.h"
+#include "hashtable_extensions.h"
 
 int carrier_register_extension(ElaCarrier *w, const char *name,
                                CarrierExtension *ext, ElaCallbacks *callbacks)

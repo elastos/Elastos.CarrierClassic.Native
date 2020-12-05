@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_EASYFILE_H__
-#define __CARRIER_EASYFILE_H__
+#ifndef __ELASTOS_CARRIER_EASYFILE_H__
+#define __ELASTOS_CARRIER_EASYFILE_H__
 
 #include <stdint.h>
 
@@ -103,4 +103,4 @@ void ela_set_error(int error);
 }
 #endif
 
-#endif /* __CARRIER_EASYFILE_H__ */
+#endif /* __ELASTOS_CARRIER_EASYFILE_H__ */

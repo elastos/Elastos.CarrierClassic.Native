@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_FILETRANSFER_H__
-#define __CARRIER_FILETRANSFER_H__
+#ifndef __ELASTOS_CARRIER_FILETRANSFER_H__
+#define __ELASTOS_CARRIER_FILETRANSFER_H__
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -611,4 +611,4 @@ void *ela_filetransfer_get_userdata(ElaFileTransfer *ft, const char *fileid);
 #pragma GCC diagnostic pop
 #endif
 
-#endif /* __CARRIER_FILETRANSFER_H__ */
+#endif /* __ELASTOS_CARRIER_FILETRANSFER_H__ */
