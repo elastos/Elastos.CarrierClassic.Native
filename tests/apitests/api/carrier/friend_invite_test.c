@@ -26,7 +26,7 @@
 
 #include <CUnit/Basic.h>
 #include <crystal.h>
-#include "carrier.h"
+#include <carrier.h>
 
 #include "cond.h"
 #include "test_helper.h"
@@ -52,23 +52,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -77,7 +77,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -119,7 +119,7 @@ static TestContext test_context = {
     .context_reset = test_context_reset
 };
 
-static void friend_invite_response_cb(ElaCarrier *w, const char *from, const char *bundle,
+static void friend_invite_response_cb(Carrier *w, const char *from, const char *bundle,
                                       int status, const char *reason, const void *content,
                                       size_t len, void *context)
 {
@@ -138,8 +138,8 @@ static void test_friend_invite_confirm(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    char userid[ELA_MAX_ID_LEN + 1];
-    char to[ELA_MAX_ID_LEN * 2 + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
+    char to[CARRIER_MAX_ID_LEN * 2 + 1];
     int rc;
     bool is_wakeup;
 
@@ -147,10 +147,10 @@ static void test_friend_invite_confirm(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     const char* hello = "hello";
-    rc = ela_invite_friend(wctxt->carrier, robotid, NULL, hello,
+    rc = carrier_invite_friend(wctxt->carrier, robotid, NULL, hello,
                            strlen(hello), friend_invite_response_cb, wctxt);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
@@ -161,7 +161,7 @@ static void test_friend_invite_confirm(void)
     CU_ASSERT_STRING_EQUAL(in, "data");
     CU_ASSERT_STRING_EQUAL(in2, hello);
 
-    (void)ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    (void)carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     sprintf(to, "%s", userid);
     const char* invite_rsp_data = "invitation-confirmed";
     rc = write_cmd("freplyinvite %s confirm %s\n", to, invite_rsp_data);
@@ -186,8 +186,8 @@ static void test_friend_invite_reject(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    char userid[ELA_MAX_ID_LEN + 1];
-    char to[ELA_MAX_ID_LEN * 2 + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
+    char to[CARRIER_MAX_ID_LEN * 2 + 1];
     int rc;
     bool is_wakeup;
 
@@ -195,10 +195,10 @@ static void test_friend_invite_reject(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     const char* hello = "hello";
-    rc = ela_invite_friend(wctxt->carrier, robotid, NULL, hello, strlen(hello),
+    rc = carrier_invite_friend(wctxt->carrier, robotid, NULL, hello, strlen(hello),
                                friend_invite_response_cb, wctxt);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
@@ -209,7 +209,7 @@ static void test_friend_invite_reject(void)
     CU_ASSERT_STRING_EQUAL(in, "data");
     CU_ASSERT_STRING_EQUAL(in2, hello);
 
-    (void)ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    (void)carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     sprintf(to, "%s", userid);
 
     const char* reason = "unknown-error";
@@ -240,26 +240,26 @@ static void test_friend_invite_stranger(void)
 
     rc = remove_friend_anyway(&test_context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_FALSE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_invite_friend(wctxt->carrier, robotid, NULL, hello, strlen(hello) + 1,
+    rc = carrier_invite_friend(wctxt->carrier, robotid, NULL, hello, strlen(hello) + 1,
                                friend_invite_response_cb, wctxt);
     CU_ASSERT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
 }
 
 static void test_friend_invite_self(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
     const char* hello = "hello";
     int rc;
 
-    (void)ela_get_userid(wctxt->carrier, userid, sizeof(userid));
-    rc = ela_invite_friend(wctxt->carrier, userid, NULL, hello, strlen(hello) + 1,
+    (void)carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
+    rc = carrier_invite_friend(wctxt->carrier, userid, NULL, hello, strlen(hello) + 1,
                                friend_invite_response_cb, wctxt);
     CU_ASSERT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
 }
 
 static CU_TestInfo cases[] = {

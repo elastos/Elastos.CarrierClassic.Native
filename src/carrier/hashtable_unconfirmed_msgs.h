@@ -29,11 +29,11 @@
 typedef struct UnconfirmedMsg {
     hash_entry_t he;
 
-    char to[ELA_MAX_ID_LEN + 1];
+    char to[CARRIER_MAX_ID_LEN + 1];
     uint32_t msgid;
     int offline_sending;
 
-    ElaFriendMessageReceiptCallback *callback;
+    CarrierFriendMessageReceiptCallback *callback;
     void *context;
 
     size_t size;

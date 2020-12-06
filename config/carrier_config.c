@@ -48,7 +48,7 @@
 
 #include "carrier_config.h"
 
-#define DEFAULT_LOG_LEVEL   ElaLogLevel_Info
+#define DEFAULT_LOG_LEVEL   CarrierLogLevel_Info
 #define DEFAULT_DATA_DIR    "~/.carrier"
 
 static void bootstraps_destructor(void *p)
@@ -120,9 +120,9 @@ static void qualified_path(const char *path, const char *ref, char *qualified)
     }
 }
 
-ElaOptions *carrier_config_load(const char *config_file,
-        int (*extra_config_handle)(void *cfg, ElaOptions *options),
-        ElaOptions *options)
+CarrierOptions *carrier_config_load(const char *config_file,
+        int (*extra_config_handle)(void *cfg, CarrierOptions *options),
+        CarrierOptions *options)
 {
     config_t cfg;
     config_setting_t *nodes_setting;
@@ -143,7 +143,7 @@ ElaOptions *carrier_config_load(const char *config_file,
     if (!config_file || !*config_file || !options)
         return NULL;
 
-    memset(options, 0, sizeof(ElaOptions));
+    memset(options, 0, sizeof(CarrierOptions));
 
     config_init(&cfg);
 
@@ -317,7 +317,7 @@ ElaOptions *carrier_config_load(const char *config_file,
     return options;
 }
 
-ElaOptions *carrier_config_copy(ElaOptions *dest, ElaOptions *src)
+CarrierOptions *carrier_config_copy(CarrierOptions *dest, CarrierOptions *src)
 {
     size_t *p;
 
@@ -339,7 +339,7 @@ ElaOptions *carrier_config_copy(ElaOptions *dest, ElaOptions *src)
     return dest;
 }
 
-void carrier_config_update(ElaOptions *options, int argc, char *argv[])
+void carrier_config_update(CarrierOptions *options, int argc, char *argv[])
 {
     char path[PATH_MAX];
 
@@ -369,7 +369,7 @@ void carrier_config_update(ElaOptions *options, int argc, char *argv[])
             break;
 
         case 2:
-            options->log_level = (ElaLogLevel)atoi(optarg);
+            options->log_level = (CarrierLogLevel)atoi(optarg);
             break;
 
         case 3:
@@ -399,7 +399,7 @@ void carrier_config_update(ElaOptions *options, int argc, char *argv[])
     optopt = 0;
 }
 
-void carrier_config_free(ElaOptions *options)
+void carrier_config_free(CarrierOptions *options)
 {
     if (!options)
         return;
@@ -421,7 +421,7 @@ void carrier_config_free(ElaOptions *options)
     }
 
 #ifndef NDEBUG
-    memset(options, 0, sizeof(ElaOptions));
+    memset(options, 0, sizeof(CarrierOptions));
 #endif
 }
 

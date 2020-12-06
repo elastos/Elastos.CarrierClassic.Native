@@ -52,9 +52,9 @@ typedef bool TimerCallback(void *user_data);
 
 typedef struct SessionExtension     SessionExtension;
 typedef struct TransportWorker      TransportWorker;
-typedef struct ElaTransport         ElaTransport;
-typedef struct ElaSession           ElaSession;
-typedef struct ElaStream            ElaStream;
+typedef struct CarrierTransport     CarrierTransport;
+typedef struct CarrierSession       CarrierSession;
+typedef struct CarrierStream        CarrierStream;
 
 typedef struct IceTransportOptions {
     const char *stun_host;
@@ -68,7 +68,7 @@ typedef struct IceTransportOptions {
 
 struct BundledRequestCallback {
     list_entry_t            le;
-    ElaSessionRequestCallback *callback;
+    CarrierSessionRequestCallback *callback;
     void                    *context;
     char                    prefix[1];
 };
@@ -76,26 +76,26 @@ struct BundledRequestCallback {
 struct SessionExtension {
     CarrierExtension        base;
 
-    ElaSessionRequestCallback *default_callback;
+    CarrierSessionRequestCallback *default_callback;
     void                    *default_context;
 
     pthread_rwlock_t        callbacks_lock;
     list_t                  *callbacks;
 
-    ElaTransport            *transport;
+    CarrierTransport        *transport;
 
     IDS_HEAP(stream_ids, MAX_STREAM_ID);
 
-    int (*create_transport)(ElaTransport **transport);
+    int (*create_transport)(CarrierTransport **transport);
 };
 
-struct ElaTransport {
+struct CarrierTransport {
     SessionExtension        *ext;
     list_t                  *workers;
 
-    int (*create_worker)   (ElaTransport *transport, IceTransportOptions *opts,
+    int (*create_worker)   (CarrierTransport *transport, IceTransportOptions *opts,
                             TransportWorker **worker);
-    int (*create_session)  (ElaTransport *transport, ElaSession **session);
+    int (*create_session)  (CarrierTransport *transport, CarrierSession **session);
 };
 
 struct TransportWorker {
@@ -111,15 +111,15 @@ struct TransportWorker {
     void (*destroy_timer)  (TransportWorker *worker, Timer *timer);
 };
 
-typedef struct ElaSession {
-    ElaTransport            *transport;
+typedef struct CarrierSession {
+    CarrierTransport        *transport;
     char                    *to;
 
     TransportWorker         *worker;
 
     int                     offerer;
 
-    ElaSessionRequestCompleteCallback *complete_callback;
+    CarrierSessionRequestCompleteCallback *complete_callback;
     void                    *context;
 
     void                    *userdata;
@@ -143,24 +143,24 @@ typedef struct ElaSession {
         hashtable_t *services;
     } portforwarding;
 
-    int  (*init)            (ElaSession *session);
-    int  (*create_stream)   (ElaSession *session, ElaStream **stream);
-    bool (*set_offer)       (ElaSession *session, bool offerer);
-    int  (*encode_local_sdp)(ElaSession *session, char *sdp, size_t len);
-    int  (*apply_remote_sdp)(ElaSession *session, const char *sdp, size_t sdp_len);
-} ElaSession;
+    int  (*init)            (CarrierSession *session);
+    int  (*create_stream)   (CarrierSession *session, CarrierStream **stream);
+    bool (*set_offer)       (CarrierSession *session, bool offerer);
+    int  (*encode_local_sdp)(CarrierSession *session, char *sdp, size_t len);
+    int  (*apply_remote_sdp)(CarrierSession *session, const char *sdp, size_t sdp_len);
+} CarrierSession;
 
 typedef struct Multiplexer  Multiplexer;
 
-struct ElaStream {
+struct CarrierStream {
     StreamHandler           pipeline;
     Multiplexer             *mux;
 
     list_entry_t            le;
     int                     id;
-    ElaSession              *session;
-    ElaStreamType           type;
-    ElaStreamState          state;
+    CarrierSession          *session;
+    CarrierStreamType       type;
+    CarrierStreamState      state;
 
     int                     compress;
     int                     unencrypt;
@@ -169,13 +169,13 @@ struct ElaStream {
     int                     portforwarding;
     int                     deactivate;
 
-    ElaStreamCallbacks  callbacks;
+    CarrierStreamCallbacks  callbacks;
     void *context;
 
-    int  (*get_info)        (ElaStream *stream, ElaTransportInfo *info);
-    void (*fire_state_changed)(ElaStream *stream, int state);
-    void (*lock)            (ElaStream *stream);
-    void (*unlock)          (ElaStream *stream);
+    int  (*get_info)        (CarrierStream *stream, CarrierTransportInfo *info);
+    void (*fire_state_changed)(CarrierStream *stream, int state);
+    void (*lock)            (CarrierStream *stream);
+    void (*unlock)          (CarrierStream *stream);
 };
 
 void transport_base_destroy(void *p);
@@ -185,55 +185,55 @@ void session_base_destroy(void *p);
 void stream_base_destroy(void *p);
 
 static inline
-SessionExtension *stream_get_extension(ElaStream *stream)
+SessionExtension *stream_get_extension(CarrierStream *stream)
 {
     return stream->session->transport->ext;
 }
 
 static inline
-ElaTransport *stream_get_transport(ElaStream *stream)
+CarrierTransport *stream_get_transport(CarrierStream *stream)
 {
     return stream->session->transport;
 }
 
 static inline
-TransportWorker *stream_get_worker(ElaStream *stream)
+TransportWorker *stream_get_worker(CarrierStream *stream)
 {
     return stream->session->worker;
 }
 
 static inline
-ElaSession *stream_get_session(ElaStream *stream)
+CarrierSession *stream_get_session(CarrierStream *stream)
 {
     return stream->session;
 }
 
 static inline
-bool stream_is_reliable(ElaStream *stream)
+bool stream_is_reliable(CarrierStream *stream)
 {
     return stream->reliable != 0;
 }
 
 static inline
-SessionExtension *session_get_extension(ElaSession *session)
+SessionExtension *session_get_extension(CarrierSession *session)
 {
     return session->transport->ext;
 }
 
 static inline
-ElaTransport *session_get_transport(ElaSession *session)
+CarrierTransport *session_get_transport(CarrierSession *session)
 {
     return session->transport;
 }
 
 static inline
-TransportWorker *session_get_worker(ElaSession *session)
+TransportWorker *session_get_worker(CarrierSession *session)
 {
     return session->worker;
 }
 
 CARRIER_API
-int ela_session_register_strerror();
+int carrier_session_register_strerror();
 
 #ifdef __cplusplus
 }

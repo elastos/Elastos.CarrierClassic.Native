@@ -25,18 +25,18 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
+#include <carrier.h>
 
 #include "config.h"
 #include "cond.h"
 #include "test_helper.h"
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -73,49 +73,49 @@ static TestContext test_context = {
 static void test_get_address(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char addr[ELA_MAX_ADDRESS_LEN + 1];
+    char addr[CARRIER_MAX_ADDRESS_LEN + 1];
     char *p;
 
-    p = ela_get_address(wctxt->carrier, addr, sizeof(addr));
+    p = carrier_get_address(wctxt->carrier, addr, sizeof(addr));
     CU_ASSERT_PTR_NOT_NULL(p);
-    CU_ASSERT_TRUE(ela_address_is_valid(addr));
+    CU_ASSERT_TRUE(carrier_address_is_valid(addr));
 }
 
 static void test_get_nodeid(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char nodeid[ELA_MAX_ID_LEN + 1];
+    char nodeid[CARRIER_MAX_ID_LEN + 1];
     char *p;
 
-    p = ela_get_nodeid(wctxt->carrier, nodeid, sizeof(nodeid));
+    p = carrier_get_nodeid(wctxt->carrier, nodeid, sizeof(nodeid));
     CU_ASSERT_PTR_NOT_NULL(p);
     CU_ASSERT_PTR_EQUAL(p, nodeid);
-    CU_ASSERT_TRUE(ela_id_is_valid(nodeid));
+    CU_ASSERT_TRUE(carrier_id_is_valid(nodeid));
 }
 
 static void test_get_userid(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
     char *p;
 
-    p = ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    p = carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     CU_ASSERT_PTR_NOT_NULL(p);
     CU_ASSERT_PTR_EQUAL(p, userid);
-    CU_ASSERT_TRUE(ela_id_is_valid(userid));
+    CU_ASSERT_TRUE(carrier_id_is_valid(userid));
 }
 
 static void test_get_presence(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    ElaPresenceStatus presence;
+    CarrierPresenceStatus presence;
     int rc;
 
-    rc = ela_set_self_presence(wctxt->carrier, ElaPresenceStatus_Busy);
+    rc = carrier_set_self_presence(wctxt->carrier, CarrierPresenceStatus_Busy);
     CU_ASSERT_EQUAL(rc, 0);
-    rc = ela_get_self_presence(wctxt->carrier, &presence);
+    rc = carrier_get_self_presence(wctxt->carrier, &presence);
     CU_ASSERT_EQUAL(rc, 0);
-    CU_ASSERT_EQUAL(presence, ElaPresenceStatus_Busy);
+    CU_ASSERT_EQUAL(presence, CarrierPresenceStatus_Busy);
 }
 
 static CU_TestInfo cases[] = {

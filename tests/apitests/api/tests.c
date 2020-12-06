@@ -33,7 +33,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
+#include <carrier.h>
 
 #include "config.h"
 #include "suites.h"
@@ -191,8 +191,8 @@ void clear_socket_buffer()
     vlogD("@@@@@@@@ Clear socket buffer.");
 }
 
-char robotid[ELA_MAX_ID_LEN + 1];
-char robotaddr[ELA_MAX_ADDRESS_LEN + 1];
+char robotid[CARRIER_MAX_ID_LEN + 1];
+char robotaddr[CARRIER_MAX_ADDRESS_LEN + 1];
 
 int test_main(int argc, char *argv[])
 {

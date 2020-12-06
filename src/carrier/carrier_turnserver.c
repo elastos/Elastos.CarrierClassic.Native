@@ -22,7 +22,7 @@
 #define TURN_SERVER_USER_SUFFIX         "auth.tox"
 #define TURN_REALM                      "elastos.org"
 
-int ela_get_turn_server(ElaCarrier *w, ElaTurnServer *turn_server)
+int carrier_get_turn_server(Carrier *w, CarrierTurnServer *turn_server)
 {
     uint8_t secret_key[PUBLIC_KEY_BYTES];
     uint8_t public_key[PUBLIC_KEY_BYTES];
@@ -35,12 +35,12 @@ int ela_get_turn_server(ElaCarrier *w, ElaTurnServer *turn_server)
     int times = 0;
 
     if (!w || !turn_server) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
@@ -54,13 +54,13 @@ redo_get_tcp_relay:
             goto redo_get_tcp_relay;
         } else {
             vlogE("Carrier: Get turn server address and public key error (%d)", rc);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
             return -1;
         }
     }
 
     {
-        char bootstrap_pk[ELA_MAX_ID_LEN + 1];
+        char bootstrap_pk[CARRIER_MAX_ID_LEN + 1];
         size_t pk_len = sizeof(bootstrap_pk);
 
         base58_encode(public_key, sizeof(public_key), bootstrap_pk, &pk_len);

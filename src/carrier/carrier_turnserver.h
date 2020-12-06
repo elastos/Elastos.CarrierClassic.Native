@@ -29,21 +29,21 @@
 extern "C" {
 #endif
 
-#define ELA_MAX_TURN_SERVER_LEN         63
-#define ELA_MAX_TURN_USERNAME_LEN       127
-#define ELA_MAX_TURN_PASSWORD_LEN       63
-#define ELA_MAX_TURN_REALM_LEN          127
+#define CARRIER_MAX_TURN_SERVER_LEN         63
+#define CARRIER_MAX_TURN_USERNAME_LEN       127
+#define CARRIER_MAX_TURN_PASSWORD_LEN       63
+#define CARRIER_MAX_TURN_REALM_LEN          127
 
-typedef struct ElaTurnServer {
-    char server[ELA_MAX_TURN_SERVER_LEN + 1];
+typedef struct CarrierTurnServer {
+    char server[CARRIER_MAX_TURN_SERVER_LEN + 1];
     uint16_t port;
-    char username[ELA_MAX_TURN_USERNAME_LEN + 1];
-    char password[ELA_MAX_TURN_PASSWORD_LEN + 1];
-    char realm[ELA_MAX_TURN_REALM_LEN + 1];
-} ElaTurnServer;
+    char username[CARRIER_MAX_TURN_USERNAME_LEN + 1];
+    char password[CARRIER_MAX_TURN_PASSWORD_LEN + 1];
+    char realm[CARRIER_MAX_TURN_REALM_LEN + 1];
+} CarrierTurnServer;
 
 CARRIER_API
-int ela_get_turn_server(ElaCarrier *carrier, ElaTurnServer *turn_server);
+int carrier_get_turn_server(Carrier *carrier, CarrierTurnServer *turn_server);
 
 #ifdef __cplusplus
 }

@@ -32,42 +32,42 @@
 static
 bool extension_is_friend(CarrierExtension *ext, const char *address)
 {
-    if (!ext || !address || strlen(address) >= ELA_MAX_ID_LEN * 2 + 2) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (!ext || !address || strlen(address) >= CARRIER_MAX_ID_LEN * 2 + 2) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return false;
     }
 
     if (!ext->scope) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return false;
     }
 
-    if (!ela_id_is_valid(address)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_USERID));
+    if (!carrier_id_is_valid(address)) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_USERID));
         return false;
     }
 
-    return ela_is_friend(ext->carrier, address);
+    return carrier_is_friend(ext->carrier, address);
 }
 
 static
 int extension_invite_friend(CarrierExtension *ext, const char *address,
                             const char *bundle,
                             const char *data, size_t len,
-                            ElaFriendInviteResponseCallback *callback,
+                            CarrierFriendInviteResponseCallback *callback,
                             void *context)
 {
     ExtensionHolder *holder;
-    char addr[ELA_MAX_ID_LEN * 2 + CARRIER_MAX_EXTENSION_NAME_LEN + 8];
+    char addr[CARRIER_MAX_ID_LEN * 2 + CARRIER_MAX_EXTENSION_NAME_LEN + 8];
 
     if (!ext || !data || len == 0 ||
-        !address || strlen(address) >= ELA_MAX_ID_LEN*2 + 2 ) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        !address || strlen(address) >= CARRIER_MAX_ID_LEN*2 + 2 ) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return false;
     }
 
     if (!ext->scope) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
 
@@ -77,7 +77,7 @@ int extension_invite_friend(CarrierExtension *ext, const char *address,
     strcat(addr, ":");
     strcat(addr, holder->name);
 
-    return ela_invite_friend(ext->carrier, addr, bundle, data, len, callback,
+    return carrier_invite_friend(ext->carrier, addr, bundle, data, len, callback,
                              context);
 }
 
@@ -88,16 +88,16 @@ int extension_reply_friend_invite(CarrierExtension *ext, const char *address,
                                   const char *data, size_t len)
 {
     ExtensionHolder *holder;
-    char addr[ELA_MAX_ID_LEN * 2 + CARRIER_MAX_EXTENSION_NAME_LEN + 8];
+    char addr[CARRIER_MAX_ID_LEN * 2 + CARRIER_MAX_EXTENSION_NAME_LEN + 8];
 
     if (!ext || (status && !reason) || (!status && (!data || len == 0)) ||
-        !address || strlen(address) >= ELA_MAX_ID_LEN*2 + 2 ) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        !address || strlen(address) >= CARRIER_MAX_ID_LEN*2 + 2 ) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!ext->scope) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
 
@@ -107,8 +107,8 @@ int extension_reply_friend_invite(CarrierExtension *ext, const char *address,
     strcat(addr, ":");
     strcat(addr, holder->name);
 
-    return ela_reply_friend_invite(ext->carrier, addr, bundle, status, reason,
-                                   data, len);
+    return carrier_reply_friend_invite(ext->carrier, addr, bundle, status,
+                                       reason, data, len);
 }
 
 #endif //__EXTENSIONS_HELPER_H__

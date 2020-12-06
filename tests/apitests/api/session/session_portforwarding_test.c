@@ -40,8 +40,8 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
-#include "carrier_session.h"
+#include <carrier.h>
+#include <carrier_session.h>
 
 #include "cond.h"
 #include "test_helper.h"
@@ -52,24 +52,24 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
 static
-void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -78,7 +78,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot node connection status changed -> %s", connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -108,7 +108,7 @@ static CarrierContext carrier_context = {
 };
 
 static
-void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
+void session_request_complete_callback(CarrierSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = (SessionContext *)context;
@@ -121,7 +121,7 @@ void session_request_complete_callback(ElaSession *ws, const char *bundle, int s
     if (status == 0) {
         int rc;
 
-        rc = ela_session_start(ws, sdp, len);
+        rc = carrier_session_start(ws, sdp, len);
         CU_ASSERT_TRUE(rc == 0);
     }
 
@@ -143,14 +143,14 @@ static SessionContext session_context = {
     .extra   = NULL,
 };
 
-static void stream_on_data(ElaSession *ws, int stream, const void *data,
+static void stream_on_data(CarrierSession *ws, int stream, const void *data,
                            size_t len, void *context)
 {
     vlogD("Stream [%d] received data [%.*s]", stream, (int)len, (char*)data);
 }
 
-static void stream_state_changed(ElaSession *ws, int stream,
-                                 ElaStreamState state, void *context)
+static void stream_state_changed(CarrierSession *ws, int stream,
+                                 CarrierStreamState state, void *context)
 {
     StreamContext *stream_ctxt = (StreamContext *)context;
 
@@ -162,7 +162,7 @@ static void stream_state_changed(ElaSession *ws, int stream,
     cond_signal(stream_ctxt->cond);
 }
 
-static ElaStreamCallbacks stream_callbacks = {
+static CarrierStreamCallbacks stream_callbacks = {
     .stream_data = stream_on_data,
     .state_changed = stream_state_changed
 };
@@ -384,7 +384,7 @@ static int do_portforwarding_internal(TestContext *context)
     TEST_ASSERT_TRUE(strcmp(cmd, "spfsvcadd") == 0);
     TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
-    pfid = ela_stream_open_port_forwarding(context->session->session,
+    pfid = carrier_stream_open_port_forwarding(context->session->session,
                             context->stream->stream_id,
                             extra->service, PortForwardingProtocol_TCP, "127.0.0.1",
                             extra->shadow_port);
@@ -426,7 +426,7 @@ static int do_portforwarding_internal(TestContext *context)
     TEST_ASSERT_TRUE(strcmp(result, "0") == 0);
     TEST_ASSERT_TRUE(strcmp(recv_count, "1024") == 0);
 
-    rc = ela_stream_close_port_forwarding(context->session->session,
+    rc = carrier_stream_close_port_forwarding(context->session->session,
                                               context->stream->stream_id, pfid);
     TEST_ASSERT_TRUE(rc == 0);
 
@@ -436,7 +436,7 @@ static int do_portforwarding_internal(TestContext *context)
 
 cleanup:
     if (pfid > 0)
-        ela_stream_close_port_forwarding(context->session->session,
+        carrier_stream_close_port_forwarding(context->session->session,
                                              context->stream->stream_id, pfid);
 
     write_cmd("spfsvcremove %s\n", extra->service);
@@ -452,7 +452,7 @@ static int do_reversed_portforwarding_internal(TestContext *context)
     char cmd[32];
     char result[32];
 
-    rc = ela_session_add_service(context->session->session, extra->service,
+    rc = carrier_session_add_service(context->session->session, extra->service,
                                      PortForwardingProtocol_TCP, "127.0.0.1",
                                      extra->port);
     TEST_ASSERT_TRUE(rc == 0);
@@ -499,31 +499,31 @@ static int do_reversed_portforwarding_internal(TestContext *context)
     TEST_ASSERT_TRUE(strcmp(cmd, "spfclose") == 0);
     TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
-    ela_session_remove_service(context->session->session, extra->service);
+    carrier_session_remove_service(context->session->session, extra->service);
     return 0;
 
 cleanup:
-    ela_session_remove_service(context->session->session, extra->service);
+    carrier_session_remove_service(context->session->session, extra->service);
     return -1;
 }
 
 static inline void portforwarding_impl(int stream_options)
 {
-    test_stream_scheme(ElaStreamType_text, stream_options,
+    test_stream_scheme(CarrierStreamType_text, stream_options,
                        &test_context, do_portforwarding_internal);
 }
 
 static inline void reversed_portforwarding_impl(int stream_options)
 {
-    test_stream_scheme(ElaStreamType_text, stream_options,
+    test_stream_scheme(CarrierStreamType_text, stream_options,
                        &test_context, do_reversed_portforwarding_internal);
 }
 
 static void test_session_portforwarding_reliable(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_PORT_FORWARDING;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_PORT_FORWARDING;
 
     portforwarding_impl(stream_options);
 }
@@ -531,9 +531,9 @@ static void test_session_portforwarding_reliable(void)
 static void test_session_portforwarding_reliable_plain(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_PORT_FORWARDING;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_PORT_FORWARDING;
 
     portforwarding_impl(stream_options);
 }
@@ -541,8 +541,8 @@ static void test_session_portforwarding_reliable_plain(void)
 static void test_session_reversed_portforwarding_reliable(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_PORT_FORWARDING;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_PORT_FORWARDING;
 
     reversed_portforwarding_impl(stream_options);
 }
@@ -552,9 +552,9 @@ void test_session_reversed_portforwarding_reliable_plain(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_PORT_FORWARDING;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_PORT_FORWARDING;
 
     reversed_portforwarding_impl(stream_options);
 }

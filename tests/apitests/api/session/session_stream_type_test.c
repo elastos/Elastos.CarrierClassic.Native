@@ -25,8 +25,8 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
-#include "carrier_session.h"
+#include <carrier.h>
+#include <carrier_session.h>
 
 #include "cond.h"
 #include "test_helper.h"
@@ -37,24 +37,24 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
 static
-void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -63,7 +63,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -92,7 +92,7 @@ static CarrierContext carrier_context = {
     .extra = NULL
 };
 
-static void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
+static void session_request_complete_callback(CarrierSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = (SessionContext *)context;
@@ -105,7 +105,7 @@ static void session_request_complete_callback(ElaSession *ws, const char *bundle
     if (status == 0) {
         int rc;
 
-        rc = ela_session_start(ws, sdp, len);
+        rc = carrier_session_start(ws, sdp, len);
         CU_ASSERT_EQUAL(rc, 0);
     }
 
@@ -127,14 +127,14 @@ static SessionContext session_context = {
     .extra = NULL,
 };
 
-static void stream_on_data(ElaSession *ws, int stream, const void *data,
+static void stream_on_data(CarrierSession *ws, int stream, const void *data,
                            size_t len, void *context)
 {
     vlogD("Stream [%d] received data [%.*s]", stream, (int)len, (char*)data);
 }
 
-static void stream_state_changed(ElaSession *ws, int stream,
-                                 ElaStreamState state, void *context)
+static void stream_state_changed(CarrierSession *ws, int stream,
+                                 CarrierStreamState state, void *context)
 {
     StreamContext *stream_ctxt = (StreamContext *)context;
 
@@ -146,7 +146,7 @@ static void stream_state_changed(ElaSession *ws, int stream,
     cond_signal(stream_ctxt->cond);
 }
 
-static ElaStreamCallbacks stream_callbacks = {
+static CarrierStreamCallbacks stream_callbacks = {
     .stream_data = stream_on_data,
     .state_changed = stream_state_changed
 };
@@ -201,7 +201,7 @@ static TestContext test_context = {
 
 
 static
-void check_unimplemented_stream_type(ElaStreamType stream_type,
+void check_unimplemented_stream_type(CarrierStreamType stream_type,
                     TestContext *context)
 {
     CarrierContext *wctxt = context->carrier;
@@ -213,36 +213,36 @@ void check_unimplemented_stream_type(ElaStreamType stream_type,
 
     rc = add_friend_anyway(context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_session_init(wctxt->carrier);
+    rc = carrier_session_init(wctxt->carrier);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    sctxt->session = ela_session_new(wctxt->carrier, robotid);
+    sctxt->session = carrier_session_new(wctxt->carrier, robotid);
     TEST_ASSERT_TRUE(sctxt->session != NULL);
 
-    stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
+    stream_ctxt->stream_id = carrier_session_add_stream(sctxt->session,
                         stream_type, 0, stream_ctxt->cbs, stream_ctxt);
     TEST_ASSERT_TRUE(stream_ctxt->stream_id < 0);
-    TEST_ASSERT_TRUE(ela_get_error() == ELA_GENERAL_ERROR(ELAERR_NOT_IMPLEMENTED));
+    TEST_ASSERT_TRUE(carrier_get_error() == CARRIER_GENERAL_ERROR(ERROR_NOT_IMPLEMENTED));
 
 cleanup:
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        carrier_session_close(sctxt->session);
         sctxt->session = NULL;
     }
 
-    ela_session_cleanup(wctxt->carrier);
+    carrier_session_cleanup(wctxt->carrier);
 }
 
 static int check_supported_stream_type(TestContext *context)
 {
     SessionContext *sctxt = context->session;
     StreamContext *stream_ctxt = context->stream;
-    ElaStreamType real_type;
+    CarrierStreamType real_type;
     int rc;
 
-    rc = ela_stream_get_type(sctxt->session, stream_ctxt->stream_id, &real_type);
+    rc = carrier_stream_get_type(sctxt->session, stream_ctxt->stream_id, &real_type);
     TEST_ASSERT_TRUE(rc == 0);
     TEST_ASSERT_TRUE(stream_ctxt->extra->stream_type == (int)real_type);
 
@@ -252,12 +252,12 @@ cleanup:
     return -1;
 }
 
-static void test_unimplemented_stream_type(ElaStreamType stream_type)
+static void test_unimplemented_stream_type(CarrierStreamType stream_type)
 {
     check_unimplemented_stream_type(stream_type, &test_context);
 }
 
-static void test_supported_stream_type(ElaStreamType stream_type)
+static void test_supported_stream_type(CarrierStreamType stream_type)
 {
 
     test_context.stream->extra->stream_type = stream_type;
@@ -267,27 +267,27 @@ static void test_supported_stream_type(ElaStreamType stream_type)
 
 static void test_stream_audio_type(void)
 {
-    test_unimplemented_stream_type(ElaStreamType_audio);
+    test_unimplemented_stream_type(CarrierStreamType_audio);
 }
 
 static void test_stream_video_type(void)
 {
-    test_unimplemented_stream_type(ElaStreamType_video);
+    test_unimplemented_stream_type(CarrierStreamType_video);
 }
 
 static void test_stream_text_type(void)
 {
-    test_supported_stream_type(ElaStreamType_text);
+    test_supported_stream_type(CarrierStreamType_text);
 }
 
 static void test_stream_application_type(void)
 {
-    test_supported_stream_type(ElaStreamType_application);
+    test_supported_stream_type(CarrierStreamType_application);
 }
 
 static void test_stream_message_type(void)
 {
-    test_supported_stream_type(ElaStreamType_message);
+    test_supported_stream_type(CarrierStreamType_message);
 }
 
 static CU_TestInfo cases[] = {

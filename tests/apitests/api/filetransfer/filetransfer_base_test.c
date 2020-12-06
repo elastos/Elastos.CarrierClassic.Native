@@ -25,7 +25,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
+#include <carrier.h>
 #include "carrier_filetransfer.h"
 
 #include "config.h"
@@ -47,23 +47,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -72,7 +72,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void ft_state_changed_cb(ElaFileTransfer *filetransfer,
+static void ft_state_changed_cb(CarrierFileTransfer *filetransfer,
                                 FileTransferConnection state, void *context)
 {
     TestContext *wctx = (TestContext *)context;
@@ -83,7 +83,7 @@ static void ft_state_changed_cb(ElaFileTransfer *filetransfer,
     cond_signal(ctx->ft_cond);
 }
 
-static void ft_pull_cb(ElaFileTransfer *filetransfer, const char *fileid,
+static void ft_pull_cb(CarrierFileTransfer *filetransfer, const char *fileid,
                        uint64_t offset, void *context)
 {
     TestContext *wctx = (TestContext *)context;
@@ -92,7 +92,7 @@ static void ft_pull_cb(ElaFileTransfer *filetransfer, const char *fileid,
     cond_signal(ctx->ft_cond);
 }
 
-static void ft_pending_cb(ElaFileTransfer *filetransfer, const char *fileid,
+static void ft_pending_cb(CarrierFileTransfer *filetransfer, const char *fileid,
                           void *context)
 {
     TestContext *wctx = (TestContext *)context;
@@ -101,7 +101,7 @@ static void ft_pending_cb(ElaFileTransfer *filetransfer, const char *fileid,
     cond_signal(ctx->ft_cond);
 }
 
-static void ft_resume_cb(ElaFileTransfer *filetransfer, const char *fileid,
+static void ft_resume_cb(CarrierFileTransfer *filetransfer, const char *fileid,
                          void *context)
 {
     TestContext *wctx = (TestContext *)context;
@@ -110,7 +110,7 @@ static void ft_resume_cb(ElaFileTransfer *filetransfer, const char *fileid,
     cond_signal(ctx->ft_cond);
 }
 
-static void ft_cancel_cb(ElaFileTransfer *filetransfer, const char *fileid,
+static void ft_cancel_cb(CarrierFileTransfer *filetransfer, const char *fileid,
                          int status, const char *reason, void *context)
 {
     TestContext *wctx = (TestContext *)context;
@@ -124,7 +124,7 @@ static void ft_cancel_cb(ElaFileTransfer *filetransfer, const char *fileid,
     cond_signal(ctx->ft_cond);
 }
 
-static ElaFileTransferCallbacks ft_cbs = {
+static CarrierFileTransferCallbacks ft_cbs = {
     .state_changed = ft_state_changed_cb,
     .file = NULL,
     .pull = ft_pull_cb,
@@ -134,7 +134,7 @@ static ElaFileTransferCallbacks ft_cbs = {
     .cancel = ft_cancel_cb
 };
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -187,12 +187,12 @@ static int filetransfer_base_cb(TestContext *ctx)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *wextra = wctxt->extra;
-    ElaFileTransferInfo ft_info = {0};
-    char file_name[ELA_MAX_FILE_NAME_LEN + 1] = {0};
-    char file_id[ELA_MAX_FILE_ID_LEN + 1] = {0};
+    CarrierFileTransferInfo ft_info = {0};
+    char file_name[CARRIER_MAX_FILE_NAME_LEN + 1] = {0};
+    char file_id[CARRIER_MAX_FILE_ID_LEN + 1] = {0};
     char cmd[32] = {0};
     char result[32] = {0};
-    char data[ELA_MAX_USER_DATA_LEN] = "hello";
+    char data[CARRIER_MAX_USER_DATA_LEN] = "hello";
     char *p;
     const char *reason = "busy";
     int len = (int)strlen(data) + 1;
@@ -200,11 +200,11 @@ static int filetransfer_base_cb(TestContext *ctx)
     int rc;
     int size;
 
-    p = ela_filetransfer_fileid(ft_info.filename, sizeof(ft_info.filename));
+    p = carrier_filetransfer_fileid(ft_info.filename, sizeof(ft_info.filename));
     CU_ASSERT_PTR_EQUAL(p, ft_info.filename);
     ft_info.size = 10000;
 
-    rc = ela_filetransfer_add(wctxt->ft, &ft_info);
+    rc = carrier_filetransfer_add(wctxt->ft, &ft_info);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = read_ack("%64s %64s %d", file_name, ft_info.fileid, &size);
@@ -223,7 +223,7 @@ static int filetransfer_base_cb(TestContext *ctx)
     // wait for the 'pull' callback function to be invoked
     cond_wait(wctxt->ft_cond);
 
-    rc = (int)ela_filetransfer_send(wctxt->ft, ft_info.fileid, (const uint8_t*)data, len);
+    rc = (int)carrier_filetransfer_send(wctxt->ft, ft_info.fileid, (const uint8_t*)data, len);
     CU_ASSERT_EQUAL(rc, len);
 
     rc = read_ack("%32s %45s %32s %d", cmd, file_id, data, &len);
@@ -257,7 +257,7 @@ static int filetransfer_base_cb(TestContext *ctx)
 
     memset(data, 'D', sizeof(data) - 1);
     data[sizeof(data) - 1] = '\0';
-    rc = (int)ela_filetransfer_send(wctxt->ft, ft_info.fileid, (const uint8_t*)data, sizeof(data) - 1);
+    rc = (int)carrier_filetransfer_send(wctxt->ft, ft_info.fileid, (const uint8_t*)data, sizeof(data) - 1);
     CU_ASSERT_EQUAL(rc, sizeof(data) - 1);
 
     rc = read_ack("%32s %45s %32s %d", cmd, file_id, data, &len);
@@ -287,9 +287,9 @@ static int filetransfer_with_zero_length_cb(TestContext *ctx)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *wextra = wctxt->extra;
-    ElaFileTransferInfo ft_info = {0};
-    char file_name[ELA_MAX_FILE_NAME_LEN + 1] = {0};
-    char file_id[ELA_MAX_FILE_ID_LEN + 1] = {0};
+    CarrierFileTransferInfo ft_info = {0};
+    char file_name[CARRIER_MAX_FILE_NAME_LEN + 1] = {0};
+    char file_id[CARRIER_MAX_FILE_ID_LEN + 1] = {0};
     char cmd[32] = {0};
     char result[32] = {0};
     char data[32] = {0};
@@ -298,11 +298,11 @@ static int filetransfer_with_zero_length_cb(TestContext *ctx)
     int rc;
     int size;
 
-    p = ela_filetransfer_fileid(ft_info.filename, sizeof(ft_info.filename));
+    p = carrier_filetransfer_fileid(ft_info.filename, sizeof(ft_info.filename));
     CU_ASSERT_PTR_EQUAL(p, ft_info.filename);
     ft_info.size = 10000;
 
-    rc = ela_filetransfer_add(wctxt->ft, &ft_info);
+    rc = carrier_filetransfer_add(wctxt->ft, &ft_info);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = read_ack("%64s %64s %d", file_name, ft_info.fileid, &size);
@@ -321,7 +321,7 @@ static int filetransfer_with_zero_length_cb(TestContext *ctx)
     // wait for the 'pull' callback function to be invoked
     cond_wait(wctxt->ft_cond);
 
-    rc = (int)ela_filetransfer_send(wctxt->ft, ft_info.fileid, NULL, 0);
+    rc = (int)carrier_filetransfer_send(wctxt->ft, ft_info.fileid, NULL, 0);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = read_ack("%32s %45s %32s %d", cmd, file_id, data, &len);

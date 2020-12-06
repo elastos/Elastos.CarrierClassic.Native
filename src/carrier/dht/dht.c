@@ -74,47 +74,47 @@ static inline int __dht_new_error(TOX_ERR_NEW code)
 
     switch (code) {
     case TOX_ERR_NEW_OK:
-        rc = ELASUCCESS;
+        rc = CARRIER_SUCCESS;
         break;
 
     case TOX_ERR_NEW_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
         break;
 
     case TOX_ERR_NEW_MALLOC:
-        rc = ELA_DHT_ERROR(ELAERR_OUT_OF_MEMORY);
+        rc = CARRIER_DHT_ERROR(ERROR_OUT_OF_MEMORY);
         break;
 
     case TOX_ERR_NEW_PORT_ALLOC:
-        rc = ELA_DHT_ERROR(ELAERR_PORT_ALLOC);
+        rc = CARRIER_DHT_ERROR(ERROR_PORT_ALLOC);
         break;
 
     case TOX_ERR_NEW_PROXY_BAD_TYPE:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_PROXY_TYPE);
+        rc = CARRIER_DHT_ERROR(ERROR_BAD_PROXY_TYPE);
         break;
 
     case TOX_ERR_NEW_PROXY_BAD_HOST:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_PROXY_HOST);
+        rc = CARRIER_DHT_ERROR(ERROR_BAD_PROXY_HOST);
         break;
 
     case TOX_ERR_NEW_PROXY_BAD_PORT:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_PROXY_PORT);
+        rc = CARRIER_DHT_ERROR(ERROR_BAD_PROXY_PORT);
         break;
 
     case TOX_ERR_NEW_PROXY_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_PROXY_NOT_AVAILABLE);
+        rc = CARRIER_DHT_ERROR(ERROR_PROXY_NOT_AVAILABLE);
         break;
 
     case TOX_ERR_NEW_LOAD_ENCRYPTED:
-        rc = ELA_DHT_ERROR(ELAERR_ENCRYPTED_PERSISTENT_DATA);
+        rc = CARRIER_DHT_ERROR(ERROR_ENCRYPTED_PERSISTENT_DATA);
         break;
 
     case TOX_ERR_NEW_LOAD_BAD_FORMAT:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_PERSISTENT_DATA);
+        rc = CARRIER_DHT_ERROR(ERROR_BAD_PERSISTENT_DATA);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -126,23 +126,23 @@ static inline int __dht_bootstrap_error(TOX_ERR_BOOTSTRAP code)
 
     switch (code) {
     case TOX_ERR_BOOTSTRAP_OK:
-        rc = ELASUCCESS;
+        rc = CARRIER_SUCCESS;
         break;
 
     case TOX_ERR_BOOTSTRAP_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
         break;
 
     case TOX_ERR_BOOTSTRAP_BAD_HOST:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_BOOTSTRAP_HOST);
+        rc = CARRIER_DHT_ERROR(ERROR_BAD_BOOTSTRAP_HOST);
         break;
 
     case TOX_ERR_BOOTSTRAP_BAD_PORT:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_BOOTSTRAP_PORT);
+        rc = CARRIER_DHT_ERROR(ERROR_BAD_BOOTSTRAP_PORT);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -154,19 +154,19 @@ static inline int __dht_friend_query_error(TOX_ERR_FRIEND_QUERY code)
 
     switch (code) {
     case TOX_ERR_FRIEND_QUERY_OK:
-        rc = ELASUCCESS;
+        rc = CARRIER_SUCCESS;
         break;
 
     case TOX_ERR_FRIEND_QUERY_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
         break;
 
     case TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -178,15 +178,15 @@ static inline int __dht_friend_get_pk_error(TOX_ERR_FRIEND_GET_PUBLIC_KEY code)
 
     switch (code) {
     case TOX_ERR_FRIEND_GET_PUBLIC_KEY_OK:
-        rc = ELASUCCESS;
+        rc = CARRIER_SUCCESS;
         break;
 
     case TOX_ERR_FRIEND_GET_PUBLIC_KEY_FRIEND_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -198,19 +198,19 @@ static inline int __dht_set_info_error(TOX_ERR_SET_INFO code)
 
     switch (code) {
     case TOX_ERR_SET_INFO_OK:
-        rc = ELASUCCESS;
+        rc = CARRIER_SUCCESS;
         break;
 
     case TOX_ERR_SET_INFO_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
         break;
 
     case TOX_ERR_SET_INFO_TOO_LONG:
-        rc = ELA_DHT_ERROR(ELAERR_TOO_LONG);
+        rc = CARRIER_DHT_ERROR(ERROR_TOO_LONG);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -222,19 +222,19 @@ static inline int __dht_friend_by_pk_error(TOX_ERR_FRIEND_BY_PUBLIC_KEY code)
 
     switch (code) {
     case TOX_ERR_FRIEND_BY_PUBLIC_KEY_OK:
-        rc = ELASUCCESS;
+        rc = CARRIER_SUCCESS;
         break;
 
     case TOX_ERR_FRIEND_BY_PUBLIC_KEY_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
         break;
 
     case TOX_ERR_FRIEND_BY_PUBLIC_KEY_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -248,35 +248,35 @@ static inline int __dht_friend_add_error(TOX_ERR_FRIEND_ADD code)
     case TOX_ERR_FRIEND_ADD_OK:
     case TOX_ERR_FRIEND_ADD_SET_NEW_NOSPAM:
     case TOX_ERR_FRIEND_ADD_ALREADY_SENT:
-        rc = ELASUCCESS;
+        rc = CARRIER_SUCCESS;
         break;
 
     case TOX_ERR_FRIEND_ADD_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
         break;
 
     case TOX_ERR_FRIEND_ADD_TOO_LONG:
-        rc = ELA_DHT_ERROR(ELAERR_TOO_LONG);
+        rc = CARRIER_DHT_ERROR(ERROR_TOO_LONG);
         break;
 
     case TOX_ERR_FRIEND_ADD_NO_MESSAGE:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
         break;
 
     case TOX_ERR_FRIEND_ADD_OWN_KEY:
-        rc = ELA_DHT_ERROR(ELAERR_ADD_SELF);
+        rc = CARRIER_DHT_ERROR(ERROR_ADD_SELF);
         break;
 
     case TOX_ERR_FRIEND_ADD_BAD_CHECKSUM:
-        rc = ELA_DHT_ERROR(ELAERR_BAD_ADDRESS);
+        rc = CARRIER_DHT_ERROR(ERROR_BAD_ADDRESS);
         break;
 
     case TOX_ERR_FRIEND_ADD_MALLOC:
-        rc = ELA_DHT_ERROR(ELAERR_OUT_OF_MEMORY);
+        rc = CARRIER_DHT_ERROR(ERROR_OUT_OF_MEMORY);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -288,35 +288,35 @@ static inline int __dht_friend_send_msg_error(TOX_ERR_FRIEND_SEND_MESSAGE code)
 
     switch (code) {
     case TOX_ERR_FRIEND_SEND_MESSAGE_OK:
-        rc = ELASUCCESS;
+        rc = CARRIER_SUCCESS;
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_NULL:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_CONNECTED:
-        rc = ELA_DHT_ERROR(ELAERR_FRIEND_OFFLINE);
+        rc = CARRIER_DHT_ERROR(ERROR_FRIEND_OFFLINE);
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_SENDQ:
-        rc = ELA_DHT_ERROR(ELAERR_OUT_OF_MEMORY);
+        rc = CARRIER_DHT_ERROR(ERROR_OUT_OF_MEMORY);
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_TOO_LONG:
-        rc = ELA_DHT_ERROR(ELAERR_TOO_LONG);
+        rc = CARRIER_DHT_ERROR(ERROR_TOO_LONG);
         break;
 
     case TOX_ERR_FRIEND_SEND_MESSAGE_EMPTY:
-        rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+        rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -328,15 +328,15 @@ static inline int __dht_friend_delete_error(TOX_ERR_FRIEND_DELETE code)
 
     switch (code) {
     case TOX_ERR_FRIEND_DELETE_OK:
-        rc = ELASUCCESS;
+        rc = CARRIER_SUCCESS;
         break;
 
     case TOX_ERR_FRIEND_DELETE_FRIEND_NOT_FOUND:
-        rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
         break;
 
     default:
-        rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+        rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -348,19 +348,19 @@ static inline int __dht_group_number_by_public_key_error(TOX_ERR_CONFERENCE_BY_I
 
     switch (code) {
         case TOX_ERR_CONFERENCE_BY_ID_OK:
-            rc = ELASUCCESS;
+            rc = CARRIER_SUCCESS;
             break;
 
         case TOX_ERR_CONFERENCE_BY_ID_NULL:
-            rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+            rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
             break;
 
         case TOX_ERR_CONFERENCE_BY_ID_NOT_FOUND:
-            rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+            rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
             break;
 
         default:
-            rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+            rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -372,15 +372,15 @@ static inline int __dht_group_new_error(TOX_ERR_CONFERENCE_NEW code)
 
     switch (code) {
         case TOX_ERR_CONFERENCE_NEW_OK:
-            rc = ELASUCCESS;
+            rc = CARRIER_SUCCESS;
             break;
 
         case TOX_ERR_CONFERENCE_NEW_INIT:
-            rc = ELA_DHT_ERROR(ELAERR_WRONG_STATE);
+            rc = CARRIER_DHT_ERROR(ERROR_WRONG_STATE);
             break;
 
         default:
-            rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+            rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -392,15 +392,15 @@ static inline int __dht_group_delete_error(TOX_ERR_CONFERENCE_DELETE code)
 
     switch (code) {
         case TOX_ERR_CONFERENCE_DELETE_OK:
-            rc = ELASUCCESS;
+            rc = CARRIER_SUCCESS;
             break;
 
         case TOX_ERR_CONFERENCE_DELETE_CONFERENCE_NOT_FOUND:
-            rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+            rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
             break;
 
         default:
-            rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+            rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -412,19 +412,19 @@ static inline int __dht_group_invite_error(TOX_ERR_CONFERENCE_INVITE code)
 
     switch (code) {
         case TOX_ERR_CONFERENCE_INVITE_OK:
-            rc = ELASUCCESS;
+            rc = CARRIER_SUCCESS;
             break;
 
         case TOX_ERR_CONFERENCE_INVITE_CONFERENCE_NOT_FOUND:
-            rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+            rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
             break;
 
         case TOX_ERR_CONFERENCE_INVITE_FAIL_SEND:
-            rc = ELA_DHT_ERROR(ELAERR_WRONG_STATE); //TODO: error.
+            rc = CARRIER_DHT_ERROR(ERROR_WRONG_STATE); //TODO: error.
             break;
 
         default:
-            rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+            rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -436,35 +436,35 @@ static inline int __dht_group_join_error(TOX_ERR_CONFERENCE_JOIN code)
 
     switch (code) {
         case TOX_ERR_CONFERENCE_JOIN_OK:
-            rc = ELASUCCESS;
+            rc = CARRIER_SUCCESS;
             break;
 
         case TOX_ERR_CONFERENCE_JOIN_INVALID_LENGTH:
-            rc = ELA_DHT_ERROR(ELAERR_TOO_LONG);
+            rc = CARRIER_DHT_ERROR(ERROR_TOO_LONG);
             break;
 
         case TOX_ERR_CONFERENCE_JOIN_WRONG_TYPE:
-            rc = ELA_DHT_ERROR(ELAERR_INVALID_ARGS);
+            rc = CARRIER_DHT_ERROR(ERROR_INVALID_ARGS);
             break;
 
         case TOX_ERR_CONFERENCE_JOIN_FRIEND_NOT_FOUND:
-            rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+            rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
             break;
 
         case TOX_ERR_CONFERENCE_JOIN_DUPLICATE:
-            rc = ELA_DHT_ERROR(ELAERR_ALREADY_EXIST);
+            rc = CARRIER_DHT_ERROR(ERROR_ALREADY_EXIST);
             break;
 
         case TOX_ERR_CONFERENCE_JOIN_INIT_FAIL:
-            rc = ELA_DHT_ERROR(ELAERR_WRONG_STATE);
+            rc = CARRIER_DHT_ERROR(ERROR_WRONG_STATE);
             break;
 
         case TOX_ERR_CONFERENCE_JOIN_FAIL_SEND:
-            rc = ELA_DHT_ERROR(ELAERR_WRONG_STATE);
+            rc = CARRIER_DHT_ERROR(ERROR_WRONG_STATE);
             break;
 
         default:
-            rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+            rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -476,27 +476,27 @@ static inline int __dht_group_send_message_error(TOX_ERR_CONFERENCE_SEND_MESSAGE
 
     switch (code) {
         case TOX_ERR_CONFERENCE_SEND_MESSAGE_OK:
-            rc = ELASUCCESS;
+            rc = CARRIER_SUCCESS;
             break;
 
         case TOX_ERR_CONFERENCE_SEND_MESSAGE_CONFERENCE_NOT_FOUND:
-            rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+            rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
             break;
 
         case TOX_ERR_CONFERENCE_SEND_MESSAGE_TOO_LONG:
-            rc = ELA_DHT_ERROR(ELAERR_TOO_LONG);
+            rc = CARRIER_DHT_ERROR(ERROR_TOO_LONG);
             break;
 
         case TOX_ERR_CONFERENCE_SEND_MESSAGE_NO_CONNECTION:
-            rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+            rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
             break;
 
         case TOX_ERR_CONFERENCE_SEND_MESSAGE_FAIL_SEND:
-            rc = ELA_DHT_ERROR(ELAERR_WRONG_STATE);
+            rc = CARRIER_DHT_ERROR(ERROR_WRONG_STATE);
             break;
 
         default:
-            rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+            rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -508,23 +508,23 @@ static inline int __dht_group_title_error(TOX_ERR_CONFERENCE_TITLE code)
 
     switch (code) {
         case TOX_ERR_CONFERENCE_TITLE_OK:
-            rc = ELASUCCESS;
+            rc = CARRIER_SUCCESS;
             break;
 
         case TOX_ERR_CONFERENCE_TITLE_CONFERENCE_NOT_FOUND:
-            rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+            rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
             break;
 
         case TOX_ERR_CONFERENCE_TITLE_INVALID_LENGTH:
-            rc = ELA_DHT_ERROR(ELAERR_TOO_LONG);
+            rc = CARRIER_DHT_ERROR(ERROR_TOO_LONG);
             break;
 
         case TOX_ERR_CONFERENCE_TITLE_FAIL_SEND:
-            rc = ELA_DHT_ERROR(ELAERR_WRONG_STATE);
+            rc = CARRIER_DHT_ERROR(ERROR_WRONG_STATE);
             break;
 
         default:
-            rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+            rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -536,23 +536,23 @@ static inline int __dht_group_peer_query_error(TOX_ERR_CONFERENCE_PEER_QUERY cod
 
     switch (code) {
         case TOX_ERR_CONFERENCE_PEER_QUERY_OK:
-            rc = ELASUCCESS;
+            rc = CARRIER_SUCCESS;
             break;
 
         case TOX_ERR_CONFERENCE_PEER_QUERY_CONFERENCE_NOT_FOUND:
-            rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+            rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
             break;
 
         case TOX_ERR_CONFERENCE_PEER_QUERY_PEER_NOT_FOUND:
-            rc = ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+            rc = CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
             break;
 
         case TOX_ERR_CONFERENCE_PEER_QUERY_NO_CONNECTION:
-            rc = ELA_DHT_ERROR(ELAERR_WRONG_STATE);
+            rc = CARRIER_DHT_ERROR(ERROR_WRONG_STATE);
             break;
 
         default:
-            rc = ELA_DHT_ERROR(ELAERR_UNKNOWN);
+            rc = CARRIER_DHT_ERROR(ERROR_UNKNOWN);
     }
 
     return rc;
@@ -1050,7 +1050,7 @@ int dht_self_get_name(DHT *dht, uint8_t *name, size_t length)
     name_len = tox_self_get_name_size(tox);
     if (name_len > length) {
         assert(0);
-        return ELA_DHT_ERROR(ELAERR_BUFFER_TOO_SMALL);
+        return CARRIER_DHT_ERROR(ERROR_BUFFER_TOO_SMALL);
     }
 
     tox_self_get_name(tox, name);
@@ -1241,7 +1241,7 @@ int dht_group_get_public_key(DHT *dht, uint32_t group_number,
     rc = tox_conference_get_id(tox, group_number, public_key);
     if (!rc) {
         vlogE("DHT: get group public key error.");
-        return ELA_DHT_ERROR(ELAERR_NOT_EXIST);
+        return CARRIER_DHT_ERROR(ERROR_NOT_EXIST);
     }
 
     return 0;
@@ -1385,7 +1385,7 @@ int dht_group_get_title(DHT *dht, uint32_t group_number, uint8_t *title,
     }
 
     if (len > length)
-        return ELA_DHT_ERROR(ELAERR_BUFFER_TOO_SMALL);
+        return CARRIER_DHT_ERROR(ERROR_BUFFER_TOO_SMALL);
 
     tox_conference_get_title(dht->tox, group_number, (uint8_t *)title, &error);
     if (error != TOX_ERR_CONFERENCE_TITLE_OK) {
@@ -1457,7 +1457,7 @@ int dht_group_get_peer_name(DHT *dht, uint32_t group_number, uint32_t peer_numbe
         return 0;
 
     if (len > length)
-        return ELA_DHT_ERROR(ELAERR_BUFFER_TOO_SMALL);
+        return CARRIER_DHT_ERROR(ERROR_BUFFER_TOO_SMALL);
 
     tox_conference_peer_get_name(tox, group_number, peer_number,
                                  (uint8_t *)name, &error);
@@ -1516,7 +1516,7 @@ int dht_group_get_offline_peer_name(DHT *dht, uint32_t group_number, uint32_t pe
         return 0;
 
     if (len > length)
-        return ELA_DHT_ERROR(ELAERR_BUFFER_TOO_SMALL);
+        return CARRIER_DHT_ERROR(ERROR_BUFFER_TOO_SMALL);
 
     tox_conference_offline_peer_get_name(tox, group_number, peer_number,
                                          (uint8_t *)name, &error);

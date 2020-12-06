@@ -25,19 +25,19 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
+#include <carrier.h>
 #include "carrier_filetransfer.h"
 
 #include "config.h"
 #include "cond.h"
 #include "test_helper.h"
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -83,12 +83,12 @@ static TestContext test_context = {
 
 static void test_filetransfer_id(void)
 {
-    char file_id[ELA_MAX_FILE_ID_LEN + 1] = {0};
+    char file_id[CARRIER_MAX_FILE_ID_LEN + 1] = {0};
     char *p;
 
-    p = ela_filetransfer_fileid(file_id, sizeof(file_id));
+    p = carrier_filetransfer_fileid(file_id, sizeof(file_id));
     CU_ASSERT_PTR_EQUAL(p, file_id);
-    CU_ASSERT_TRUE(ela_id_is_valid(file_id));
+    CU_ASSERT_TRUE(carrier_id_is_valid(file_id));
 }
 
 static CU_TestInfo cases[] = {

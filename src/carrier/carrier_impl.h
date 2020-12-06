@@ -45,8 +45,6 @@ extern "C" {
 
 #define BOOTSTRAP_DEFAULT_PORT 33445
 
-#define ELA_MAX_EXTENSION_NAME_LEN  (31)
-
 typedef struct DHT {
     uint8_t padding[32];  // reserved for DHT.
 } DHT;
@@ -77,18 +75,18 @@ typedef struct Preferences {
 
 typedef struct EventBase EventBase;
 struct EventBase {
-    void (*handle)(EventBase *, ElaCarrier *);
+    void (*handle)(EventBase *, Carrier *);
     list_entry_t le;
 };
 
 typedef struct FriendEvent {
     EventBase base;
-    ElaFriendInfo fi;
+    CarrierFriendInfo fi;
 } FriendEvent;
 
 typedef struct OfflineEvent {
     EventBase base;
-    char from [ELA_MAX_ADDRESS_LEN + 1];
+    char from [CARRIER_MAX_ADDRESS_LEN + 1];
     int64_t timestamp;
     size_t length;
     uint8_t data[0];
@@ -96,32 +94,34 @@ typedef struct OfflineEvent {
 
 typedef struct MsgidEvent {
     EventBase base;
-    char friendid[ELA_MAX_ADDRESS_LEN + 1];
+    char friendid[CARRIER_MAX_ADDRESS_LEN + 1];
     uint32_t msgid;
     int errcode;
 } MsgidEvent;
 
+/*
 typedef enum MsgCh {
     MSGCH_DHT = 1,
     MSGCH_EXPRESS = 2,
 } MsgCh;
+*/
 
-struct ElaCarrier {
+struct Carrier {
     DHT dht;
 
     Preferences pref;
 
     uint8_t public_key[DHT_PUBLIC_KEY_SIZE];
     uint8_t address[DHT_ADDRESS_SIZE];
-    char base58_addr[ELA_MAX_ADDRESS_LEN + 1];
+    char base58_addr[CARRIER_MAX_ADDRESS_LEN + 1];
 
-    ElaUserInfo me;
-    ElaPresenceStatus presence_status;
-    ElaConnectionStatus connection_status;
+    CarrierUserInfo me;
+    CarrierPresenceStatus presence_status;
+    CarrierConnectionStatus connection_status;
     bool is_ready;
 
-    ElaCallbacks callbacks;
-    ElaGroupCallbacks group_callbacks;
+    CarrierCallbacks callbacks;
+    CarrierGroupCallbacks group_callbacks;
     void *context;
 
     DHTCallbacks dht_callbacks;
@@ -151,21 +151,21 @@ struct ElaCarrier {
 
 typedef struct ExtensionHolder {
     char name[CARRIER_MAX_EXTENSION_NAME_LEN+1];
-    ElaCallbacks callbacks;
+    CarrierCallbacks callbacks;
     ExtensionAPIs apis;
     CarrierExtension *ext;
     hash_entry_t he;
 } ExtensionHolder;
 
 CARRIER_API
-int ela_leave_all_groups(ElaCarrier *w);
+int carrier_leave_all_groups(Carrier *w);
 
 
 static inline
-ElaConnectionStatus connection_status(bool connected)
+CarrierConnectionStatus connection_status(bool connected)
 {
-    return connected ? ElaConnectionStatus_Connected :
-                       ElaConnectionStatus_Disconnected;
+    return connected ? CarrierConnectionStatus_Connected :
+                       CarrierConnectionStatus_Disconnected;
 }
 
 static inline

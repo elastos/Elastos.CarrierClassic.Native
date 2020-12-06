@@ -25,15 +25,15 @@
 
 #include <carrier.h>
 
-ElaOptions *carrier_config_load(const char *config_file,
-            int (*extra_config_handle)(void *cfg, ElaOptions *options),
-            ElaOptions *options);
+CarrierOptions *carrier_config_load(const char *config_file,
+            int (*extra_config_handle)(void *cfg, CarrierOptions *options),
+            CarrierOptions *options);
 
-ElaOptions *carrier_config_copy(ElaOptions *dest, ElaOptions *src);
+CarrierOptions *carrier_config_copy(CarrierOptions *dest, CarrierOptions *src);
 
-void carrier_config_update(ElaOptions *options, int argc, char *argv[]);
+void carrier_config_update(CarrierOptions *options, int argc, char *argv[]);
 
-void carrier_config_free(ElaOptions *options);
+void carrier_config_free(CarrierOptions *options);
 
 const char *get_config_file(const char *config_file,
             const char *default_config_files[]);

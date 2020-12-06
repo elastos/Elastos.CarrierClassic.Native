@@ -146,7 +146,7 @@ typedef struct UdpChannel {
 void multiplex_handler_set_channel_callbacks(MultiplexHandler *handler,
                 ChannelType type, ChannelCallbacks *callbacks, void *context);
 
-int multiplex_handler_create(ElaStream *stream, MultiplexHandler **mux);
+int multiplex_handler_create(CarrierStream *stream, MultiplexHandler **mux);
 
 #ifdef __cplusplus
 }

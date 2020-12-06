@@ -25,8 +25,8 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
-#include "carrier_session.h"
+#include <carrier.h>
+#include <carrier_session.h>
 
 #include "cond.h"
 #include "test_helper.h"
@@ -37,24 +37,24 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
 static
-void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -63,7 +63,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -92,7 +92,7 @@ static CarrierContext carrier_context = {
     .extra = NULL
 };
 
-static void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
+static void session_request_complete_callback(CarrierSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = (SessionContext *)context;
@@ -105,7 +105,7 @@ static void session_request_complete_callback(ElaSession *ws, const char *bundle
     if (status == 0) {
         int rc;
 
-        rc = ela_session_start(ws, sdp, len);
+        rc = carrier_session_start(ws, sdp, len);
         CU_ASSERT_EQUAL(rc, 0);
     }
 
@@ -127,14 +127,14 @@ static SessionContext session_context = {
     .extra   = NULL
 };
 
-static void stream_on_data(ElaSession *ws, int stream, const void *data,
+static void stream_on_data(CarrierSession *ws, int stream, const void *data,
                            size_t len, void *context)
 {
     vlogD("Stream [%d] received data [%.*s]", stream, (int)len, (char*)data);
 }
 
-static void stream_state_changed(ElaSession *ws, int stream,
-                                 ElaStreamState state, void *context)
+static void stream_state_changed(CarrierSession *ws, int stream,
+                                 CarrierStreamState state, void *context)
 {
     StreamContext *stream_ctxt = (StreamContext *)context;
 
@@ -146,7 +146,7 @@ static void stream_state_changed(ElaSession *ws, int stream,
     cond_signal(stream_ctxt->cond);
 }
 
-static ElaStreamCallbacks stream_callbacks = {
+static CarrierStreamCallbacks stream_callbacks = {
     .stream_data = stream_on_data,
     .state_changed = stream_state_changed
 };
@@ -192,14 +192,14 @@ static TestContext test_context = {
 };
 
 static
-int check_stream_state(TestContext *context, ElaStreamState target_state)
+int check_stream_state(TestContext *context, CarrierStreamState target_state)
 {
-    ElaSession *session = context->session->session;
+    CarrierSession *session = context->session->session;
     int stream_id = context->stream->stream_id;
     int rc;
-    ElaStreamState cur_state;
+    CarrierStreamState cur_state;
 
-    rc = ela_stream_get_state(session, stream_id, &cur_state);
+    rc = carrier_stream_get_state(session, stream_id, &cur_state);
     TEST_ASSERT_TRUE(rc == 0);
     TEST_ASSERT_TRUE(cur_state == target_state);
     return 0;
@@ -210,7 +210,7 @@ cleanup:
 
 static
 void test_stream_state_scheme(int stream_options, TestContext *context,
-                    int (*check_state_cb)(TestContext *, ElaStreamState))
+                    int (*check_state_cb)(TestContext *, CarrierStreamState))
 {
     CarrierContext *wctxt = context->carrier;
     SessionContext *sctxt = context->session;
@@ -219,15 +219,15 @@ void test_stream_state_scheme(int stream_options, TestContext *context,
     int rc;
     char cmd[32];
     char result[32];
-    ElaStreamState cur_state;
+    CarrierStreamState cur_state;
 
     context->context_reset(context);
 
     rc = add_friend_anyway(context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_session_init(wctxt->carrier);
+    rc = carrier_session_init(wctxt->carrier);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     rc = robot_sinit();
@@ -238,29 +238,29 @@ void test_stream_state_scheme(int stream_options, TestContext *context,
     TEST_ASSERT_TRUE(strcmp(cmd, "sinit") == 0);
     TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
-    sctxt->session = ela_session_new(wctxt->carrier, robotid);
+    sctxt->session = carrier_session_new(wctxt->carrier, robotid);
     TEST_ASSERT_TRUE(sctxt->session != NULL);
 
-    stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
-                                        ElaStreamType_text, stream_options,
+    stream_ctxt->stream_id = carrier_session_add_stream(sctxt->session,
+                                        CarrierStreamType_text, stream_options,
                                         stream_ctxt->cbs, stream_ctxt);
     TEST_ASSERT_TRUE(stream_ctxt->stream_id > 0);
 
     cond_wait(stream_ctxt->cond);
-    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_initialized);
-    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_initialized));
+    TEST_ASSERT_TRUE(stream_ctxt->state == CarrierStreamState_initialized);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << CarrierStreamState_initialized));
 
-    rc = check_state_cb(context, ElaStreamState_initialized);
+    rc = check_state_cb(context, CarrierStreamState_initialized);
     TEST_ASSERT_TRUE(rc == 0);
 
-    rc = ela_session_request(sctxt->session, NULL, sctxt->request_complete_cb, sctxt);
+    rc = carrier_session_request(sctxt->session, NULL, sctxt->request_complete_cb, sctxt);
     TEST_ASSERT_TRUE(rc == 0);
 
     cond_wait(stream_ctxt->cond);
-    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_transport_ready);
-    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_transport_ready));
+    TEST_ASSERT_TRUE(stream_ctxt->state == CarrierStreamState_transport_ready);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << CarrierStreamState_transport_ready));
 
-    rc = check_state_cb(context, ElaStreamState_transport_ready);
+    rc = check_state_cb(context, CarrierStreamState_transport_ready);
     TEST_ASSERT_TRUE(rc == 0);
 
     rc = read_ack("%32s %32s", cmd, result);
@@ -268,7 +268,7 @@ void test_stream_state_scheme(int stream_options, TestContext *context,
     TEST_ASSERT_TRUE(strcmp(cmd, "srequest") == 0);
     TEST_ASSERT_TRUE(strcmp(result, "received") == 0);
 
-    rc = write_cmd("sreply confirm %d %d\n", ElaStreamType_text,
+    rc = write_cmd("sreply confirm %d %d\n", CarrierStreamType_text,
                    stream_options);
     TEST_ASSERT_TRUE(rc > 0);
 
@@ -283,21 +283,21 @@ void test_stream_state_scheme(int stream_options, TestContext *context,
 
     cond_wait(stream_ctxt->cond);
 
-    if (stream_ctxt->state != ElaStreamState_connecting &&
-        stream_ctxt->state != ElaStreamState_connected) {
+    if (stream_ctxt->state != CarrierStreamState_connecting &&
+        stream_ctxt->state != CarrierStreamState_connected) {
         // if error, consume ctrl acknowlege from robot.
         read_ack("%32s %32s", cmd, result);
     }
 
-    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_connecting ||
-                     stream_ctxt->state == ElaStreamState_connected);
-    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_connecting));
+    TEST_ASSERT_TRUE(stream_ctxt->state == CarrierStreamState_connecting ||
+                     stream_ctxt->state == CarrierStreamState_connected);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << CarrierStreamState_connecting));
 
     //TODO: need to replace with check_state_cb.
-    rc = ela_stream_get_state(sctxt->session, stream_ctxt->stream_id, &cur_state);
+    rc = carrier_stream_get_state(sctxt->session, stream_ctxt->stream_id, &cur_state);
     TEST_ASSERT_TRUE(rc == 0);
-    TEST_ASSERT_TRUE(cur_state == ElaStreamState_connecting ||
-                     cur_state == ElaStreamState_connected);
+    TEST_ASSERT_TRUE(cur_state == CarrierStreamState_connecting ||
+                     cur_state == CarrierStreamState_connected);
 
     rc = read_ack("%32s %32s", cmd, result);
     TEST_ASSERT_TRUE(rc == 2);
@@ -305,32 +305,32 @@ void test_stream_state_scheme(int stream_options, TestContext *context,
     TEST_ASSERT_TRUE(strcmp(result, "success") == 0);
 
     cond_wait(&stream_cond);
-    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_connected);
-    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_connected));
+    TEST_ASSERT_TRUE(stream_ctxt->state == CarrierStreamState_connected);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << CarrierStreamState_connected));
 
-    rc = check_state_cb(context, ElaStreamState_connected);
+    rc = check_state_cb(context, CarrierStreamState_connected);
     TEST_ASSERT_TRUE(rc == 0);
 
-    rc = ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+    rc = carrier_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
     TEST_ASSERT_TRUE(rc == 0);
     stream_ctxt->stream_id = -1;
 
     cond_wait(stream_ctxt->cond);
-    TEST_ASSERT_TRUE(stream_ctxt->state == ElaStreamState_closed);
-    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << ElaStreamState_closed));
+    TEST_ASSERT_TRUE(stream_ctxt->state == CarrierStreamState_closed);
+    TEST_ASSERT_TRUE(stream_ctxt->state_bits & (1 << CarrierStreamState_closed));
 
 cleanup:
     if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        carrier_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
         stream_ctxt->stream_id = -1;
     }
 
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        carrier_session_close(sctxt->session);
         sctxt->session = NULL;
     }
 
-    ela_session_cleanup(wctxt->carrier);
+    carrier_session_cleanup(wctxt->carrier);
     robot_sfree();
 }
 
@@ -349,7 +349,7 @@ static void test_normal_stream_state(void)
 static void test_plain_stream_state(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_PLAIN;
 
     test_stream_state(stream_options);
 }
@@ -357,7 +357,7 @@ static void test_plain_stream_state(void)
 static void test_reliable_stream_state(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_RELIABLE;
 
     test_stream_state(stream_options);
 }
@@ -366,8 +366,8 @@ static void test_plain_reliable_stream_state(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_RELIABLE;
 
     test_stream_state(stream_options);
 }
@@ -375,7 +375,7 @@ static void test_plain_reliable_stream_state(void)
 static void test_multiplexing_stream_state(void)
 {
     int stream_options = 0;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
 
     test_stream_state(stream_options);
 }
@@ -384,8 +384,8 @@ static void test_plain_multiplexing_stream_state(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
 
     test_stream_state(stream_options);
 }
@@ -394,8 +394,8 @@ static void test_reliable_multiplexing_stream_state(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
 
     test_stream_state(stream_options);
 }
@@ -404,9 +404,9 @@ static void test_plain_reliable_multiplexing_stream_state(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
 
     test_stream_state(stream_options);
 }
@@ -415,10 +415,10 @@ static void test_reliable_portforwarding_stream_state(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_PORT_FORWARDING;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_PORT_FORWARDING;
 
     test_stream_state(stream_options);
 }
@@ -427,10 +427,10 @@ static void test_plain_reliable_portforwarding_stream_state(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_PORT_FORWARDING;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_PORT_FORWARDING;
 
     test_stream_state(stream_options);
 }

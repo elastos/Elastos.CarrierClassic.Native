@@ -18,7 +18,7 @@ add_submodule(elafile
     DIRECTORY file
     DEPENDS ${DEPEND_MODULES} carrier-filetransfer)
 
-# add_submodule(fileonce
+#add_submodule(fileonce
 #     DIRECTORY fileonce
 #     DEPENDS ${DEPEND_MODULES} carrier-filetransfer)
 

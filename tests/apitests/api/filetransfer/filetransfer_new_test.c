@@ -25,7 +25,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
+#include <carrier.h>
 #include "carrier_filetransfer.h"
 
 #include "config.h"
@@ -37,23 +37,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -62,7 +62,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -112,94 +112,94 @@ static void test_filetransfer_init(void)
     CarrierContext *wctxt = test_context.carrier;
     int rc;
 
-    rc = ela_filetransfer_init(wctxt->carrier, NULL, NULL);
+    rc = carrier_filetransfer_init(wctxt->carrier, NULL, NULL);
     CU_ASSERT_EQUAL(rc, 0);
 
-    ela_filetransfer_cleanup(wctxt->carrier);
+    carrier_filetransfer_cleanup(wctxt->carrier);
 }
 
 static void test_filetransfer_new(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    ElaFileTransferInfo ft_info = {0};
-    ElaFileTransferCallbacks ft_cbs = {0};
+    CarrierFileTransferInfo ft_info = {0};
+    CarrierFileTransferCallbacks ft_cbs = {0};
     int rc;
 
     test_context.context_reset(&test_context);
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_filetransfer_init(wctxt->carrier, NULL, NULL);
+    rc = carrier_filetransfer_init(wctxt->carrier, NULL, NULL);
     CU_ASSERT_EQUAL(rc, 0);
 
     wctxt->ft_cbs = &ft_cbs;
-    wctxt->ft = ela_filetransfer_new(wctxt->carrier, robotid, NULL,
+    wctxt->ft = carrier_filetransfer_new(wctxt->carrier, robotid, NULL,
                                      wctxt->ft_cbs, NULL);
     CU_ASSERT_PTR_NOT_NULL(wctxt->ft);
-    ela_filetransfer_close(wctxt->ft);
+    carrier_filetransfer_close(wctxt->ft);
 
     strcpy(ft_info.filename, "test-file-name");
     ft_info.size = 1;
     wctxt->ft_info = &ft_info;
-    wctxt->ft = ela_filetransfer_new(wctxt->carrier, robotid, wctxt->ft_info,
+    wctxt->ft = carrier_filetransfer_new(wctxt->carrier, robotid, wctxt->ft_info,
                                      wctxt->ft_cbs, NULL);
     CU_ASSERT_PTR_NOT_NULL(wctxt->ft);
 
-    ela_filetransfer_close(wctxt->ft);
-    ela_filetransfer_cleanup(wctxt->carrier);
+    carrier_filetransfer_close(wctxt->ft);
+    carrier_filetransfer_cleanup(wctxt->carrier);
 }
 
 static void test_filetransfer_new_with_stranger(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    ElaFileTransferInfo ft_info = {0};
-    ElaFileTransferCallbacks ft_cbs = {0};
+    CarrierFileTransferInfo ft_info = {0};
+    CarrierFileTransferCallbacks ft_cbs = {0};
     int rc;
 
     test_context.context_reset(&test_context);
 
     rc = remove_friend_anyway(&test_context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_FALSE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_filetransfer_init(wctxt->carrier, NULL, NULL);
+    rc = carrier_filetransfer_init(wctxt->carrier, NULL, NULL);
     CU_ASSERT_EQUAL(rc, 0);
 
     strcpy(ft_info.filename, "test-file-name");
     ft_info.size = 1;
     wctxt->ft_info = &ft_info;
     wctxt->ft_cbs = &ft_cbs;
-    wctxt->ft = ela_filetransfer_new(wctxt->carrier, robotid, wctxt->ft_info,
+    wctxt->ft = carrier_filetransfer_new(wctxt->carrier, robotid, wctxt->ft_info,
                                      wctxt->ft_cbs, NULL);
     CU_ASSERT_EQUAL(wctxt->ft, NULL);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
 
-    ela_filetransfer_cleanup(wctxt->carrier);
+    carrier_filetransfer_cleanup(wctxt->carrier);
 }
 
 static void test_filetransfer_new_without_initializing(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    ElaFileTransferInfo ft_info = {0};
-    ElaFileTransferCallbacks ft_cbs = {0};
+    CarrierFileTransferInfo ft_info = {0};
+    CarrierFileTransferCallbacks ft_cbs = {0};
     int rc;
 
     test_context.context_reset(&test_context);
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     strcpy(ft_info.filename, "test-file-name");
     ft_info.size = 1;
     wctxt->ft_info = &ft_info;
     wctxt->ft_cbs = &ft_cbs;
-    wctxt->ft = ela_filetransfer_new(wctxt->carrier, robotid, wctxt->ft_info,
+    wctxt->ft = carrier_filetransfer_new(wctxt->carrier, robotid, wctxt->ft_info,
                                      wctxt->ft_cbs, NULL);
     CU_ASSERT_EQUAL(wctxt->ft, NULL);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
 }
 
 static CU_TestInfo cases[] = {

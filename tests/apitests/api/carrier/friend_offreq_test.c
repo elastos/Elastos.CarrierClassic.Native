@@ -31,19 +31,19 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
+#include <carrier.h>
 
 #include "cond.h"
 #include "test_helper.h"
 
 struct CarrierContextExtra {
     char* from;
-    ElaConnectionStatus connection_status;
+    CarrierConnectionStatus connection_status;
 };
 
 static CarrierContextExtra extra = {
     .from = NULL,
-    .connection_status = ElaConnectionStatus_Disconnected
+    .connection_status = CarrierConnectionStatus_Disconnected
 };
 
 static inline void wakeup(void* context)
@@ -51,26 +51,26 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
 static
-void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
     vlogD("Friend %s added.", info->user_info.userid);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
     vlogD("Friend %s removed.\n", friendid);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -95,7 +95,7 @@ static void kill_node()
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -141,7 +141,7 @@ static void test_send_offline_friend_request(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
     char prefix[32] = {0};
     char hello[32] = {0};
     char buf[2][64] = {0};
@@ -151,7 +151,7 @@ static void test_send_offline_friend_request(void)
 
     rc = remove_friend_anyway(&test_context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_FALSE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     kill_node();
 
@@ -165,11 +165,11 @@ static void test_send_offline_friend_request(void)
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 
     sprintf(hello, "%s:greeting", prefix);
-    rc = ela_add_friend(wctxt->carrier, robotaddr, hello);
+    rc = carrier_add_friend(wctxt->carrier, robotaddr, hello);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     // wait for friend_added() callback to be invoked.
     cond_wait(wctxt->cond);
-    CU_ASSERT_TRUE(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE(carrier_is_friend(wctxt->carrier, robotid));
 
     rc = write_cmd("restartnode %d\n", 900);
     CU_ASSERT_FATAL(rc > 0);
@@ -189,13 +189,13 @@ static void test_send_offline_friend_request(void)
     CU_ASSERT_STRING_EQUAL(buf[0], "ready");
 
     // tell robot to accept ourself as friend as long as robot is ready.
-    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     rc = write_cmd("faccept %s\n", userid);
     CU_ASSERT_FATAL(rc > 0);
 
     // wait for friend connection (online) callback to be invoked.
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                     robotid, ElaConnectionStatus_Connected);
+                     robotid, CarrierConnectionStatus_Connected);
 
     rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL_FATAL(rc, 2);

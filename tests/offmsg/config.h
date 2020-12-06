@@ -28,7 +28,7 @@
 #include <carrier.h>
 
 typedef struct TestConfig {
-    ElaOptions shared_options;
+    CarrierOptions shared_options;
     int sender_log_level;
     int receiver_log_level;
 } TestConfig;

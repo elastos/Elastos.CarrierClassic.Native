@@ -29,16 +29,16 @@
 #include <crystal.h>
 #include <CUnit/Basic.h>
 
-#include "carrier.h"
+#include <carrier.h>
 #include "cond.h"
 #include "test_helper.h"
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -78,33 +78,33 @@ static TestContext test_context = {
 static void test_new_group(void)
 {
     CarrierContext *wctx = test_context.carrier;
-    char groupid[ELA_MAX_ID_LEN + 1] = {0};
+    char groupid[CARRIER_MAX_ID_LEN + 1] = {0};
     int rc;
 
-    rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
+    rc = carrier_new_group(wctx->carrier, groupid, sizeof(groupid));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_FATAL(strlen(groupid) > 0);
 
-    rc = ela_leave_group(wctx->carrier, groupid);
+    rc = carrier_leave_group(wctx->carrier, groupid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 }
 
 static void test_leave_group_twice(void)
 {
     CarrierContext *wctx = test_context.carrier;
-    char groupid[ELA_MAX_ID_LEN + 1] = {0};
+    char groupid[CARRIER_MAX_ID_LEN + 1] = {0};
     int rc;
 
-    rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
+    rc = carrier_new_group(wctx->carrier, groupid, sizeof(groupid));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_FATAL(strlen(groupid) > 0);
 
-    rc = ela_leave_group(wctx->carrier, groupid);
+    rc = carrier_leave_group(wctx->carrier, groupid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    rc = ela_leave_group(wctx->carrier, groupid);
+    rc = carrier_leave_group(wctx->carrier, groupid);
     CU_ASSERT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
 }
 
 static CU_TestInfo cases[] = {

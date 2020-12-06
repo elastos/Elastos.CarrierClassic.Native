@@ -29,14 +29,14 @@
 extern "C" {
 #endif
 
-typedef struct ElaStream ElaStream;
+typedef struct CarrierStream CarrierStream;
 typedef struct StreamHandler StreamHandler;
 typedef struct FlexBuffer FlexBuffer;
 
 struct StreamHandler {
     const char *name;
 
-    ElaStream *stream;
+    CarrierStream *stream;
 
     StreamHandler *prev;
     StreamHandler *next;
@@ -115,9 +115,9 @@ void default_handler_on_state_changed(StreamHandler *handler, int state)
     handler->prev->on_state_changed(handler->prev, state);
 }
 
-int crypto_handler_create(ElaStream *s, StreamHandler **handler);
+int crypto_handler_create(CarrierStream *s, StreamHandler **handler);
 
-int reliable_handler_create(ElaStream *s, StreamHandler **handler);
+int reliable_handler_create(CarrierStream *s, StreamHandler **handler);
 
 #ifdef __cplusplus
 }

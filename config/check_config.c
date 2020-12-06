@@ -43,7 +43,7 @@ static const char *default_config_files[] = {
     NULL
 };
 
-static void print_options(ElaOptions *options)
+static void print_options(CarrierOptions *options)
 {
     size_t i;
 
@@ -86,7 +86,7 @@ static void usage(void)
 
 int main(int argc, char *argv[])
 {
-    ElaOptions options;
+    CarrierOptions options;
     const char *config_file = NULL;
 
     int opt;

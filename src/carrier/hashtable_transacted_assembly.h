@@ -29,8 +29,8 @@
 #include "carrier_impl.h"
 
 typedef struct TransactedAssembly {
-    char ext[ELA_MAX_EXTENSION_NAME_LEN + 1];
-    char friendid[ELA_MAX_ID_LEN + 1];
+    char ext[CARRIER_MAX_EXTENSION_NAME_LEN + 1];
+    char friendid[CARRIER_MAX_ID_LEN + 1];
     int64_t tid;
     char *bundle;
     char *reason;

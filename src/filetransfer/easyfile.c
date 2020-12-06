@@ -45,6 +45,7 @@
 #include <crystal.h>
 
 #include <carrier.h>
+#include <carrier_error.h>
 #include <carrier_session.h>
 #include "carrier_filetransfer.h"
 #include "carrier_easyfile.h"
@@ -53,7 +54,7 @@
 #define TMP_EXTENSION  ".ft~part"
 
 static
-void notify_state_changed_cb(ElaFileTransfer *ft, FileTransferConnection state,
+void notify_state_changed_cb(CarrierFileTransfer *ft, FileTransferConnection state,
                              void *context)
 {
     EasyFile *file = (EasyFile *)context;
@@ -76,7 +77,7 @@ void notify_state_changed_cb(ElaFileTransfer *ft, FileTransferConnection state,
 }
 
 static
-void notify_file_cb(ElaFileTransfer *ft, const char *fileid,
+void notify_file_cb(CarrierFileTransfer *ft, const char *fileid,
                     const char *filename, uint64_t size, void *context)
 {
     EasyFile *file = (EasyFile *)context;
@@ -94,22 +95,22 @@ void notify_file_cb(ElaFileTransfer *ft, const char *fileid,
     if (file->filesz <= file->offset) {
         vlogE(TAG "filetransfer pulling %s error, file already exists.", fileid);
         file->sys_errno = EINVAL;
-        ela_filetransfer_cancel(ft, fileid, file->sys_errno, strerror(file->sys_errno));
+        carrier_filetransfer_cancel(ft, fileid, file->sys_errno, strerror(file->sys_errno));
         return;
     }
 
-    rc = ela_filetransfer_pull(ft, fileid, file->offset);
+    rc = carrier_filetransfer_pull(ft, fileid, file->offset);
     if (rc < 0) {
-        vlogE(TAG "filetransfer pulling %s error (0x%x).", fileid, ela_get_error());
-        file->carrier_errno = ela_get_error();
-        ela_filetransfer_close(ft);
+        vlogE(TAG "filetransfer pulling %s error (0x%x).", fileid, carrier_get_error());
+        file->carrier_errno = carrier_get_error();
+        carrier_filetransfer_close(ft);
     }
 }
 
 static void *sending_file_routine(void *args)
 {
     EasyFile *file = (EasyFile *)args;
-    uint8_t buf[ELA_MAX_USER_DATA_LEN];
+    uint8_t buf[CARRIER_MAX_USER_DATA_LEN];
     uint64_t offset = file->offset;
     size_t send_len;
     int rc;
@@ -119,29 +120,29 @@ static void *sending_file_routine(void *args)
         vlogE(TAG "seeking file %s to offset %llu error (%d).", file->fileid,
               offset, errno);
         file->sys_errno = errno;
-        ela_filetransfer_close(file->ft);
+        carrier_filetransfer_close(file->ft);
         return NULL;
     }
 
     do {
         send_len = (size_t)(file->filesz - offset);
-        if (send_len > ELA_MAX_USER_DATA_LEN)
-            send_len = ELA_MAX_USER_DATA_LEN;
+        if (send_len > CARRIER_MAX_USER_DATA_LEN)
+            send_len = CARRIER_MAX_USER_DATA_LEN;
 
         rc = fread(buf, send_len, 1, file->fp);
         if (rc < 0)  {
             vlogE(TAG "reading local file error (%d).", errno);
             file->sys_errno = errno;
-            ela_filetransfer_close(file->ft);
+            carrier_filetransfer_close(file->ft);
             break;
         }
 
-        rc = ela_filetransfer_send(file->ft, file->fileid, buf, send_len);
+        rc = carrier_filetransfer_send(file->ft, file->fileid, buf, send_len);
         if (rc < 0) {
             vlogE(TAG "filetransfer sending %s data error (0x%x).",
-                  file->fileid, ela_get_error());
-            file->carrier_errno = ela_get_error();
-            ela_filetransfer_close(file->ft);
+                  file->fileid, carrier_get_error());
+            file->carrier_errno = carrier_get_error();
+            carrier_filetransfer_close(file->ft);
             break;
         }
 
@@ -155,7 +156,7 @@ static void *sending_file_routine(void *args)
 }
 
 static
-void notify_pull_cb(ElaFileTransfer *ft, const char *fileid, uint64_t offset,
+void notify_pull_cb(CarrierFileTransfer *ft, const char *fileid, uint64_t offset,
                     void *context)
 {
     EasyFile *file = (EasyFile *)context;
@@ -171,7 +172,7 @@ void notify_pull_cb(ElaFileTransfer *ft, const char *fileid, uint64_t offset,
     if (offset >= file->filesz) {
         vlogE(TAG "invalid filetransfer offset %llu to pull.", offset);
         file->sys_errno = ERANGE;
-        ela_filetransfer_close(ft);
+        carrier_filetransfer_close(ft);
         return;
     }
 
@@ -183,7 +184,7 @@ void notify_pull_cb(ElaFileTransfer *ft, const char *fileid, uint64_t offset,
 }
 
 static
-bool notify_data_cb(ElaFileTransfer *ft, const char *fileid, const uint8_t *data,
+bool notify_data_cb(CarrierFileTransfer *ft, const char *fileid, const uint8_t *data,
                     size_t length, void *context)
 {
     EasyFile *file = (EasyFile *)context;
@@ -199,7 +200,7 @@ bool notify_data_cb(ElaFileTransfer *ft, const char *fileid, const uint8_t *data
     if (rc < 0) {
         vlogE(TAG "writing data to file %s error (%d).", file->fileid, errno);
         file->sys_errno = errno;
-        ela_filetransfer_cancel(ft, fileid, file->sys_errno,
+        carrier_filetransfer_cancel(ft, fileid, file->sys_errno,
                                 strerror(file->sys_errno));
         return true;
     }
@@ -209,7 +210,7 @@ bool notify_data_cb(ElaFileTransfer *ft, const char *fileid, const uint8_t *data
     if (file->offset > file->filesz) {
         vlogE(TAG "received excessive data.", file->fileid);
         file->sys_errno = ERANGE;
-        ela_filetransfer_cancel(ft, fileid, file->sys_errno,
+        carrier_filetransfer_cancel(ft, fileid, file->sys_errno,
                                 strerror(file->sys_errno));
         return true;
     } else {
@@ -223,7 +224,7 @@ bool notify_data_cb(ElaFileTransfer *ft, const char *fileid, const uint8_t *data
             strcat(tmp, TMP_EXTENSION);
             rename(tmp, file->filename);
 
-            ela_filetransfer_close(file->ft);
+            carrier_filetransfer_close(file->ft);
         }
 
         if (file->callbacks.received)
@@ -231,14 +232,14 @@ bool notify_data_cb(ElaFileTransfer *ft, const char *fileid, const uint8_t *data
 
         /*
          * a hack for preventing multiplexer from notifying about channel
-         * close when ela_filetransfer_close() has been called. (TODO)
+         * close when carrier_filetransfer_close() has been called. (TODO)
          */
         return true;
     }
 }
 
 static
-void notify_cancel_cb(ElaFileTransfer *ft, const char *fileid, int status,
+void notify_cancel_cb(CarrierFileTransfer *ft, const char *fileid, int status,
                       const char *reason, void *context)
 {
     EasyFile *file = (EasyFile *)context;
@@ -246,7 +247,7 @@ void notify_cancel_cb(ElaFileTransfer *ft, const char *fileid, int status,
     vlogD("Received cancel event for %s with status %d and reason: %s",
           fileid, status, reason);
 
-    ela_filetransfer_close(file->ft);
+    carrier_filetransfer_close(file->ft);
 }
 
 static void easyfile_destroy(void *p)
@@ -255,7 +256,7 @@ static void easyfile_destroy(void *p)
 
 #if 0
     if (file->ft) {
-        ela_filetransfer_close(file->ft);
+        carrier_filetransfer_close(file->ft);
         file->ft = NULL;
     }
 #endif
@@ -266,54 +267,54 @@ static void easyfile_destroy(void *p)
     }
 }
 
-int ela_file_send(ElaCarrier *w, const char *address, const char *filename,
-                  ElaFileProgressCallbacks *callbacks, void *context)
+int carrier_file_send(Carrier *w, const char *address, const char *filename,
+                  CarrierFileProgressCallbacks *callbacks, void *context)
 {
     EasyFile *file;
-    ElaFileTransferInfo fi;
-    ElaFileTransferCallbacks cbs;
+    CarrierFileTransferInfo fi;
+    CarrierFileTransferCallbacks cbs;
     struct stat st;
     char path[PATH_MAX] = {0};
     char *p;
     int rc;
 
     if (!w || !address || !*address || !filename || !*filename || !callbacks) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     p = realpath(filename, path);
     if (!p) {
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         return -1;
     }
 
     p = basename(path);
     if (!p) {
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         return -1;
     }
 
-    if (strlen(p) > ELA_MAX_FILE_NAME_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (strlen(p) > CARRIER_MAX_FILE_NAME_LEN) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     rc = stat(path, &st);
     if (rc < 0) {
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         return -1;
     }
 
     file = (EasyFile *)rc_zalloc(sizeof(*file), easyfile_destroy);
     if (!file) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return -1;
     }
 
     file->fp = fopen(path, "rb");
     if (!file->fp) {
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         deref(file);
         return -1;
     }
@@ -332,53 +333,53 @@ int ela_file_send(ElaCarrier *w, const char *address, const char *filename,
     cbs.pull = notify_pull_cb;
     cbs.cancel = notify_cancel_cb;
 
-    file->ft = ela_filetransfer_new(w, address, &fi, &cbs, file);
+    file->ft = carrier_filetransfer_new(w, address, &fi, &cbs, file);
     if (!file->ft) {
         vlogE(TAG "creating filetransfer instance with info[%s] error (0x%x).",
-              fi.filename, ela_get_error());
+              fi.filename, carrier_get_error());
         deref(file);
         return -1;
     }
 
-    rc = ela_filetransfer_connect(file->ft);
+    rc = carrier_filetransfer_connect(file->ft);
     if (rc < 0) {
         vlogE(TAG "filetransfer connecting to %s error (0x%x).", address,
-              ela_get_error());
-        ela_filetransfer_close(file->ft);
+              carrier_get_error());
+        carrier_filetransfer_close(file->ft);
         deref(file);
     }
 
     return rc;
 }
 
-int ela_file_recv(ElaCarrier *w, const char *address, const char *filename,
-                  ElaFileProgressCallbacks *callbacks, void *context)
+int carrier_file_recv(Carrier *w, const char *address, const char *filename,
+                  CarrierFileProgressCallbacks *callbacks, void *context)
 {
     EasyFile *file;
-    ElaFileTransferCallbacks cbs;
+    CarrierFileTransferCallbacks cbs;
     struct stat st;
     char path[PATH_MAX] = {0};
     char *p;
     int rc;
 
     if (!w || !address || !*address || !filename || !*filename || !callbacks) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     p = realpath(filename, path);
     if (p) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_ALREADY_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_ALREADY_EXIST));
         return -1;
     }
 
     if (!p && errno != ENOENT) {
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         return -1;
     }
 
     if (strlen(path) + strlen(TMP_EXTENSION) >= PATH_MAX) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
@@ -386,13 +387,13 @@ int ela_file_recv(ElaCarrier *w, const char *address, const char *filename,
     memset(&st, 0, sizeof(st));
     rc = stat(path, &st);
     if (rc < 0 && errno != ENOENT) {
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         return -1;
     }
 
     file = (EasyFile *)rc_zalloc(sizeof(*file), easyfile_destroy);
     if (!file) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return -1;
     }
 
@@ -403,7 +404,7 @@ int ela_file_recv(ElaCarrier *w, const char *address, const char *filename,
     strncpy(file->filename, path, strrchr(path, '.') - path);
     file->fp = fopen(path, "ab");
     if (!file->fp) {
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         deref(file);
         return -1;
     }
@@ -413,19 +414,19 @@ int ela_file_recv(ElaCarrier *w, const char *address, const char *filename,
     cbs.file = notify_file_cb;
     cbs.data = notify_data_cb;
 
-    file->ft = ela_filetransfer_new(w, address, NULL, &cbs, file);
+    file->ft = carrier_filetransfer_new(w, address, NULL, &cbs, file);
     if (!file->ft) {
         vlogE(TAG "creating filetransfer instance to %s error (0x%x).",
-              address, ela_get_error());
+              address, carrier_get_error());
         deref(file);
         return -1;
     }
 
-    rc = ela_filetransfer_accept_connect(file->ft);
+    rc = carrier_filetransfer_accept_connect(file->ft);
     if (rc < 0) {
         vlogE(TAG "accepting filletransfer connection from %s error (0x%x).",
-              address, ela_get_error());
-        ela_filetransfer_close(file->ft);
+              address, carrier_get_error());
+        carrier_filetransfer_close(file->ft);
         deref(file);
     }
 

@@ -45,8 +45,8 @@
 extern "C" {
 #endif
 
-#define ELA_MAX_TRANSFERFILE_COUNT      5
-#define ELA_MAX_EXTENSION_NAME_LEN      31
+#define CARRIER_MAX_TRANSFERFILE_COUNT      5
+#define CARRIER_MAX_EXTENSION_NAME_LEN      31
 
 #define SENDER                          1
 #define RECEIVER                        2
@@ -60,10 +60,10 @@ typedef struct FileTransferItem         FileTransferItem;
 struct FileTransferExt {
     CarrierExtension        base;
 
-    ElaFileTransferConnectCallback *connect_callback;
+    CarrierFileTransferConnectCallback *connect_callback;
     void                    *connect_context;
 
-    ElaStreamCallbacks      stream_callbacks;
+    CarrierStreamCallbacks  stream_callbacks;
     hashtable_t             *filereqs;
 };
 
@@ -75,7 +75,7 @@ enum {
 };
 
 struct FileTransferItem {
-    char fileid[ELA_MAX_FILE_ID_LEN + 1];
+    char fileid[CARRIER_MAX_FILE_ID_LEN + 1];
     char *filename;
     uint64_t filesz;
 
@@ -84,18 +84,18 @@ struct FileTransferItem {
     int channel;
 };
 
-struct ElaFileTransfer {
+struct CarrierFileTransfer {
     FileTransferExt         *ext;
 
-    char                    address[ELA_MAX_EXTENSION_NAME_LEN + ELA_MAX_ID_LEN + 2];
-    FileTransferItem        files[ELA_MAX_TRANSFERFILE_COUNT];
+    char                    address[CARRIER_MAX_EXTENSION_NAME_LEN + CARRIER_MAX_ID_LEN + 2];
+    FileTransferItem        files[CARRIER_MAX_TRANSFERFILE_COUNT];
 
-    ElaSession              *session;
+    CarrierSession          *session;
     int                     stream;
     int                     error;
-    int                     state;  //ElaFileTransferConnection.
+    int                     state;  //CarrierFileTransferConnection.
 
-    ElaFileTransferCallbacks   callbacks;
+    CarrierFileTransferCallbacks   callbacks;
     void                    *callbacks_context;
 
     char                    *sdp;
@@ -103,7 +103,7 @@ struct ElaFileTransfer {
 
     int                     sender_receiver;    // 1: sender. 0: receiver.
 
-    ElaStreamCallbacks      *stream_callbacks;
+    CarrierStreamCallbacks  *stream_callbacks;
 
     bool                    ready_to_connect;
 };
@@ -111,7 +111,7 @@ struct ElaFileTransfer {
 #define item_counts(ft) ((int)(sizeof(ft->files) / sizeof(FileTransferItem)))
 
 static inline
-FileTransferItem *get_fileinfo_free(ElaFileTransfer *ft)
+FileTransferItem *get_fileinfo_free(CarrierFileTransfer *ft)
 {
     size_t i;
     for (i = 0; i < item_counts(ft); i++) {
@@ -123,7 +123,7 @@ FileTransferItem *get_fileinfo_free(ElaFileTransfer *ft)
 }
 
 static inline
-FileTransferItem *get_fileinfo_channel(ElaFileTransfer *ft, int channel)
+FileTransferItem *get_fileinfo_channel(CarrierFileTransfer *ft, int channel)
 {
     size_t i;
     for (i = 0; i < item_counts(ft); i++) {
@@ -135,7 +135,7 @@ FileTransferItem *get_fileinfo_channel(ElaFileTransfer *ft, int channel)
 }
 
 static inline
-FileTransferItem *get_fileinfo_fileid(ElaFileTransfer *ft, const char *fileid)
+FileTransferItem *get_fileinfo_fileid(CarrierFileTransfer *ft, const char *fileid)
 {
     size_t i;
     for (i = 0; i < item_counts(ft); i++) {
@@ -147,7 +147,7 @@ FileTransferItem *get_fileinfo_fileid(ElaFileTransfer *ft, const char *fileid)
 }
 
 static inline
-FileTransferItem *get_fileinfo_name(ElaFileTransfer *ft, const char *filename)
+FileTransferItem *get_fileinfo_name(CarrierFileTransfer *ft, const char *filename)
 {
     size_t i;
     for (i = 0; i < item_counts(ft); i++) {

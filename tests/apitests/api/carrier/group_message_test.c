@@ -29,7 +29,7 @@
 #include <crystal.h>
 #include <CUnit/Basic.h>
 
-#include "carrier.h"
+#include <carrier.h>
 #include "cond.h"
 #include "test_helper.h"
 
@@ -50,23 +50,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -75,7 +75,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
+static void peer_list_changed_cb(Carrier *carrier, const char *groupid,
                                  void *context)
 {
     CarrierContext *wctx = (CarrierContext *)context;
@@ -86,7 +86,7 @@ static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
     cond_signal(wctx->group_cond);
 }
 
-static void group_message_cb(ElaCarrier *carrier, const char *groupid, const char *from,
+static void group_message_cb(Carrier *carrier, const char *groupid, const char *from,
                              const void *message, size_t length, void *context)
 {
     CarrierContext *wctx = (CarrierContext *)context;
@@ -99,7 +99,7 @@ static void group_message_cb(ElaCarrier *carrier, const char *groupid, const cha
     cond_signal(wctx->group_cond);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -156,13 +156,13 @@ static int group_message_routine(TestContext *ctx)
 {
     CarrierContext *wctx = test_context.carrier;
     CarrierContextExtra *extra = wctx->extra;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
     const char *msg = "hello";
     char cmd[32] = {0};
     char result[32] = {0};
     int rc;
 
-    rc = ela_group_send_message(wctx->carrier, wctx->groupid,
+    rc = carrier_group_send_message(wctx->carrier, wctx->groupid,
                                 msg, strlen(msg));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
@@ -173,7 +173,7 @@ static int group_message_routine(TestContext *ctx)
     CU_ASSERT_TRUE_FATAL(strncmp(result, msg, strlen(msg)) == 0);
 
     cond_wait(wctx->group_cond);
-    ela_get_userid(wctx->carrier, userid, sizeof(userid));
+    carrier_get_userid(wctx->carrier, userid, sizeof(userid));
     CU_ASSERT_TRUE_FATAL(strcmp(extra->from, userid) == 0);
     CU_ASSERT_TRUE_FATAL(strncmp(extra->msg, msg, strlen(msg)) == 0);
     CU_ASSERT_EQUAL_FATAL(extra->msglen, strlen(msg));
@@ -187,14 +187,14 @@ static int persistent_group_message_routine(TestContext *ctx)
 {
     CarrierContext *wctx = test_context.carrier;
     CarrierContextExtra *extra = wctx->extra;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
     const char *msg = "hello";
     char cmd[32] = {0};
     char result[32] = {0};
     char buf[2][32] = {0};
     char ack[128] = {0};
-    char robot_id[ELA_MAX_ID_LEN + 1] = {0};
-    char robot_addr[ELA_MAX_ADDRESS_LEN + 1] = {0};
+    char robot_id[CARRIER_MAX_ID_LEN + 1] = {0};
+    char robot_addr[CARRIER_MAX_ADDRESS_LEN + 1] = {0};
     int rc;
 
     rc = write_cmd("killnode\n");
@@ -208,7 +208,7 @@ static int persistent_group_message_routine(TestContext *ctx)
     // wait until peer_list_changed callback invoked
     cond_wait(wctx->group_cond);
     status_cond_wait(wctx->friend_status_cond, wctx->carrier,
-                     robotid, ElaConnectionStatus_Disconnected);
+                     robotid, CarrierConnectionStatus_Disconnected);
 
     write_cmd("restartnode\n");
 
@@ -218,13 +218,13 @@ static int persistent_group_message_routine(TestContext *ctx)
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 
     status_cond_wait(wctx->friend_status_cond, wctx->carrier,
-                     robotid, ElaConnectionStatus_Connected);
+                     robotid, CarrierConnectionStatus_Connected);
 
     // wait until peer_list_changed callback invoked
     cond_wait(wctx->group_cond);
     sleep(1);
 
-    rc = ela_group_send_message(wctx->carrier, wctx->groupid,
+    rc = carrier_group_send_message(wctx->carrier, wctx->groupid,
                                 msg, strlen(msg));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
@@ -236,7 +236,7 @@ static int persistent_group_message_routine(TestContext *ctx)
 
 #if 0
     cond_wait(wctx->group_cond);
-    ela_get_userid(wctx->carrier, userid, sizeof(userid));
+    carrier_get_userid(wctx->carrier, userid, sizeof(userid));
     CU_ASSERT_TRUE_FATAL(strcmp(extra->from, userid) == 0);
     CU_ASSERT_TRUE_FATAL(strncmp(extra->msg, msg, strlen(msg)) == 0);
     CU_ASSERT_EQUAL_FATAL(extra->msglen, strlen(msg));
@@ -262,18 +262,18 @@ static void test_persistent_group_message(void)
 static void test_group_message_to_myself(void)
 {
     CarrierContext *wctx = test_context.carrier;
-    char groupid[ELA_MAX_ID_LEN + 1] = {0};
+    char groupid[CARRIER_MAX_ID_LEN + 1] = {0};
     int rc;
 
-    rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
+    rc = carrier_new_group(wctx->carrier, groupid, sizeof(groupid));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_FATAL(strlen(groupid) > 0);
 
-    rc = ela_group_send_message(wctx->carrier, groupid, "hello",
+    rc = carrier_group_send_message(wctx->carrier, groupid, "hello",
                                 strlen("hello"));
     CU_ASSERT_EQUAL_FATAL(rc, -1);
 
-    rc = ela_leave_group(wctx->carrier, groupid);
+    rc = carrier_leave_group(wctx->carrier, groupid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 }
 

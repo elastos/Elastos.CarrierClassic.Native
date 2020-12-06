@@ -97,7 +97,7 @@
 
 #define DHT_MSG_EXPIRE_TIME               (60) //60s.
 
-const char* ela_get_version(void)
+const char* carrier_get_version(void)
 {
     return carrier_version;
 }
@@ -111,10 +111,10 @@ static bool is_valid_key(const char *key)
     return len == DHT_PUBLIC_KEY_SIZE;
 }
 
-bool ela_id_is_valid(const char *id)
+bool carrier_id_is_valid(const char *id)
 {
     if (!id || !*id) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return false;
     }
 
@@ -150,45 +150,45 @@ static bool is_valid_address(const char *address)
     return checksum == check;
 }
 
-bool ela_address_is_valid(const char *address)
+bool carrier_address_is_valid(const char *address)
 {
     if (!address || !*address) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return false;
     }
 
     return is_valid_address(address);
 }
 
-char *ela_get_id_by_address(const char *address, char *userid, size_t len)
+char *carrier_get_id_by_address(const char *address, char *userid, size_t len)
 {
     uint8_t addr[DHT_ADDRESS_SIZE];
     ssize_t addr_len;
     char *ret_userid;
-    size_t userid_len = ELA_MAX_ID_LEN + 1;
+    size_t userid_len = CARRIER_MAX_ID_LEN + 1;
 
-    if (len <= ELA_MAX_ID_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (len <= CARRIER_MAX_ID_LEN) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return NULL;
     }
 
     addr_len = base58_decode(address, strlen(address), addr, sizeof(addr));
     if (addr_len != DHT_ADDRESS_SIZE) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return NULL;
     }
 
     memset(userid, 0, len);
     ret_userid = base58_encode(addr, DHT_PUBLIC_KEY_SIZE, userid, &userid_len);
     if (ret_userid == NULL) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return NULL;
     }
 
     return ret_userid;
 }
 
-void ela_log_init(ElaLogLevel level, const char *log_file,
+void carrier_log_init(CarrierLogLevel level, const char *log_file,
                   void (*log_printer)(const char *format, va_list args))
 {
 #if !defined(__ANDROID__)
@@ -197,7 +197,7 @@ void ela_log_init(ElaLogLevel level, const char *log_file,
 }
 
 static
-int get_friend_number(ElaCarrier *w, const char *friendid, uint32_t *friend_number)
+int get_friend_number(Carrier *w, const char *friendid, uint32_t *friend_number)
 {
     uint8_t pk[DHT_PUBLIC_KEY_SIZE];
     ssize_t len;
@@ -210,19 +210,19 @@ int get_friend_number(ElaCarrier *w, const char *friendid, uint32_t *friend_numb
     len = base58_decode(friendid, strlen(friendid), pk, sizeof(pk));
     if (len != DHT_PUBLIC_KEY_SIZE) {
         vlogE("Carrier: friendid %s is not base58-encoded string", friendid);
-        return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        return CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS);
     }
 
     rc = dht_get_friend_number(&w->dht, pk, friend_number);
     if (rc < 0) {
         //vlogE("Carrier: friendid %s is not friend yet.", friendid);
-        return ELA_GENERAL_ERROR(ELAERR_NOT_EXIST);
+        return CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST);
     }
 
     return rc;
 }
 
-static void fill_empty_user_descr(ElaCarrier *w)
+static void fill_empty_user_descr(Carrier *w)
 {
     Packet *cp;
     uint8_t *data;
@@ -257,7 +257,7 @@ static void fill_empty_user_descr(ElaCarrier *w)
 }
 
 static
-int unpack_user_descr(const uint8_t *desc, size_t desc_len, ElaUserInfo *info,
+int unpack_user_descr(const uint8_t *desc, size_t desc_len, CarrierUserInfo *info,
                      bool *changed)
 {
     Packet *cp;
@@ -336,14 +336,14 @@ int unpack_user_descr(const uint8_t *desc, size_t desc_len, ElaUserInfo *info,
     return 0;
 }
 
-static ElaPresenceStatus normalize_presence_status(int user_status)
+static CarrierPresenceStatus normalize_presence_status(int user_status)
 {
-    if (user_status <= ElaPresenceStatus_None)
-        return ElaPresenceStatus_None;
-    if (user_status >= ElaPresenceStatus_Busy)
-        return ElaPresenceStatus_Busy;
+    if (user_status <= CarrierPresenceStatus_None)
+        return CarrierPresenceStatus_None;
+    if (user_status >= CarrierPresenceStatus_Busy)
+        return CarrierPresenceStatus_Busy;
 
-    return (ElaPresenceStatus)user_status;
+    return (CarrierPresenceStatus)user_status;
 }
 
 static void get_self_info_cb(const uint8_t *address, const uint8_t *public_key,
@@ -351,10 +351,10 @@ static void get_self_info_cb(const uint8_t *address, const uint8_t *public_key,
                              const uint8_t *desc, size_t desc_len,
                              void *context)
 {
-    ElaCarrier *w = (ElaCarrier *)context;
-    ElaUserInfo *ui = &w->me;
+    Carrier *w = (Carrier *)context;
+    CarrierUserInfo *ui = &w->me;
     size_t text_len;
-    char dht_name[ELA_MAX_USER_NAME_LEN + 1];
+    char dht_name[CARRIER_MAX_USER_NAME_LEN + 1];
     int name_len;
 
     memcpy(w->address, address, DHT_ADDRESS_SIZE);
@@ -390,9 +390,9 @@ static bool friends_iterate_cb(uint32_t friend_number,
                                const uint8_t *descr, size_t descr_len,
                                void *context)
 {
-    ElaCarrier  *w = (ElaCarrier *)context;
+    Carrier  *w = (Carrier *)context;
     FriendInfo  *fi;
-    ElaUserInfo *ui;
+    CarrierUserInfo *ui;
     size_t _len = sizeof(ui->userid);
     int rc;
 
@@ -415,7 +415,7 @@ static bool friends_iterate_cb(uint32_t friend_number,
         return false;
     }
 
-    fi->info.status = ElaConnectionStatus_Disconnected;
+    fi->info.status = CarrierConnectionStatus_Disconnected;
     fi->info.presence = normalize_presence_status(user_status);
     fi->friend_number = friend_number;
 
@@ -469,7 +469,7 @@ static int convert_old_dhtdata(const char *data_location)
     sprintf(eladata_filename, "%s/%s", data_location, old_eladata_filename);
 
     if (stat(dhtdata_filename, &st) < 0)
-        return ELA_SYS_ERROR(errno);
+        return CARRIER_SYS_ERROR(errno);
 
     dht_data_len = st.st_size;
 
@@ -482,20 +482,20 @@ static int convert_old_dhtdata(const char *data_location)
     total_len = 256 + ROUND256(dht_data_len) + ROUND256(extra_data_len);
     buf = (uint8_t *)calloc(total_len, 1);
     if (!buf)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
     pos = buf + 256;
 
     fd = open(dhtdata_filename, O_RDONLY | O_BINARY);
     if (fd < 0) {
         free(buf);
-        return ELA_SYS_ERROR(errno);
+        return CARRIER_SYS_ERROR(errno);
     }
 
     if (read(fd, pos, dht_data_len) != dht_data_len) {
         free(buf);
         close(fd);
-        return ELA_SYS_ERROR(errno);
+        return CARRIER_SYS_ERROR(errno);
     }
 
     close(fd);
@@ -585,19 +585,19 @@ write_data:
     fd = open(journal_filename, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         free(buf);
-        return ELA_SYS_ERROR(errno);
+        return CARRIER_SYS_ERROR(errno);
     }
 
     if (write(fd, buf, total_len) != total_len) {
         close(fd);
         remove(journal_filename);
-        return ELA_SYS_ERROR(errno);
+        return CARRIER_SYS_ERROR(errno);
     }
 
     if (fsync(fd) < 0) {
         close(fd);
         remove(journal_filename);
-        return ELA_SYS_ERROR(errno);
+        return CARRIER_SYS_ERROR(errno);
     }
 
     close(fd);
@@ -630,13 +630,13 @@ static int _load_persistence_data_i(const char *filename, persistence_data *data
     fd = open(filename, O_RDONLY | O_BINARY);
     if (fd < 0) {
         vlogE("Loading persistence data failed, cannot open file.");
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         return DATA_LOAD_FAILED;
     }
 
     if (fstat(fd, &st) < 0) {
         vlogW("Load persistence data failed, stat files error(%d).", errno);
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         close(fd);
         return DATA_LOAD_FAILED;
     }
@@ -649,7 +649,7 @@ static int _load_persistence_data_i(const char *filename, persistence_data *data
 
     if (read(fd, (void *)&val, sizeof(val)) != sizeof(val)) {
         vlogW("Load persistence data failed, read error(%d).", errno);
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         close(fd);
         return DATA_LOAD_FAILED;
     }
@@ -662,21 +662,21 @@ static int _load_persistence_data_i(const char *filename, persistence_data *data
 
     if (read(fd, (void *)&val, sizeof(val)) != sizeof(val)) {
         vlogW("Load persistence data failed, read error(%d).", errno);
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         close(fd);
         return DATA_LOAD_FAILED;
     }
     val = ntohl(val);
     if (val != PERSISTENCE_REVISION) {
         vlogW("Load persistence data failed, unsupported date file version.");
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_BAD_PERSISTENT_DATA));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_BAD_PERSISTENT_DATA));
         close(fd);
         return DATA_LOAD_FAILED;
     }
 
     if (read(fd, (void *)&val, sizeof(val)) != sizeof(val)) {
         vlogW("Load persistence data failed, read error(%d).", errno);
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         close(fd);
         return DATA_LOAD_FAILED;
     }
@@ -689,7 +689,7 @@ static int _load_persistence_data_i(const char *filename, persistence_data *data
 
     if (read(fd, (void *)&val, sizeof(val)) != sizeof(val)) {
         vlogW("Load persistence data failed, read error(%d).", errno);
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         close(fd);
         return DATA_LOAD_FAILED;
     }
@@ -708,7 +708,7 @@ static int _load_persistence_data_i(const char *filename, persistence_data *data
 
     if (read(fd, p_sum, sizeof(p_sum)) != sizeof(p_sum)) {
         vlogW("Load persistence data failed, read error(%d).", errno);
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         close(fd);
         return DATA_LOAD_FAILED;
     }
@@ -716,7 +716,7 @@ static int _load_persistence_data_i(const char *filename, persistence_data *data
     buf = (uint8_t *)malloc(st.st_size - 256);
     if (!buf) {
         vlogW("Load persistence data failed, out of memory.");
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         close(fd);
         return DATA_LOAD_FAILED;
     }
@@ -724,7 +724,7 @@ static int _load_persistence_data_i(const char *filename, persistence_data *data
     lseek(fd, 256, SEEK_SET);
     if (read(fd, buf, st.st_size - 256) != (st.st_size - 256)) {
         vlogW("Load persistence data failed, read error(%d).", errno);
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         close(fd);
         free(buf);
         return DATA_LOAD_FAILED;
@@ -761,7 +761,7 @@ static int load_persistence_data(const char *data_location, persistence_data *da
 
     if (access(data_location, R_OK | W_OK | X_OK) && errno != ENOENT) {
         vlogE("Failed to access data location.");
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         return DATA_LOAD_FAILED;
     }
 
@@ -770,7 +770,7 @@ static int load_persistence_data(const char *data_location, persistence_data *da
     rc = access(journal_fname, R_OK | W_OK);
     if (rc < 0 && errno != ENOENT) {
         vlogE("Failed to access data journal.");
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         return DATA_LOAD_FAILED;
     }
     journal_exists = !rc ? true : false;
@@ -780,7 +780,7 @@ static int load_persistence_data(const char *data_location, persistence_data *da
     rc = access(data_fname, R_OK | W_OK);
     if (rc < 0 && errno != ENOENT) {
         vlogE("Failed to access data file.");
-        ela_set_error(ELA_SYS_ERROR(errno));
+        carrier_set_error(CARRIER_SYS_ERROR(errno));
         return DATA_LOAD_FAILED;
     }
     data_exists = !rc ? true : false;
@@ -822,7 +822,7 @@ load_from_data_file:
     return _load_persistence_data_i(data_fname, data);
 }
 
-static void apply_extra_data(ElaCarrier *w, const uint8_t *extra_savedata, size_t extra_savedata_len)
+static void apply_extra_data(Carrier *w, const uint8_t *extra_savedata, size_t extra_savedata_len)
 {
     const uint8_t *pos = extra_savedata;
 
@@ -901,7 +901,7 @@ static int mkdirs(const char *path, mode_t mode)
     return rc;
 }
 
-static size_t get_extra_savedata_size(ElaCarrier *w)
+static size_t get_extra_savedata_size(Carrier *w)
 {
     hashtable_iterator_t it;
     size_t total_len = 0;
@@ -925,7 +925,7 @@ static size_t get_extra_savedata_size(ElaCarrier *w)
     return total_len;
 }
 
-static void get_extra_savedata(ElaCarrier *w, void *data, size_t len)
+static void get_extra_savedata(Carrier *w, void *data, size_t len)
 {
     hashtable_iterator_t it;
     uint8_t *pos = (uint8_t *)data;
@@ -967,7 +967,7 @@ static void get_extra_savedata(ElaCarrier *w, void *data, size_t len)
 #pragma warning(disable: 4267)
 #endif
 
-static int store_persistence_data(ElaCarrier *w)
+static int store_persistence_data(Carrier *w)
 {
     static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
     uint8_t *buf;
@@ -990,7 +990,7 @@ static int store_persistence_data(ElaCarrier *w)
 
     buf = (uint8_t *)calloc(total_len, 1);
     if (!buf)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
     pos = buf;
     val = htonl(PERSISTENCE_MAGIC);
@@ -1022,7 +1022,7 @@ static int store_persistence_data(ElaCarrier *w)
     if (rc < 0) {
         free(buf);
         pthread_mutex_unlock(&lock);
-        return ELA_SYS_ERROR(errno);
+        return CARRIER_SYS_ERROR(errno);
     }
 
     filename = (char *)alloca(strlen(w->pref.data_location) + strlen(data_filename) + 4);
@@ -1034,21 +1034,21 @@ static int store_persistence_data(ElaCarrier *w)
     if (fd < 0) {
         free(buf);
         pthread_mutex_unlock(&lock);
-        return ELA_SYS_ERROR(errno);
+        return CARRIER_SYS_ERROR(errno);
     }
 
     if (write(fd, buf, total_len) != total_len) {
         close(fd);
         remove(journal_filename);
         pthread_mutex_unlock(&lock);
-        return ELA_SYS_ERROR(errno);
+        return CARRIER_SYS_ERROR(errno);
     }
 
     if (fsync(fd) < 0) {
         close(fd);
         remove(journal_filename);
         pthread_mutex_unlock(&lock);
-        return ELA_SYS_ERROR(errno);
+        return CARRIER_SYS_ERROR(errno);
     }
 
     close(fd);
@@ -1066,9 +1066,9 @@ static int store_persistence_data(ElaCarrier *w)
 #pragma warning(pop)
 #endif
 
-static void ela_destroy(void *argv)
+static void carrier_destroy(void *argv)
 {
-    ElaCarrier *w = (ElaCarrier *)argv;
+    Carrier *w = (Carrier *)argv;
 
     if (w->pref.data_location)
         free(w->pref.data_location);
@@ -1128,32 +1128,32 @@ static void ela_destroy(void *argv)
     dht_kill(&w->dht);
 }
 
-static void notify_offmsg_received(ElaCarrier *w, const char *, const uint8_t *, size_t, uint64_t);
-static void notify_offreq_received(ElaCarrier *w, const char *, const uint8_t *, size_t, uint64_t);
-static void notify_offreceipt_received(ElaCarrier *w, const char *, ExpressMessageType, uint32_t, int);
-ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
-                    void *context)
+static void notify_offmsg_received(Carrier *w, const char *, const uint8_t *, size_t, uint64_t);
+static void notify_offreq_received(Carrier *w, const char *, const uint8_t *, size_t, uint64_t);
+static void notify_offreceipt_received(Carrier *w, const char *, ExpressMessageType, uint32_t, int);
+Carrier *carrier_new(const CarrierOptions *opts, CarrierCallbacks *callbacks,
+                 void *context)
 {
-    ElaCarrier *w;
+    Carrier *w;
     persistence_data data;
     int rc;
     size_t i;
 
     if (!opts) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return NULL;
     }
 
     if (!opts->persistent_location || !*opts->persistent_location) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return NULL;
     }
 
-    ela_log_init(opts->log_level, opts->log_file, opts->log_printer);
+    carrier_log_init(opts->log_level, opts->log_file, opts->log_printer);
 
-    w = (ElaCarrier *)rc_zalloc(sizeof(ElaCarrier), ela_destroy);
+    w = (Carrier *)rc_zalloc(sizeof(Carrier), carrier_destroy);
     if (!w) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return NULL;
     }
 
@@ -1166,7 +1166,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
                             sizeof(BootstrapNodeBuf) * w->pref.bootstrap_size);
         if (!w->pref.bootstrap_nodes) {
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
             return NULL;
         }
     }
@@ -1180,7 +1180,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (!b->ipv4 && !b->ipv6) {
             vlogE("Carrier: IPv4 and IPv6 address of bootstrap node are both empty");
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
             return NULL;
         }
 
@@ -1189,7 +1189,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
 
         if (!bi->ipv4 && !bi->ipv6) {
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
             return NULL;
         }
 
@@ -1197,7 +1197,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (bi->port < 1 || bi->port > 65535 || *endptr) {
             vlogE("Carrier: Port value (%s) of bootstrap node is invalid", b->port);
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
             return NULL;
         }
 
@@ -1206,7 +1206,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (len != DHT_PUBLIC_KEY_SIZE) {
             vlogE("Carrier: Public key (%s) of bootstrap node is invalid", b->public_key);
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
             return NULL;
         }
     }
@@ -1218,7 +1218,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
 
         if (!w->pref.express_nodes) {
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
             return NULL;
         }
     }
@@ -1232,14 +1232,14 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (!n->ipv4) {
             vlogE("Carrier: IPv4 address (%s) of express node is empty", n->ipv4);
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
             return NULL;
         }
 
         ni->ipv4 = strdup(n->ipv4);
         if (!ni->ipv4) {
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
             return NULL;
         }
 
@@ -1247,7 +1247,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (ni->port < 1 || ni->port > 65535 || *endptr) {
             vlogE("Carrier: Port value (%s) of express node is invalid", n->port);
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
             return NULL;
         }
 
@@ -1256,7 +1256,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
         if (len != DHT_PUBLIC_KEY_SIZE) {
             vlogE("Carrier: Public key (%s) of express node is invalid", n->public_key);
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
             return NULL;
         }
     }
@@ -1276,7 +1276,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (rc < 0) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return NULL;
     }
 
@@ -1284,7 +1284,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (!w->friends) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return NULL;
     }
 
@@ -1292,7 +1292,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (!w->friend_events) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return NULL;
     }
 
@@ -1300,7 +1300,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (!w->tcallbacks) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return NULL;
     }
 
@@ -1308,7 +1308,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (!w->thistory) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return NULL;
     }
 
@@ -1316,7 +1316,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (!w->tassembly_ireqs) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return NULL;
     }
 
@@ -1324,7 +1324,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (!w->tassembly_irsps) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return NULL;
     }
 
@@ -1332,7 +1332,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (!w->bulkmsgs) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return NULL;
     }
 
@@ -1340,7 +1340,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (!w->unconfirmed) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return NULL;
     }
 
@@ -1348,7 +1348,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (!w->exts) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return NULL;
     }
 
@@ -1356,7 +1356,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (rc < 0) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return NULL;
     }
 
@@ -1364,7 +1364,7 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     if (rc < 0) {
         free_persistence_data(&data);
         deref(w);
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return NULL;
     }
 
@@ -1373,10 +1373,10 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
                                                 notify_offreq_received,
                                                 notify_offreceipt_received);
         if (!w->connector) {
-            vlogE("Carrier: Creating express connector error (%x)", ela_get_error());
+            vlogE("Carrier: Creating express connector error (%x)", carrier_get_error());
             free_persistence_data(&data);
             deref(w);
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
             return NULL;
         }
     }
@@ -1398,10 +1398,10 @@ ElaCarrier *ela_new(const ElaOptions *opts, ElaCallbacks *callbacks,
     return w;
 }
 
-void ela_kill(ElaCarrier *w)
+void carrier_kill(Carrier *w)
 {
     if (!w) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return;
     }
 
@@ -1419,13 +1419,13 @@ void ela_kill(ElaCarrier *w)
     vlogI("Carrier: Carrier node killed.");
 }
 
-static void notify_idle(ElaCarrier *w)
+static void notify_idle(Carrier *w)
 {
     if (w->callbacks.idle)
         w->callbacks.idle(w, w->context);
 }
 
-static void notify_friends(ElaCarrier *w)
+static void notify_friends(Carrier *w)
 {
     hashtable_iterator_t it;
 
@@ -1437,9 +1437,9 @@ static void notify_friends(ElaCarrier *w)
             break;
 
         if (w->callbacks.friend_list) {
-            ElaFriendInfo _fi;
+            CarrierFriendInfo _fi;
 
-            memcpy(&_fi, &fi->info, sizeof(ElaFriendInfo));
+            memcpy(&_fi, &fi->info, sizeof(CarrierFriendInfo));
             w->callbacks.friend_list(w, &_fi, w->context);
         }
 
@@ -1452,7 +1452,7 @@ static void notify_friends(ElaCarrier *w)
 
 static void notify_connection_cb(bool connected, void *context)
 {
-    ElaCarrier *w = (ElaCarrier *)context;
+    Carrier *w = (Carrier *)context;
 
     if (!w->is_ready && connected) {
         w->is_ready = true;
@@ -1472,10 +1472,10 @@ static
 void notify_friend_description_cb(uint32_t friend_number, const uint8_t *descr,
                                   size_t length, void *context)
 {
-    ElaCarrier *w = (ElaCarrier *)context;
+    Carrier *w = (Carrier *)context;
     FriendInfo *fi;
     bool changed = false;
-    ElaFriendInfo _fi;
+    CarrierFriendInfo _fi;
 
     assert(friend_number != UINT32_MAX);
     assert(descr);
@@ -1508,11 +1508,11 @@ void notify_friend_description_cb(uint32_t friend_number, const uint8_t *descr,
 }
 
 static void parse_address(const char *addr, char **uid, char **ext);
-static int send_express_message(ElaCarrier *w, const char *userid,
+static int send_express_message(Carrier *w, const char *userid,
                                 uint32_t msgid, const void *msg, size_t len,
                                 const char *ext_name);
-static void notify_friend_connection(ElaCarrier *w, const char *friendid,
-                                     ElaConnectionStatus status)
+static void notify_friend_connection(Carrier *w, const char *friendid,
+                                     CarrierConnectionStatus status)
 {
     hashtable_iterator_t it;
 
@@ -1522,14 +1522,14 @@ static void notify_friend_connection(ElaCarrier *w, const char *friendid,
     if (w->callbacks.friend_connection)
         w->callbacks.friend_connection(w, friendid, status, w->context);
 
-    if (status == ElaConnectionStatus_Connected)
+    if (status == CarrierConnectionStatus_Connected)
         return;
 
 redo_check:
     unconfirmed_iterate(w->unconfirmed, &it);
     while (unconfirmed_iterator_has_next(&it)) {
         UnconfirmedMsg *item;
-        ElaReceiptState state;
+        CarrierReceiptState state;
         char *userid;
         char *ext_name;
         char *addr;
@@ -1557,7 +1557,7 @@ redo_check:
         if (rc < 0) {
             unconfirmed_iterator_remove(&it);
             if (item->callback)
-                item->callback(item->msgid, ElaReceipt_Error, item->context);
+                item->callback(item->msgid, CarrierReceipt_Error, item->context);
             deref(item);
             continue;
         }
@@ -1567,7 +1567,7 @@ redo_check:
     }
 }
 
-static void trigger_pull_offmsg_instantly(ElaCarrier *w)
+static void trigger_pull_offmsg_instantly(Carrier *w)
 {
     struct timeval expireat;
     struct timeval interval;
@@ -1591,8 +1591,8 @@ static
 void notify_friend_connection_cb(uint32_t friend_number, bool connected,
                                  void *context)
 {
-    ElaCarrier *w = (ElaCarrier *)context;
-    ElaConnectionStatus status;
+    Carrier *w = (Carrier *)context;
+    CarrierConnectionStatus status;
     FriendInfo *fi;
 
     struct timeval expireat;
@@ -1609,7 +1609,7 @@ void notify_friend_connection_cb(uint32_t friend_number, bool connected,
 
     status = connection_status(connected);
     if (status != fi->info.status) {
-        char friendid[ELA_MAX_ID_LEN + 1];
+        char friendid[CARRIER_MAX_ID_LEN + 1];
 
         fi->info.status = status;
         strcpy(friendid, fi->info.user_info.userid);
@@ -1621,8 +1621,8 @@ void notify_friend_connection_cb(uint32_t friend_number, bool connected,
     trigger_pull_offmsg_instantly(w);
 }
 
-static void notify_friend_presence(ElaCarrier *w, const char *friendid,
-                                   ElaPresenceStatus presence)
+static void notify_friend_presence(Carrier *w, const char *friendid,
+                                   CarrierPresenceStatus presence)
 {
     assert(w);
     assert(friendid);
@@ -1635,7 +1635,7 @@ static
 void notify_friend_status_cb(uint32_t friend_number, int status,
                              void *context)
 {
-    ElaCarrier *w = (ElaCarrier *)context;
+    Carrier *w = (Carrier *)context;
     FriendInfo *fi;
 
     assert(friend_number != UINT32_MAX);
@@ -1647,14 +1647,14 @@ void notify_friend_status_cb(uint32_t friend_number, int status,
         return;
     }
 
-    if (status < ElaPresenceStatus_None ||
-        status > ElaPresenceStatus_Busy) {
+    if (status < CarrierPresenceStatus_None ||
+        status > CarrierPresenceStatus_Busy) {
         vlogW("Carrier: Invalid friend status %d received, dropped it.", status);
         return;
     }
 
     if (status != fi->info.presence) {
-        char friendid[ELA_MAX_ID_LEN + 1];
+        char friendid[CARRIER_MAX_ID_LEN + 1];
 
         fi->info.presence = status;
         strcpy(friendid, fi->info.user_info.userid);
@@ -1669,10 +1669,10 @@ static
 void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* greeting,
                               size_t length, void *context)
 {
-    ElaCarrier *w = (ElaCarrier *)context;
+    Carrier *w = (Carrier *)context;
     uint32_t friend_number;
     Packet* cp;
-    ElaUserInfo ui;
+    CarrierUserInfo ui;
     size_t _len = sizeof(ui.userid);
     const char *name;
     const char *desc;
@@ -1720,7 +1720,7 @@ void notify_friend_request_cb(const uint8_t *public_key, const uint8_t* greeting
     packet_free(cp);
 }
 
-static void handle_add_friend_cb(EventBase *event, ElaCarrier *w)
+static void handle_add_friend_cb(EventBase *event, Carrier *w)
 {
     FriendEvent *ev = (FriendEvent *)event;
 
@@ -1728,15 +1728,15 @@ static void handle_add_friend_cb(EventBase *event, ElaCarrier *w)
         w->callbacks.friend_added(w, &ev->fi, w->context);
 }
 
-static void handle_remove_friend_cb(EventBase *event, ElaCarrier *w)
+static void handle_remove_friend_cb(EventBase *event, Carrier *w)
 {
     FriendEvent *ev = (FriendEvent *)event;
     hashtable_iterator_t it;
 
-    if (ev->fi.status == ElaConnectionStatus_Connected &&
+    if (ev->fi.status == CarrierConnectionStatus_Connected &&
         w->callbacks.friend_connection)
         w->callbacks.friend_connection(w, ev->fi.user_info.userid,
-                                       ElaConnectionStatus_Disconnected,
+                                       CarrierConnectionStatus_Disconnected,
                                        w->context);
 
     if (w->callbacks.friend_removed)
@@ -1746,7 +1746,7 @@ redo_check:
     unconfirmed_iterate(w->unconfirmed, &it);
     while (unconfirmed_iterator_has_next(&it)) {
         UnconfirmedMsg *item;
-        ElaReceiptState state;
+        CarrierReceiptState state;
         char *userid;
         char *ext_name;
         char *addr;
@@ -1770,13 +1770,13 @@ redo_check:
         unconfirmed_iterator_remove(&it);
 
         if (item->callback)
-            item->callback(item->msgid, ElaReceipt_Error, item->context);
+            item->callback(item->msgid, CarrierReceipt_Error, item->context);
         deref(item);
     }
 }
 
-static void notify_friend_changed(ElaCarrier *w, ElaFriendInfo *fi,
-                                  void (*cb)(EventBase *, ElaCarrier *))
+static void notify_friend_changed(Carrier *w, CarrierFriendInfo *fi,
+                                  void (*cb)(EventBase *, Carrier *))
 {
     FriendEvent *event;
 
@@ -1795,7 +1795,7 @@ static void notify_friend_changed(ElaCarrier *w, ElaFriendInfo *fi,
     }
 }
 
-static void do_friend_events(ElaCarrier *w)
+static void do_friend_events(Carrier *w)
 {
     list_t *events = w->friend_events;
     list_iterator_t it;
@@ -1848,10 +1848,10 @@ redo_expire:
 }
 
 static
-void transacted_callback_expire(ElaCarrier *w, TransactedCallback *callback)
+void transacted_callback_expire(Carrier *w, TransactedCallback *callback)
 {
-    char friendid[ELA_MAX_ID_LEN + 1];
-    ElaFriendInviteResponseCallback *callback_func;
+    char friendid[CARRIER_MAX_ID_LEN + 1];
+    CarrierFriendInviteResponseCallback *callback_func;
     FriendInfo *fi;
 
     fi = friends_get(w->friends, callback->friend_number);
@@ -1864,14 +1864,14 @@ void transacted_callback_expire(ElaCarrier *w, TransactedCallback *callback)
     strcpy(friendid, fi->info.user_info.userid);
     deref(fi);
 
-    callback_func = (ElaFriendInviteResponseCallback *)callback->callback_func;
+    callback_func = (CarrierFriendInviteResponseCallback *)callback->callback_func;
     assert(callback_func);
 
     callback_func(w, friendid, callback->bundle, ELA_STATUS_TIMEOUT, "timeout",
                   NULL, 0, callback->callback_context);
 }
 
-static void do_transacted_callabcks_expire(ElaCarrier *w)
+static void do_transacted_callabcks_expire(Carrier *w)
 {
     hashtable_iterator_t it;
     struct timeval now;
@@ -1928,7 +1928,7 @@ redo_exipre:
     }
 }
 
-static void do_express_expire(ElaCarrier *w)
+static void do_express_expire(Carrier *w)
 {
     struct timeval timeout;
     struct timeval now;
@@ -1957,10 +1957,10 @@ static inline int64_t current_timestamp(void)
 }
 
 static
-void handle_friend_message(ElaCarrier *w, uint32_t friend_number, Packet *cp)
+void handle_friend_message(Carrier *w, uint32_t friend_number, Packet *cp)
 {
     FriendInfo *fi;
-    char friendid[ELA_MAX_ID_LEN + 1];
+    char friendid[CARRIER_MAX_ID_LEN + 1];
     const char *name;
     const void *msg;
     size_t len;
@@ -2001,10 +2001,10 @@ void handle_friend_message(ElaCarrier *w, uint32_t friend_number, Packet *cp)
 }
 
 static
-void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, Packet *cp)
+void handle_friend_bulkmsg(Carrier *w, uint32_t friend_number, Packet *cp)
 {
     FriendInfo *fi;
-    char friendid[ELA_MAX_ID_LEN + 1];
+    char friendid[CARRIER_MAX_ID_LEN + 1];
     BulkMsg *msg;
     const char *name;
     const void *data;
@@ -2036,7 +2036,7 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, Packet *cp)
 
     msg = bulkmsgs_get(w->bulkmsgs, &tid);
     if (!msg) {
-        if (!totalsz || totalsz > ELA_MAX_APP_BULKMSG_LEN) {
+        if (!totalsz || totalsz > CARRIER_MAX_APP_BULKMSG_LEN) {
             vlogW("Carrier: Received bulk message with invalid totalsz %z,"
                   "dropped.", totalsz);
             return;
@@ -2059,7 +2059,7 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, Packet *cp)
     }
 
     if ((name && strcmp(msg->ext, name)) ||
-        strcmp(msg->friendid, friendid) || !len || len > ELA_MAX_APP_MESSAGE_LEN ||
+        strcmp(msg->friendid, friendid) || !len || len > CARRIER_MAX_APP_MESSAGE_LEN ||
         msg->data_offset + len < len || msg->data_offset + len > msg->data_cap) {
         vlogE("Carrier: Inavlid bulkmsg fragment (or HACKED), dropped.");
         deref(msg);
@@ -2100,10 +2100,10 @@ void handle_friend_bulkmsg(ElaCarrier *w, uint32_t friend_number, Packet *cp)
 }
 
 static
-void handle_invite_request(ElaCarrier *w, uint32_t friend_number, Packet *cp)
+void handle_invite_request(Carrier *w, uint32_t friend_number, Packet *cp)
 {
     FriendInfo *fi;
-    char friendid[ELA_MAX_ID_LEN + 1];
+    char friendid[CARRIER_MAX_ID_LEN + 1];
     const char *name;
     const void *data;
     const char *bundle;
@@ -2112,7 +2112,7 @@ void handle_invite_request(ElaCarrier *w, uint32_t friend_number, Packet *cp)
     int64_t tid;
     size_t totalsz;
     bool need_add = false;
-    char from[ELA_MAX_ID_LEN + ELA_MAX_EXTENSION_NAME_LEN + 4];
+    char from[CARRIER_MAX_ID_LEN + CARRIER_MAX_EXTENSION_NAME_LEN + 4];
     TransactedAssembly *ireq = NULL;
 
     assert(w);
@@ -2140,7 +2140,7 @@ void handle_invite_request(ElaCarrier *w, uint32_t friend_number, Packet *cp)
 
     ireq = tassemblies_get(w->tassembly_ireqs, &tid);
     if (!ireq) {
-        if (!totalsz || totalsz > ELA_MAX_INVITE_DATA_LEN) {
+        if (!totalsz || totalsz > CARRIER_MAX_INVITE_DATA_LEN) {
             vlogW("Carrier: Received invite request fragment with invalid "
                   "totalsz %z, dropped.", totalsz);
             return;
@@ -2218,12 +2218,12 @@ void handle_invite_request(ElaCarrier *w, uint32_t friend_number, Packet *cp)
 }
 
 static
-void handle_invite_response(ElaCarrier *w, uint32_t friend_number, Packet *cp)
+void handle_invite_response(Carrier *w, uint32_t friend_number, Packet *cp)
 {
     FriendInfo *fi;
-    char friendid[ELA_MAX_ID_LEN + 1];
+    char friendid[CARRIER_MAX_ID_LEN + 1];
     TransactedCallback *tcb;
-    ElaFriendInviteResponseCallback *callback_func;
+    CarrierFriendInviteResponseCallback *callback_func;
     void *callback_ctxt;
     int64_t tid;
     size_t totalsz;
@@ -2275,7 +2275,7 @@ void handle_invite_response(ElaCarrier *w, uint32_t friend_number, Packet *cp)
 
     irsp = tassemblies_get(w->tassembly_irsps, &tid);
     if (!irsp) {
-        if (totalsz > ELA_MAX_INVITE_DATA_LEN) {
+        if (totalsz > CARRIER_MAX_INVITE_DATA_LEN) {
             vlogW("Carrier: Received overlong invite request fragment, "
                   "dropped.");
             deref(tcb);
@@ -2326,7 +2326,7 @@ void handle_invite_response(ElaCarrier *w, uint32_t friend_number, Packet *cp)
     }
 
     if (irsp->data_off == irsp->data_len) {
-        callback_func = (ElaFriendInviteResponseCallback *)tcb->callback_func;
+        callback_func = (CarrierFriendInviteResponseCallback *)tcb->callback_func;
         callback_ctxt = tcb->callback_context;
         assert(callback_func);
 
@@ -2352,7 +2352,7 @@ static
 void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
                               size_t length, void *context)
 {
-    ElaCarrier *w = (ElaCarrier *)context;
+    Carrier *w = (Carrier *)context;
     Packet *cp;
 
     cp = packet_decode(message, length);
@@ -2386,7 +2386,7 @@ static
 void notify_friend_read_receipt_cb(uint32_t friend_number, uint32_t msgid,
                                    void *context)
 {
-    ElaCarrier *w = (ElaCarrier *)context;
+    Carrier *w = (Carrier *)context;
     UnconfirmedMsg *item;
 
     item = unconfirmed_remove(w->unconfirmed, msgid);
@@ -2394,7 +2394,7 @@ void notify_friend_read_receipt_cb(uint32_t friend_number, uint32_t msgid,
         return;
 
     if (item->callback)
-        item->callback(item->msgid, ElaReceipt_ByFriend, item->context);
+        item->callback(item->msgid, CarrierReceipt_ByFriend, item->context);
 
     deref(item);
 }
@@ -2404,7 +2404,7 @@ void notify_group_invite_cb(uint32_t friend_number, const uint8_t *cookie,
                             size_t len, void *user_data)
 {
     FriendInfo *fi;
-    ElaCarrier *w = (ElaCarrier *)user_data;
+    Carrier *w = (Carrier *)user_data;
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
@@ -2414,7 +2414,7 @@ void notify_group_invite_cb(uint32_t friend_number, const uint8_t *cookie,
     }
 
     if (w->callbacks.group_invite) {
-        char friendid[ELA_MAX_ID_LEN + 1];
+        char friendid[CARRIER_MAX_ID_LEN + 1];
 
         strcpy(friendid, fi->info.user_info.userid);
         w->callbacks.group_invite(w, friendid, cookie, len, w->context);
@@ -2424,18 +2424,18 @@ void notify_group_invite_cb(uint32_t friend_number, const uint8_t *cookie,
 }
 
 static
-int get_groupid_by_number(ElaCarrier *w, uint32_t group_number,
+int get_groupid_by_number(Carrier *w, uint32_t group_number,
                           char *groupid_buf, size_t length)
 {
     uint8_t public_key[DHT_PUBLIC_KEY_SIZE];
     size_t textlen = length;
     int rc;
 
-    assert(length >= ELA_MAX_ID_LEN + 1);
+    assert(length >= CARRIER_MAX_ID_LEN + 1);
 
     rc = dht_group_get_public_key(&w->dht, group_number, public_key);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -2445,19 +2445,19 @@ int get_groupid_by_number(ElaCarrier *w, uint32_t group_number,
 }
 
 static
-int get_peerid_by_number(ElaCarrier *w, uint32_t group_number,
+int get_peerid_by_number(Carrier *w, uint32_t group_number,
                          uint32_t peer_number, char *peerid_buf, size_t length)
 {
     uint8_t public_key[DHT_PUBLIC_KEY_SIZE];
     size_t textlen = length;
     int rc;
 
-    assert(length >= ELA_MAX_ID_LEN + 1);
+    assert(length >= CARRIER_MAX_ID_LEN + 1);
 
     rc = dht_group_get_peer_public_key(&w->dht, group_number, peer_number,
                                        public_key);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -2469,8 +2469,8 @@ int get_peerid_by_number(ElaCarrier *w, uint32_t group_number,
 static
 void notify_group_connected_cb(uint32_t group_number, void *user_data)
 {
-    ElaCarrier *w = (ElaCarrier *)user_data;
-    char groupid[ELA_MAX_ID_LEN + 1];
+    Carrier *w = (Carrier *)user_data;
+    char groupid[CARRIER_MAX_ID_LEN + 1];
     int rc;
 
     rc = get_groupid_by_number(w, group_number, groupid, sizeof(groupid));
@@ -2488,9 +2488,9 @@ static
 void notify_group_message_cb(uint32_t group_number, uint32_t peer_number,
                              const uint8_t *msg, size_t len, void *user_data)
 {
-    ElaCarrier *w = (ElaCarrier *)user_data;
-    char groupid[ELA_MAX_ID_LEN + 1];
-    char peerid[ELA_MAX_ID_LEN + 1];
+    Carrier *w = (Carrier *)user_data;
+    char groupid[CARRIER_MAX_ID_LEN + 1];
+    char peerid[CARRIER_MAX_ID_LEN + 1];
     int rc;
 
     rc = get_groupid_by_number(w, group_number, groupid, sizeof(groupid));
@@ -2517,9 +2517,9 @@ static
 void notify_group_title_cb(uint32_t group_number, uint32_t peer_number,
                            const uint8_t *title, size_t length, void *user_data)
 {
-    ElaCarrier *w = (ElaCarrier *)user_data;
-    char groupid[ELA_MAX_ID_LEN + 1];
-    char peerid[ELA_MAX_ID_LEN + 1];
+    Carrier *w = (Carrier *)user_data;
+    char groupid[CARRIER_MAX_ID_LEN + 1];
+    char peerid[CARRIER_MAX_ID_LEN + 1];
     int rc;
 
     if (peer_number == UINT32_MAX) {
@@ -2556,9 +2556,9 @@ void notify_group_peer_name_cb(uint32_t group_number, uint32_t peer_number,
                                const uint8_t *name, size_t length,
                                void *user_data)
 {
-    ElaCarrier *w = (ElaCarrier *)user_data;
-    char groupid[ELA_MAX_ID_LEN + 1];
-    char peerid[ELA_MAX_ID_LEN + 1];
+    Carrier *w = (Carrier *)user_data;
+    char groupid[CARRIER_MAX_ID_LEN + 1];
+    char peerid[CARRIER_MAX_ID_LEN + 1];
     int rc;
 
     rc = get_groupid_by_number(w, group_number, groupid, sizeof(groupid));
@@ -2587,8 +2587,8 @@ void notify_group_peer_name_cb(uint32_t group_number, uint32_t peer_number,
 static
 void notify_group_peer_list_changed_cb(uint32_t group_number, void *user_data)
 {
-    ElaCarrier *w = (ElaCarrier *)user_data;
-    char groupid[ELA_MAX_ID_LEN + 1];
+    Carrier *w = (Carrier *)user_data;
+    char groupid[CARRIER_MAX_ID_LEN + 1];
     int rc;
 
     rc = get_groupid_by_number(w, group_number, groupid, sizeof(groupid));
@@ -2604,13 +2604,13 @@ void notify_group_peer_list_changed_cb(uint32_t group_number, void *user_data)
     store_persistence_data(w);
 }
 
-static void connect_to_bootstraps(ElaCarrier *w)
+static void connect_to_bootstraps(Carrier *w)
 {
     int i;
 
     for (i = 0; i < w->pref.bootstrap_size; i++) {
         BootstrapNodeBuf *bi = &w->pref.bootstrap_nodes[i];
-        char id[ELA_MAX_ID_LEN + 1] = {0};
+        char id[CARRIER_MAX_ID_LEN + 1] = {0};
         size_t id_len = sizeof(id);
         int rc;
 
@@ -2630,10 +2630,10 @@ static void connect_to_bootstraps(ElaCarrier *w)
     }
 }
 
-int ela_run(ElaCarrier *w, int interval)
+int carrier_run(Carrier *w, int interval)
 {
     if (!w || interval < 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
@@ -2710,15 +2710,15 @@ int ela_run(ElaCarrier *w, int interval)
     return 0;
 }
 
-char *ela_get_address(ElaCarrier *w, char *address, size_t length)
+char *carrier_get_address(Carrier *w, char *address, size_t length)
 {
     if (!w || !address || !length) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return NULL;
     }
 
     if (strlen(w->base58_addr) >= length) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_BUFFER_TOO_SMALL));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_BUFFER_TOO_SMALL));
         return NULL;
     }
 
@@ -2726,15 +2726,15 @@ char *ela_get_address(ElaCarrier *w, char *address, size_t length)
     return address;
 }
 
-char *ela_get_nodeid(ElaCarrier *w, char *nodeid, size_t len)
+char *carrier_get_nodeid(Carrier *w, char *nodeid, size_t len)
 {
     if (!w || !nodeid || !len) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return NULL;
     }
 
     if (strlen(w->me.userid) >= len) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_BUFFER_TOO_SMALL));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_BUFFER_TOO_SMALL));
         return NULL;
     }
 
@@ -2742,17 +2742,17 @@ char *ela_get_nodeid(ElaCarrier *w, char *nodeid, size_t len)
     return nodeid;
 }
 
-char *ela_get_userid(ElaCarrier *w, char *userid, size_t len)
+char *carrier_get_userid(Carrier *w, char *userid, size_t len)
 {
-    return ela_get_nodeid(w, userid, len);
+    return carrier_get_nodeid(w, userid, len);
 }
 
-int ela_set_self_nospam(ElaCarrier *w, uint32_t nospam)
+int carrier_set_self_nospam(Carrier *w, uint32_t nospam)
 {
     int rc;
 
     if (!w) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
@@ -2760,7 +2760,7 @@ int ela_set_self_nospam(ElaCarrier *w, uint32_t nospam)
 
     rc = dht_get_self_info(&w->dht, get_self_info_cb, w);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -2769,10 +2769,10 @@ int ela_set_self_nospam(ElaCarrier *w, uint32_t nospam)
     return 0;
 }
 
-int ela_get_self_nospam(ElaCarrier *w, uint32_t *nospam)
+int carrier_get_self_nospam(Carrier *w, uint32_t *nospam)
 {
     if (!w || !nospam) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
@@ -2781,7 +2781,7 @@ int ela_get_self_nospam(ElaCarrier *w, uint32_t *nospam)
     return 0;
 }
 
-int ela_set_self_info(ElaCarrier *w, const ElaUserInfo *info)
+int carrier_set_self_info(Carrier *w, const CarrierUserInfo *info)
 {
     Packet *cp;
     uint8_t *data;
@@ -2789,18 +2789,18 @@ int ela_set_self_info(ElaCarrier *w, const ElaUserInfo *info)
     bool did_changed = false;
 
     if (!w || !info) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (strcmp(info->userid, w->me.userid) != 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     cp = packet_create(PACKET_TYPE_USERINFO, NULL);
     if (!cp) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return -1;
     }
 
@@ -2822,7 +2822,7 @@ int ela_set_self_info(ElaCarrier *w, const ElaUserInfo *info)
                                        strlen(info->name) + 1);
             if (rc) {
                 packet_free(cp);
-                ela_set_error(rc);
+                carrier_set_error(rc);
                 return -1;
             }
         }
@@ -2839,7 +2839,7 @@ int ela_set_self_info(ElaCarrier *w, const ElaUserInfo *info)
         packet_free(cp);
 
         if (!data) {
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
             return -1;
         }
 
@@ -2864,28 +2864,28 @@ int ela_set_self_info(ElaCarrier *w, const ElaUserInfo *info)
     return 0;
 }
 
-int ela_get_self_info(ElaCarrier *w, ElaUserInfo *info)
+int carrier_get_self_info(Carrier *w, CarrierUserInfo *info)
 {
     if (!w || !info) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
-    memcpy(info, &w->me, sizeof(ElaUserInfo));
+    memcpy(info, &w->me, sizeof(CarrierUserInfo));
 
     return 0;
 }
 
-int ela_set_self_presence(ElaCarrier *w, ElaPresenceStatus status)
+int carrier_set_self_presence(Carrier *w, CarrierPresenceStatus status)
 {
     if (!w) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
-    if (status < ElaPresenceStatus_None ||
-        status > ElaPresenceStatus_Busy) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (status < CarrierPresenceStatus_None ||
+        status > CarrierPresenceStatus_Busy) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
@@ -2894,45 +2894,45 @@ int ela_set_self_presence(ElaCarrier *w, ElaPresenceStatus status)
     return 0;
 }
 
-int ela_get_self_presence(ElaCarrier *w, ElaPresenceStatus *status)
+int carrier_get_self_presence(Carrier *w, CarrierPresenceStatus *status)
 {
     int presence_status;
 
     if (!w || !status) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     presence_status = dht_self_get_status(&w->dht);
 
-    if (presence_status < ElaPresenceStatus_None)
-        *status = ElaPresenceStatus_None;
-    else if (presence_status > ElaPresenceStatus_Busy)
-        *status = ElaPresenceStatus_None;
+    if (presence_status < CarrierPresenceStatus_None)
+        *status = CarrierPresenceStatus_None;
+    else if (presence_status > CarrierPresenceStatus_Busy)
+        *status = CarrierPresenceStatus_None;
     else
-        *status = (ElaPresenceStatus)presence_status;
+        *status = (CarrierPresenceStatus)presence_status;
 
     return 0;
 }
 
-bool ela_is_ready(ElaCarrier *w)
+bool carrier_is_ready(Carrier *w)
 {
     if (!w) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return false;
     }
 
-    ela_set_error(0);
+    carrier_set_error(0);
     return w->is_ready;
 }
 
-int ela_get_friends(ElaCarrier *w,
-                    ElaFriendsIterateCallback *callback, void *context)
+int carrier_get_friends(Carrier *w,
+                    CarrierFriendsIterateCallback *callback, void *context)
 {
     hashtable_iterator_t it;
 
     if (!w || !callback) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
@@ -2941,9 +2941,9 @@ int ela_get_friends(ElaCarrier *w,
         FriendInfo *fi;
 
         if (friends_iterator_next(&it, &fi) == 1) {
-            ElaFriendInfo wfi;
+            CarrierFriendInfo wfi;
 
-            memcpy(&wfi, &fi->info, sizeof(ElaFriendInfo));
+            memcpy(&wfi, &fi->info, sizeof(CarrierFriendInfo));
             deref(fi);
 
             if (!callback(&wfi, context))
@@ -2957,39 +2957,39 @@ int ela_get_friends(ElaCarrier *w,
     return 0;
 }
 
-int ela_get_friend_info(ElaCarrier *w, const char *friendid,
-                        ElaFriendInfo *info)
+int carrier_get_friend_info(Carrier *w, const char *friendid,
+                        CarrierFriendInfo *info)
 {
     uint32_t friend_number;
     FriendInfo *fi;
     int rc;
 
     if (!w || !friendid || !*friendid || !info) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     rc = get_friend_number(w, friendid, &friend_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
     assert(!strcmp(friendid, fi->info.user_info.userid));
 
-    memcpy(info, &fi->info, sizeof(ElaFriendInfo));
+    memcpy(info, &fi->info, sizeof(CarrierFriendInfo));
 
     deref(fi);
 
     return 0;
 }
 
-int ela_set_friend_label(ElaCarrier *w,
+int carrier_set_friend_label(Carrier *w,
                          const char *friendid, const char *label)
 {
     uint32_t friend_number;
@@ -2997,24 +2997,24 @@ int ela_set_friend_label(ElaCarrier *w,
     int rc;
 
     if (!w || !friendid || !*friendid) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
-    if (label && strlen(label) > ELA_MAX_USER_NAME_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (label && strlen(label) > CARRIER_MAX_USER_NAME_LEN) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     rc = get_friend_number(w, friendid, &friend_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
     assert(!strcmp(friendid, fi->info.user_info.userid));
@@ -3028,27 +3028,27 @@ int ela_set_friend_label(ElaCarrier *w,
     return 0;
 }
 
-bool ela_is_friend(ElaCarrier *w, const char *userid)
+bool carrier_is_friend(Carrier *w, const char *userid)
 {
     uint32_t friend_number;
     int rc;
 
     if (!w || !userid || !*userid) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return false;
     }
 
     rc = get_friend_number(w, userid, &friend_number);
     if (rc < 0 || friend_number == UINT32_MAX) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return false;
     }
 
-    ela_set_error(0);
+    carrier_set_error(0);
     return !!friends_exist(w->friends, friend_number);
 }
 
-int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
+int carrier_add_friend(Carrier *w, const char *address, const char *hello)
 {
     uint32_t friend_number;
     FriendInfo *fi;
@@ -3060,22 +3060,22 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
     int rc;
 
     if (!w || !hello || !*hello || !address || !*address) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!is_valid_address(address)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!strcmp(address, w->base58_addr)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
@@ -3083,7 +3083,7 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
 
     cp = packet_create(PACKET_TYPE_FRIEND_REQUEST, NULL);
     if (!cp) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return -1;
     }
 
@@ -3095,13 +3095,13 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
     packet_free(cp);
 
     if (!data) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return -1;
     }
 
     rc = dht_get_friend_number(&w->dht, addr, &friend_number);
-    if (rc < 0 && rc != ELA_DHT_ERROR(ELAERR_NOT_EXIST)) {
-        ela_set_error(rc);
+    if (rc < 0 && rc != CARRIER_DHT_ERROR(ERROR_NOT_EXIST)) {
+        carrier_set_error(rc);
         free(data);
         return -1;
     }
@@ -3111,7 +3111,7 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
         free(data);
 
         if (rc < 0) {
-            ela_set_error(rc);
+            carrier_set_error(rc);
             return -1;
         }
         return 0;
@@ -3120,14 +3120,14 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
     // this is the first time send friend request.
     fi = (FriendInfo *)rc_zalloc(sizeof(FriendInfo), NULL);
     if (!fi) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         free(data);
         return -1;
     }
 
     rc = dht_friend_add(&w->dht, addr, data, data_len, &friend_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         free(data);
         deref(fi);
         return -1;
@@ -3145,8 +3145,8 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
     base58_encode(addr, DHT_PUBLIC_KEY_SIZE, fi->info.user_info.userid, &_len);
 
     fi->friend_number = friend_number;
-    fi->info.presence = ElaPresenceStatus_None;
-    fi->info.status   = ElaConnectionStatus_Disconnected;
+    fi->info.presence = CarrierPresenceStatus_None;
+    fi->info.status   = CarrierConnectionStatus_Disconnected;
     friends_put(w->friends, fi);
 
     notify_friend_changed(w, &fi->info, handle_add_friend_cb);
@@ -3156,7 +3156,7 @@ int ela_add_friend(ElaCarrier *w, const char *address, const char *hello)
     return 0;
 }
 
-int ela_accept_friend(ElaCarrier *w, const char *userid)
+int carrier_accept_friend(Carrier *w, const char *userid)
 {
     uint32_t friend_number = UINT32_MAX;
     uint8_t pubkey[DHT_PUBLIC_KEY_SIZE];
@@ -3164,34 +3164,34 @@ int ela_accept_friend(ElaCarrier *w, const char *userid)
     int rc;
 
     if (!w || !userid || !*userid) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!is_valid_key(userid)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (strcmp(userid, w->me.userid) == 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_friend_number(w, userid, &friend_number);
     if (rc == 0 && friend_number != UINT32_MAX) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_ALREADY_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_ALREADY_EXIST));
         return -1;
     }
 
     fi = (FriendInfo *)rc_zalloc(sizeof(FriendInfo), NULL);
     if (!fi) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return -1;
     }
 
@@ -3199,15 +3199,15 @@ int ela_accept_friend(ElaCarrier *w, const char *userid)
     rc = dht_friend_add_norequest(&w->dht, pubkey, &friend_number);
     if (rc < 0) {
         deref(fi);
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     strcpy(fi->info.user_info.userid, userid);
 
     fi->friend_number = friend_number;
-    fi->info.presence = ElaPresenceStatus_None;
-    fi->info.status   = ElaConnectionStatus_Disconnected;
+    fi->info.presence = CarrierPresenceStatus_None;
+    fi->info.status   = CarrierConnectionStatus_Disconnected;
 
     friends_put(w->friends, fi);
 
@@ -3217,36 +3217,36 @@ int ela_accept_friend(ElaCarrier *w, const char *userid)
     return 0;
 }
 
-int ela_remove_friend(ElaCarrier *w, const char *friendid)
+int carrier_remove_friend(Carrier *w, const char *friendid)
 {
     uint32_t friend_number;
     FriendInfo *fi;
     int rc;
 
     if (!w || !friendid || !*friendid) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!is_valid_key(friendid)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_friend_number(w, friendid, &friend_number);
     if (rc < 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
 
     fi = friends_remove(w->friends, friend_number);
     if (!fi) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
 
@@ -3278,7 +3278,7 @@ static void parse_address(const char *addr, char **userid, char **ext)
     }
 }
 
-static int send_general_message(ElaCarrier *w, uint32_t friend_number,
+static int send_general_message(Carrier *w, uint32_t friend_number,
                                     const void *msg, size_t len,
                                     const char *ext_name,
                                     uint32_t msgid)
@@ -3290,7 +3290,7 @@ static int send_general_message(ElaCarrier *w, uint32_t friend_number,
 
     cp = packet_create(PACKET_TYPE_MESSAGE, ext_name);
     if (!cp)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
     packet_set_raw_data(cp, msg, len);
 
@@ -3298,7 +3298,7 @@ static int send_general_message(ElaCarrier *w, uint32_t friend_number,
     packet_free(cp);
 
     if (!data)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
     rc = dht_friend_message(&w->dht, friend_number, data, data_len, msgid);
     free(data);
@@ -3318,7 +3318,7 @@ static int64_t generate_tid(void)
     return tid;
 }
 
-static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
+static int send_bulk_message(Carrier *w, uint32_t friend_number,
                                  const void *msg, size_t len,
                                  const char *ext_name,
                                  uint32_t msgid)
@@ -3339,15 +3339,15 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
 
         cp = packet_create(PACKET_TYPE_BULKMSG, ext_name);
         if (!cp)
-            return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+            return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
         packet_set_tid(cp, &tid);
         ++index;
 
-        if (left < ELA_MAX_APP_MESSAGE_LEN)
+        if (left < CARRIER_MAX_APP_MESSAGE_LEN)
             send_len = left;
         else
-            send_len = ELA_MAX_APP_MESSAGE_LEN;
+            send_len = CARRIER_MAX_APP_MESSAGE_LEN;
 
         packet_set_totalsz(cp, (index == 1)? left : 0);
         packet_set_raw_data(cp, pos, send_len);
@@ -3359,7 +3359,7 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
         packet_free(cp);
 
         if (!data)
-            return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+            return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
         rc = dht_friend_message(&w->dht, friend_number, data, data_len, !left ? msgid : 0);
         free(data);
@@ -3369,7 +3369,7 @@ static int send_bulk_message(ElaCarrier *w, uint32_t friend_number,
     return rc;
 }
 
-static int send_express_message(ElaCarrier *w, const char *userid,
+static int send_express_message(Carrier *w, const char *userid,
                                 uint32_t msgid, const void *msg, size_t len,
                                 const char *ext_name)
 {
@@ -3382,7 +3382,7 @@ static int send_express_message(ElaCarrier *w, const char *userid,
 
     cp = packet_create(PACKET_TYPE_MESSAGE, ext_name);
     if (!cp)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
     packet_set_raw_data(cp, msg, len);
 
@@ -3390,7 +3390,7 @@ static int send_express_message(ElaCarrier *w, const char *userid,
     packet_free(cp);
 
     if (!data)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
     rc = express_enqueue_post_message_with_receipt(w->connector, userid, data, data_len, msgid);
     free(data);
@@ -3401,7 +3401,7 @@ static int send_express_message(ElaCarrier *w, const char *userid,
     return 0;
 }
 
-static int send_friend_message_internal(ElaCarrier *w, const char *to,
+static int send_friend_message_internal(Carrier *w, const char *to,
                                         const void *msg, size_t len,
                                         uint32_t msgid)
 {
@@ -3413,8 +3413,8 @@ static int send_friend_message_internal(ElaCarrier *w, const char *to,
     uint32_t friend_number;
     int rc;
 
-    if (!w || !to || !msg || !len || len > ELA_MAX_APP_BULKMSG_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (!w || !to || !msg || !len || len > CARRIER_MAX_APP_BULKMSG_LEN) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
@@ -3423,62 +3423,62 @@ static int send_friend_message_internal(ElaCarrier *w, const char *to,
     parse_address(addr, &userid, &ext_name);
 
     if (!is_valid_key(userid)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
-    if (ext_name && strlen(ext_name) > ELA_MAX_USER_NAME_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (ext_name && strlen(ext_name) > CARRIER_MAX_USER_NAME_LEN) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (strcmp(userid, w->me.userid) == 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         vlogE("Carrier: Send message to myself not allowed.");
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_friend_number(w, userid, &friend_number);
     if (rc < 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
 
     fi = friends_get(w->friends, friend_number);
     if (!fi) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
 
-    online = (fi->info.status == ElaConnectionStatus_Connected);
+    online = (fi->info.status == CarrierConnectionStatus_Connected);
     deref(fi);
 
     if (online) {
-        if (len <= ELA_MAX_APP_MESSAGE_LEN)
+        if (len <= CARRIER_MAX_APP_MESSAGE_LEN)
             rc = send_general_message(w, friend_number, msg, len, ext_name, msgid);
         else
             rc = send_bulk_message(w, friend_number, msg, len, ext_name, msgid);
     } else {
-        rc = ELA_DHT_ERROR(ELAERR_FRIEND_OFFLINE);
+        rc = CARRIER_DHT_ERROR(ERROR_FRIEND_OFFLINE);
     }
 
     if (rc < 0 && w->connector)
         rc = send_express_message(w, userid, msgid, msg, len, ext_name);
 
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     return rc;
 }
 
-static void handle_offline_friend_message_cb(EventBase *base, ElaCarrier *w)
+static void handle_offline_friend_message_cb(EventBase *base, Carrier *w)
 {
     OfflineEvent* event = (OfflineEvent *)base;
     Packet *cp;
@@ -3489,7 +3489,7 @@ static void handle_offline_friend_message_cb(EventBase *base, ElaCarrier *w)
     assert(event->timestamp > 0);
     assert(event->length > 0);
 
-    if (!ela_is_friend(w, event->from)) {
+    if (!carrier_is_friend(w, event->from)) {
         vlogW("Carrier: Offline message is not from friends, dropped");
         return;
     }
@@ -3520,7 +3520,7 @@ static void handle_offline_friend_message_cb(EventBase *base, ElaCarrier *w)
     packet_free(cp);
 }
 
-static void notify_offmsg_received(ElaCarrier *w, const char *from,
+static void notify_offmsg_received(Carrier *w, const char *from,
                                    const uint8_t *msg, size_t len,
                                    uint64_t timestamp)
 {
@@ -3545,7 +3545,7 @@ static void notify_offmsg_received(ElaCarrier *w, const char *from,
     }
 }
 
-static void handle_offline_friend_request_cb(EventBase *base, ElaCarrier *w)
+static void handle_offline_friend_request_cb(EventBase *base, Carrier *w)
 {
     OfflineEvent *event = (OfflineEvent *)base;
     uint8_t pubkey[DHT_PUBLIC_KEY_SIZE] = {0};
@@ -3560,7 +3560,7 @@ static void handle_offline_friend_request_cb(EventBase *base, ElaCarrier *w)
     notify_friend_request_cb(pubkey, event->data, event->length, w);
 }
 
-static void notify_offreq_received(ElaCarrier *w, const char *from,
+static void notify_offreq_received(Carrier *w, const char *from,
                                    const uint8_t *greeting, size_t len,
                                    uint64_t timestamp)
 {
@@ -3585,20 +3585,20 @@ static void notify_offreq_received(ElaCarrier *w, const char *from,
     }
 }
 
-static void handle_offline_message_receipt_cb(EventBase *base, ElaCarrier *w)
+static void handle_offline_message_receipt_cb(EventBase *base, Carrier *w)
 {
     MsgidEvent *event = (MsgidEvent *)base;
     UnconfirmedMsg *item;
-    ElaReceiptState state;
+    CarrierReceiptState state;
 
     item = unconfirmed_remove(w->unconfirmed, event->msgid);
     if (!item)
         return;
 
     if(event->errcode == 0)
-        state = ElaReceipt_Offline;
+        state = CarrierReceipt_Offline;
     else
-        state = ElaReceipt_Error;
+        state = CarrierReceipt_Error;
 
     if (item->callback)
         item->callback(item->msgid, state, item->context);
@@ -3606,7 +3606,7 @@ static void handle_offline_message_receipt_cb(EventBase *base, ElaCarrier *w)
     deref(item);
 }
 
-static void notify_offreceipt_received(ElaCarrier *w, const char *to,
+static void notify_offreceipt_received(Carrier *w, const char *to,
                                        ExpressMessageType type,
                                        uint32_t msgid, int errcode)
 {
@@ -3634,17 +3634,17 @@ static void notify_offreceipt_received(ElaCarrier *w, const char *to,
     }
 }
 
-static uint32_t generate_msgid(ElaCarrier *w)
+static uint32_t generate_msgid(Carrier *w)
 {
     static uint32_t msg_id = 0;
     return ++msg_id == 0 ? ++msg_id : msg_id;
 }
 
 static
-int send_message_with_receipt_internal(ElaCarrier *w, const char *to,
+int send_message_with_receipt_internal(Carrier *w, const char *to,
                                 const void *msg, size_t len,
                                 uint32_t *msgid,
-                                ElaFriendMessageReceiptCallback *cb,
+                                CarrierFriendMessageReceiptCallback *cb,
                                 void *context)
 {
     UnconfirmedMsg *item;
@@ -3653,7 +3653,7 @@ int send_message_with_receipt_internal(ElaCarrier *w, const char *to,
 
     item = (UnconfirmedMsg *)rc_zalloc(sizeof(UnconfirmedMsg) + len, NULL);
     if (!item) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return -1;
     }
 
@@ -3682,17 +3682,17 @@ int send_message_with_receipt_internal(ElaCarrier *w, const char *to,
     return 0;
 }
 
-int ela_send_friend_message(ElaCarrier *w, const char *to,
+int carrier_send_friend_message(Carrier *w, const char *to,
                             const void *message, size_t len,
                             uint32_t *msgid,
-                            ElaFriendMessageReceiptCallback *cb, void *context)
+                            CarrierFriendMessageReceiptCallback *cb, void *context)
 {
     return send_message_with_receipt_internal(w, to, message, len, msgid, cb, context);
 }
 
-int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
+int carrier_invite_friend(Carrier *w, const char *to, const char *bundle,
                       const void *data, size_t len,
-                      ElaFriendInviteResponseCallback *callback,
+                      CarrierFriendInviteResponseCallback *callback,
                       void *context)
 {
     char *addr, *userid, *ext_name;
@@ -3705,15 +3705,15 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
     char *pos = (char *)data;
     size_t send_len = 0;
 
-    if (!w || (bundle && (!*bundle || bundle_len > ELA_MAX_BUNDLE_LEN))
-           || !data || !len || len > ELA_MAX_INVITE_DATA_LEN || !callback) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (!w || (bundle && (!*bundle || bundle_len > CARRIER_MAX_BUNDLE_LEN))
+           || !data || !len || len > CARRIER_MAX_INVITE_DATA_LEN || !callback) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!to || !(*to) || strlen(to) >
-            (ELA_MAX_ID_LEN + sizeof(':') + ELA_MAX_EXTENSION_NAME_LEN)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+            (CARRIER_MAX_ID_LEN + sizeof(':') + CARRIER_MAX_EXTENSION_NAME_LEN)) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
@@ -3722,29 +3722,29 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
     parse_address(addr, &userid, &ext_name);
 
     if (!is_valid_key(userid)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (ext_name && (!(*ext_name) || strlen(ext_name) >
-                                     ELA_MAX_EXTENSION_NAME_LEN)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+                                     CARRIER_MAX_EXTENSION_NAME_LEN)) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_friend_number(w, userid, &friend_number);
     if (rc < 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
 
     if (!friends_exist(w->friends, friend_number)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
 
@@ -3756,7 +3756,7 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
 
         cp = packet_create(PACKET_TYPE_INVITE_REQUEST, ext_name);
         if (!cp) {
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
             return -1;
         }
 
@@ -3788,7 +3788,7 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
         packet_free(cp);
 
         if (!_data) {
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
             return -1;
         }
 
@@ -3797,7 +3797,7 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
             tcb = (TransactedCallback *)rc_alloc(sizeof(TransactedCallback) +
                                     (bundle ? strlen(bundle) + 1 : 0), NULL);
             if (!tcb) {
-                ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+                carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
                 free(_data);
                 return -1;
             }
@@ -3824,7 +3824,7 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
             if (len == 0)
                 transacted_callbacks_remove(w->tcallbacks, tid);
 
-            ela_set_error(rc);
+            carrier_set_error(rc);
             return -1;
         }
     } while (len > 0);
@@ -3832,7 +3832,7 @@ int ela_invite_friend(ElaCarrier *w, const char *to, const char *bundle,
     return 0;
 }
 
-int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
+int carrier_reply_friend_invite(Carrier *w, const char *to, const char *bundle,
                             int status, const char *reason,
                             const void *data, size_t len)
 {
@@ -3847,25 +3847,25 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
     Packet *cp;
     int rc;
 
-    if (!w || (bundle && (!*bundle || bundle_len > ELA_MAX_BUNDLE_LEN))) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (!w || (bundle && (!*bundle || bundle_len > CARRIER_MAX_BUNDLE_LEN))) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
-    if (status && (!reason || reason_len > ELA_MAX_INVITE_REPLY_REASON_LEN
+    if (status && (!reason || reason_len > CARRIER_MAX_INVITE_REPLY_REASON_LEN
             || data || len > 0)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
-    if (!status && (reason || !data || !len || len > ELA_MAX_INVITE_DATA_LEN)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (!status && (reason || !data || !len || len > CARRIER_MAX_INVITE_DATA_LEN)) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!to || !(*to) || strlen(to) >
-            (ELA_MAX_ID_LEN + sizeof(':') + ELA_MAX_EXTENSION_NAME_LEN)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+            (CARRIER_MAX_ID_LEN + sizeof(':') + CARRIER_MAX_EXTENSION_NAME_LEN)) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
@@ -3874,35 +3874,35 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
     parse_address(addr, &userid, &ext_name);
 
     if (!is_valid_key(userid)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (ext_name && (!(*ext_name) || strlen(ext_name) >
-                                     ELA_MAX_EXTENSION_NAME_LEN)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+                                     CARRIER_MAX_EXTENSION_NAME_LEN)) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_friend_number(w, userid, &friend_number);
     if (rc < 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
 
     if (!friends_exist(w->friends, friend_number)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return -1;
     }
 
     tid = transaction_history_get_invite(w->thistory, to);
     if (tid == 0) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NO_MATCHED_REQUEST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NO_MATCHED_REQUEST));
         return -1;
     }
 
@@ -3912,7 +3912,7 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
 
         cp = packet_create(PACKET_TYPE_INVITE_RESPONSE, ext_name);
         if (!cp) {
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
             return -1;
         }
 
@@ -3950,7 +3950,7 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
         packet_free(cp);
 
         if (!_data) {
-            ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+            carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
             return -1;
         }
 
@@ -3958,7 +3958,7 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
         free(_data);
 
         if (rc < 0) {
-            ela_set_error(rc);
+            carrier_set_error(rc);
             return -1;
         }
     } while (len > 0);
@@ -3968,31 +3968,31 @@ int ela_reply_friend_invite(ElaCarrier *w, const char *to, const char *bundle,
     return 0;
 }
 
-int ela_new_group(ElaCarrier *w, char *groupid, size_t length)
+int carrier_new_group(Carrier *w, char *groupid, size_t length)
 {
     uint32_t group_number;
     int rc;
 
-    if (!w || !groupid || length <= ELA_MAX_ID_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (!w || !groupid || length <= CARRIER_MAX_ID_LEN) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = dht_group_new(&w->dht, &group_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     rc = get_groupid_by_number(w, group_number, groupid, length);
     if (rc < 0) {
         dht_group_leave(&w->dht, group_number);
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -4004,7 +4004,7 @@ int ela_new_group(ElaCarrier *w, char *groupid, size_t length)
 }
 
 static
-int get_group_number(ElaCarrier *w, const char *groupid, uint32_t *group_number)
+int get_group_number(Carrier *w, const char *groupid, uint32_t *group_number)
 {
     uint8_t public_key[DHT_PUBLIC_KEY_SIZE];
     ssize_t len;
@@ -4017,40 +4017,40 @@ int get_group_number(ElaCarrier *w, const char *groupid, uint32_t *group_number)
     len = base58_decode(groupid, strlen(groupid), public_key, sizeof(public_key));
     if (len != DHT_PUBLIC_KEY_SIZE) {
         vlogE("Carrier: groupid %s not base58 encoded.", groupid);
-        return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        return CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS);
     }
 
     rc = dht_group_number_by_public_key(&w->dht, public_key, group_number);
     if (rc < 0)
-        return ELA_GENERAL_ERROR(ELAERR_NOT_EXIST);
+        return CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST);
 
     return rc;
 }
 
-int ela_leave_group(ElaCarrier *w, const char *groupid)
+int carrier_leave_group(Carrier *w, const char *groupid)
 {
     uint32_t group_number;
     int rc;
 
     if (!w || !groupid || !*groupid) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_group_number(w, groupid, &group_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     rc = dht_group_leave(&w->dht, group_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -4061,37 +4061,37 @@ int ela_leave_group(ElaCarrier *w, const char *groupid)
     return 0;
 }
 
-int ela_group_invite(ElaCarrier *w, const char *groupid, const char *friendid)
+int carrier_group_invite(Carrier *w, const char *groupid, const char *friendid)
 {
     uint32_t friend_number;
     uint32_t group_number;
     int rc;
 
     if (!w || !groupid || !*groupid || !friendid || !*friendid) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_group_number(w, groupid, &group_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     rc = get_friend_number(w, friendid, &friend_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     rc = dht_group_invite(&w->dht, group_number, friend_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -4101,7 +4101,7 @@ int ela_group_invite(ElaCarrier *w, const char *groupid, const char *friendid)
     return 0;
 }
 
-int ela_group_join(ElaCarrier *w, const char *friendid, const void *cookie,
+int carrier_group_join(Carrier *w, const char *friendid, const void *cookie,
                    size_t cookie_len, char *groupid, size_t length)
 {
     uint32_t friend_number;
@@ -4109,33 +4109,33 @@ int ela_group_join(ElaCarrier *w, const char *friendid, const void *cookie,
     int rc;
 
     if (!w || !friendid || !*friendid || !cookie || !cookie_len ||
-        !groupid || length <= ELA_MAX_ID_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        !groupid || length <= CARRIER_MAX_ID_LEN) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_friend_number(w, friendid, &friend_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     rc = dht_group_join(&w->dht, friend_number, (const uint8_t *)cookie,
                         cookie_len, &group_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     rc = get_groupid_by_number(w, group_number, groupid, length);
     if (rc < 0) {
         dht_group_leave(&w->dht, group_number);
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -4144,96 +4144,96 @@ int ela_group_join(ElaCarrier *w, const char *friendid, const void *cookie,
     return 0;
 }
 
-int ela_group_send_message(ElaCarrier *w, const char *groupid, const void *msg,
+int carrier_group_send_message(Carrier *w, const char *groupid, const void *msg,
                            size_t length)
 {
     uint32_t group_number;
     int rc;
 
     if (!w || !groupid || !*groupid || !msg || !length ||
-        length > ELA_MAX_APP_MESSAGE_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        length > CARRIER_MAX_APP_MESSAGE_LEN) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_group_number(w, groupid, &group_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return  -1;
     }
 
     rc = dht_group_send_message(&w->dht, group_number, msg, length);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     return 0;
 }
 
-int ela_group_get_title(ElaCarrier *w, const char *groupid, char *title,
+int carrier_group_get_title(Carrier *w, const char *groupid, char *title,
                         size_t length)
 {
     uint32_t group_number;
     int rc;
 
     if (!w || !groupid || !*groupid || !title || !length) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_group_number(w, groupid, &group_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return  -1;
     }
 
     memset(title, 0, length);
     rc = dht_group_get_title(&w->dht, group_number, (uint8_t *)title, length);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     return 0;
 }
 
-int ela_group_set_title(ElaCarrier *w, const char *groupid, const char *title)
+int carrier_group_set_title(Carrier *w, const char *groupid, const char *title)
 {
     uint32_t group_number;
-    char buf[ELA_MAX_GROUP_TITLE_LEN + 1];
+    char buf[CARRIER_MAX_GROUP_TITLE_LEN + 1];
     int rc;
 
     if (!w || !groupid || !*groupid || !title || !*title ||
-        strlen(title) > ELA_MAX_GROUP_TITLE_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        strlen(title) > CARRIER_MAX_GROUP_TITLE_LEN) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_group_number(w, groupid, &group_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     rc = dht_group_get_title(&w->dht, group_number, (uint8_t *)buf, sizeof(buf));
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -4243,7 +4243,7 @@ int ela_group_set_title(ElaCarrier *w, const char *groupid, const char *title)
     rc = dht_group_set_title(&w->dht, group_number, (uint8_t *)title,
                              strlen(title) + 1);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -4252,8 +4252,8 @@ int ela_group_set_title(ElaCarrier *w, const char *groupid, const char *title)
     return 0;
 }
 
-int ela_group_get_peers(ElaCarrier *w, const char *groupid,
-                        ElaGroupPeersIterateCallback *callback,
+int carrier_group_get_peers(Carrier *w, const char *groupid,
+                        CarrierGroupPeersIterateCallback *callback,
                         void *context)
 {
     uint32_t group_number;
@@ -4262,30 +4262,30 @@ int ela_group_get_peers(ElaCarrier *w, const char *groupid,
     int rc;
 
     if (!w || !groupid || !*groupid || !callback) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_group_number(w, groupid, &group_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     rc = dht_group_peer_count(&w->dht, group_number, &peer_count);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     for (i = 0; i < peer_count; i++) {
         uint8_t public_key[DHT_PUBLIC_KEY_SIZE];
-        ElaGroupPeer peer;
+        CarrierGroupPeer peer;
         size_t text_sz = sizeof(peer.userid);
         char *peerid;
 
@@ -4321,13 +4321,13 @@ int ela_group_get_peers(ElaCarrier *w, const char *groupid,
 
     rc = dht_group_offline_peer_count(&w->dht, group_number, &peer_count);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     for (i = 0; i < peer_count; i++) {
         uint8_t public_key[DHT_PUBLIC_KEY_SIZE];
-        ElaGroupPeer peer;
+        CarrierGroupPeer peer;
         size_t text_sz = sizeof(peer.userid);
         char *peerid;
 
@@ -4365,8 +4365,8 @@ int ela_group_get_peers(ElaCarrier *w, const char *groupid,
     return 0;
 }
 
-int ela_group_get_peer(ElaCarrier *w, const char *groupid,
-                       const char *peerid, ElaGroupPeer *peer)
+int carrier_group_get_peer(Carrier *w, const char *groupid,
+                       const char *peerid, CarrierGroupPeer *peer)
 {
     uint8_t peerpk[DHT_PUBLIC_KEY_SIZE];
     uint32_t group_number;
@@ -4375,30 +4375,30 @@ int ela_group_get_peer(ElaCarrier *w, const char *groupid,
     int rc;
 
     if (!w || !groupid || !*groupid || !peerid || !*peerid || !peer) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     rc = (int)base58_decode(peerid, strlen(peerid), peerpk, sizeof(peerpk));
     if (rc != sizeof(peerpk)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (!w->is_ready) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
         return -1;
     }
 
     rc = get_group_number(w, groupid, &group_number);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
     rc = dht_group_peer_count(&w->dht, group_number, &peer_count);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -4419,7 +4419,7 @@ int ela_group_get_peer(ElaCarrier *w, const char *groupid,
             if (rc < 0) {
                 vlogE("Carrier: Get peer %lu name from group:%lu error.", i,
                       group_number);
-                ela_set_error(rc);
+                carrier_set_error(rc);
                 return -1;
             }
 
@@ -4431,7 +4431,7 @@ int ela_group_get_peer(ElaCarrier *w, const char *groupid,
 
     rc = dht_group_offline_peer_count(&w->dht, group_number, &peer_count);
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return -1;
     }
 
@@ -4452,7 +4452,7 @@ int ela_group_get_peer(ElaCarrier *w, const char *groupid,
             if (rc < 0) {
                 vlogE("Carrier: Get peer %lu name from group:%lu error.", i,
                       group_number);
-                ela_set_error(rc);
+                carrier_set_error(rc);
                 return -1;
             }
 
@@ -4463,11 +4463,11 @@ int ela_group_get_peer(ElaCarrier *w, const char *groupid,
     }
 
     vlogE("Carrier: Can not find peer (%s) in group (%lu)", peerid, group_number);
-    ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
     return -1;
 }
 
-int ela_get_groups(ElaCarrier *w, ElaIterateGroupCallback *callback,
+int carrier_get_groups(Carrier *w, CarrierIterateGroupCallback *callback,
                    void *context)
 {
     uint32_t group_count;
@@ -4475,7 +4475,7 @@ int ela_get_groups(ElaCarrier *w, ElaIterateGroupCallback *callback,
     uint32_t i;
 
     if (!w || !callback) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
@@ -4489,7 +4489,7 @@ int ela_get_groups(ElaCarrier *w, ElaIterateGroupCallback *callback,
     dht_get_group_list(&w->dht, group_number_list);
 
     for (i = 0; i < group_count; i++) {
-        char groupid[ELA_MAX_ID_LEN + 1];
+        char groupid[CARRIER_MAX_ID_LEN + 1];
         int rc;
 
         rc = get_groupid_by_number(w, group_number_list[i], groupid,
@@ -4505,14 +4505,14 @@ int ela_get_groups(ElaCarrier *w, ElaIterateGroupCallback *callback,
     return 0;
 }
 
-int ela_leave_all_groups(ElaCarrier *w)
+int carrier_leave_all_groups(Carrier *w)
 {
     uint32_t group_count;
     uint32_t *group_number_list;
     uint32_t i;
 
     if (!w) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 

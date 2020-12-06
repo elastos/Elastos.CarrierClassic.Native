@@ -44,13 +44,13 @@ typedef struct StatusCondition {
 
 #define DEFINE_STATUS_COND(obj) obj = { .cond = COND_INITIALIZER }
 
-static inline void status_cond_wait(StatusCondition *cond, ElaCarrier *c,
-                                    const char *friend_id, ElaConnectionStatus status)
+static inline void status_cond_wait(StatusCondition *cond, Carrier *c,
+                                    const char *friend_id, CarrierConnectionStatus status)
 {
     while (true) {
-        ElaFriendInfo fi;
+        CarrierFriendInfo fi;
 
-        ela_get_friend_info(c, friend_id, &fi);
+        carrier_get_friend_info(c, friend_id, &fi);
         if (fi.status != status) {
             cond_wait(&cond->cond);
             continue;

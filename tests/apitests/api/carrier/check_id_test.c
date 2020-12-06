@@ -31,8 +31,8 @@ static void test_id_valid(void)
     const char *valid_id   = "3KygiXesrAACKrF9cnWQrcWW5KqSRY9rKzVqkKUsEoWL";
     const char *invalid_id = "lKygiXesrAACKrF9cnWQrcWW5KqSRY9rKzVqkKUsEoWL";
 
-    CU_ASSERT_TRUE(ela_id_is_valid(valid_id));
-    CU_ASSERT_FALSE(ela_id_is_valid(invalid_id));
+    CU_ASSERT_TRUE(carrier_id_is_valid(valid_id));
+    CU_ASSERT_FALSE(carrier_id_is_valid(invalid_id));
 }
 
 static CU_TestInfo cases[] = {

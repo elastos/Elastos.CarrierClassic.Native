@@ -23,8 +23,8 @@
 #ifndef __TEST_HELPER_H__
 #define __TEST_HELPER_H__
 
-#include "carrier.h"
-#include "carrier_session.h"
+#include <carrier.h>
+#include <carrier_session.h>
 
 #include "test_context.h"
 
@@ -35,9 +35,9 @@
     }                           \
 } while(0)
 
-extern char robotid[ELA_MAX_ID_LEN + 1];
+extern char robotid[CARRIER_MAX_ID_LEN + 1];
 
-extern char robotaddr[ELA_MAX_ADDRESS_LEN + 1];
+extern char robotaddr[CARRIER_MAX_ADDRESS_LEN + 1];
 
 int test_suite_init_ext(TestContext *ctx, bool udp_disabled);
 
@@ -45,7 +45,7 @@ int test_suite_init(TestContext *ctx);
 
 int test_suite_cleanup(TestContext *ctx);
 
-int hello_prepare(ElaCarrier *c, const char *hello);
+int hello_prepare(Carrier *c, const char *hello);
 
 int add_friend_anyway(TestContext *ctx, const char *userid, const char *address);
 
@@ -55,12 +55,12 @@ int robot_sinit(void);
 
 void robot_sfree(void);
 
-const char *stream_state_name(ElaStreamState state);
+const char *stream_state_name(CarrierStreamState state);
 
-void test_stream_scheme(ElaStreamType stream_type, int stream_options,
+void test_stream_scheme(CarrierStreamType stream_type, int stream_options,
                         TestContext *context, int (*do_work_cb)(TestContext *));
 
-const char* connection_str(enum ElaConnectionStatus status);
+const char* connection_str(enum CarrierConnectionStatus status);
 
 void test_group_scheme(TestContext *context,
                        int (*do_work_cb)(TestContext *));

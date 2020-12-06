@@ -35,7 +35,7 @@
 #include "carrier_config.h"
 #include "config.h"
 
-static int extra_config_parser(void *p, ElaOptions *options)
+static int extra_config_parser(void *p, CarrierOptions *options)
 {
     config_t *cfg = (config_t *)p;
     TestConfig *config = (TestConfig *)options;
@@ -51,7 +51,7 @@ TestConfig *load_config(const char *config_file, TestConfig *config)
     memset(config, 0, sizeof(TestConfig));
 
     return (TestConfig *)carrier_config_load(config_file, extra_config_parser,
-                (ElaOptions *)config);
+                (CarrierOptions *)config);
 }
 
 void free_config(TestConfig *config)

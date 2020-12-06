@@ -35,8 +35,8 @@
 #endif
 #include <crystal.h>
 
-#include "carrier.h"
-#include "carrier_session.h"
+#include <carrier.h>
+#include <carrier_session.h>
 #include "carrier_filetransfer.h"
 #include "carrier_easyfile.h"
 
@@ -47,7 +47,7 @@
 #include "test_helper.h"
 #include "cond.h"
 
-const char *stream_state_name(ElaStreamState state);
+const char *stream_state_name(CarrierStreamState state);
 
 #define CHK_ARGS(exp) if (!(exp)) { \
         vlogE("Invalid command syntax"); \
@@ -59,7 +59,7 @@ struct SessionContextExtra {
 
     char remote_sdp[2048];
     size_t sdp_len;
-    char test_peer_id[(ELA_MAX_ID_LEN + 1) * 2];
+    char test_peer_id[(CARRIER_MAX_ID_LEN + 1) * 2];
 };
 
 static SessionContextExtra session_extra = {
@@ -70,7 +70,7 @@ static SessionContextExtra session_extra = {
     .test_peer_id = {0}
 };
 
-static void session_request_callback(ElaCarrier *w, const char *from, const char *bundle,
+static void session_request_callback(Carrier *w, const char *from, const char *bundle,
                                      const char *sdp, size_t len, void *context)
 {
     SessionContextExtra *extra = ((SessionContext *)context)->extra;
@@ -84,7 +84,7 @@ static void session_request_callback(ElaCarrier *w, const char *from, const char
     write_ack("srequest received\n");
 }
 
-static void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
+static void session_request_complete_callback(CarrierSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = ((TestContext *)context)->session;
@@ -100,7 +100,7 @@ static void session_request_complete_callback(ElaSession *ws, const char *bundle
     }
 
     cond_wait(stream_ctxt->cond);
-    if (!(stream_ctxt->state_bits & (1 << ElaStreamState_transport_ready))) {
+    if (!(stream_ctxt->state_bits & (1 << CarrierStreamState_transport_ready))) {
         vlogE("Stream state not 'transport ready' state");
         goto cleanup;
     }
@@ -110,21 +110,21 @@ static void session_request_complete_callback(ElaSession *ws, const char *bundle
         write_ack("bundle %s\n", bundle);
     }
 
-    rc = ela_session_start(ws, sdp, len);
+    rc = carrier_session_start(ws, sdp, len);
     if (rc < 0) {
-        vlogE("Start session for robot failed (0x%x)", ela_get_error());
+        vlogE("Start session for robot failed (0x%x)", carrier_get_error());
         goto cleanup;
     } else
         vlogD("Start session for robot success");
 
     cond_wait(stream_ctxt->cond);
-    if (!(stream_ctxt->state_bits & (1 << ElaStreamState_connecting))) {
+    if (!(stream_ctxt->state_bits & (1 << CarrierStreamState_connecting))) {
         vlogE("Stream state not 'connnecting' state");
         goto cleanup;
     }
 
     cond_wait(stream_ctxt->cond);
-    if (!(stream_ctxt->state_bits & (1 << ElaStreamState_connected))) {
+    if (!(stream_ctxt->state_bits & (1 << CarrierStreamState_connected))) {
         vlogE("Stream state not 'connected' state");
         goto cleanup;
     }
@@ -134,11 +134,11 @@ static void session_request_complete_callback(ElaSession *ws, const char *bundle
 
 cleanup:
     if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        carrier_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
         stream_ctxt->stream_id = -1;
     }
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        carrier_session_close(sctxt->session);
         sctxt->session = NULL;
     }
     write_ack("sconnect failed\n");
@@ -157,14 +157,14 @@ static SessionContext session_context = {
     .extra = &session_extra
 };
 
-static void stream_on_data(ElaSession *ws, int stream, const void *data,
+static void stream_on_data(CarrierSession *ws, int stream, const void *data,
                            size_t len, void *context)
 {
     vlogD("Stream [%d] received data [%.*s]", stream, (int)len, (char*)data);
 }
 
-static void stream_state_changed(ElaSession *ws, int stream,
-                                 ElaStreamState state, void *context)
+static void stream_state_changed(CarrierSession *ws, int stream,
+                                 CarrierStreamState state, void *context)
 {
     StreamContext *stream_ctxt = (StreamContext *)context;
 
@@ -193,7 +193,7 @@ static StreamContextExtra stream_extra = {
     .portforwarding_id = -1
 };
 
-static bool channel_open(ElaSession *ws, int stream, int channel,
+static bool channel_open(CarrierSession *ws, int stream, int channel,
                          const char *cookie, void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
@@ -205,7 +205,7 @@ static bool channel_open(ElaSession *ws, int stream, int channel,
 }
 
 static
-void channel_opened(ElaSession *ws, int stream, int channel, void *context)
+void channel_opened(CarrierSession *ws, int stream, int channel, void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
 
@@ -216,7 +216,7 @@ void channel_opened(ElaSession *ws, int stream, int channel, void *context)
         cond_signal(&extra->channel_opened_cond);
 }
 
-static void channel_close(ElaSession *ws, int stream, int channel,
+static void channel_close(CarrierSession *ws, int stream, int channel,
                           CloseReason reason, void *context)
 {
     StreamContextExtra *extra = ((StreamContext *)context)->extra;
@@ -233,7 +233,7 @@ static void channel_close(ElaSession *ws, int stream, int channel,
         extra->channels[channel-1].channel_error_state = 1;
 }
 
-static  bool channel_data(ElaSession *ws, int stream, int channel,
+static  bool channel_data(CarrierSession *ws, int stream, int channel,
                           const void *data, size_t len, void *context)
 {
     vlogD("stream [%d] channel [%d] received data [%.*s]",
@@ -242,18 +242,18 @@ static  bool channel_data(ElaSession *ws, int stream, int channel,
 }
 
 static
-void channel_pending(ElaSession *ws, int stream, int channel, void *context)
+void channel_pending(CarrierSession *ws, int stream, int channel, void *context)
 {
     vlogD("stream [%d] channel [%d] pend data.", stream, channel);
 }
 
 static
-void channel_resume(ElaSession *ws, int stream, int channel, void *context)
+void channel_resume(CarrierSession *ws, int stream, int channel, void *context)
 {
     vlogD("stream [%d] channel [%d] resume data.", stream, channel);
 }
 
-static ElaStreamCallbacks stream_callbacks = {
+static CarrierStreamCallbacks stream_callbacks = {
     .stream_data = stream_on_data,
     .state_changed = stream_state_changed,
     .channel_open = channel_open,
@@ -286,11 +286,11 @@ TestContext test_context = {
  */
 static void wready(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
 
     CHK_ARGS(argc == 1);
 
-    while(!ela_is_ready(w))
+    while(!carrier_is_ready(w))
         usleep(1*1000*1000);
 
     write_ack("ready\n");
@@ -301,13 +301,13 @@ static void wready(TestContext *context, int argc, char *argv[])
  */
 static void hello(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
     CarrierContext *wctx = context->carrier;
     CarrierContextExtra *extra = context->carrier->extra;
 
     CHK_ARGS(argc == 4);
 
-    if (!ela_is_friend(w, argv[1])) {
+    if (!carrier_is_friend(w, argv[1])) {
         extra->offmsg_case = Freq_Once;
         extra->hellomsg = strdup(argv[3]);
         write_ack("hello succeeded\n");
@@ -322,16 +322,16 @@ static void hello(TestContext *context, int argc, char *argv[])
  */
 static void fadd(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
     CarrierContext *wctx = context->carrier;
     int rc;
 
     CHK_ARGS(argc == 4);
 
-    if (!ela_is_friend(w, argv[1])) {
-        rc = ela_add_friend(w, argv[2], argv[3]);
+    if (!carrier_is_friend(w, argv[1])) {
+        rc = carrier_add_friend(w, argv[2], argv[3]);
         if (rc < 0) {
-            vlogE("Add user %s to be friend error (0x%x)", argv[2], ela_get_error());
+            vlogE("Add user %s to be friend error (0x%x)", argv[2], carrier_get_error());
             write_ack("fadd failed\n");
             return;
         } else {
@@ -342,7 +342,7 @@ static void fadd(TestContext *context, int argc, char *argv[])
     }
 
     status_cond_wait(wctx->friend_status_cond, w, argv[1],
-                     ElaConnectionStatus_Connected);
+                     CarrierConnectionStatus_Connected);
     write_ack("fadd succeeded\n");
 }
 
@@ -351,15 +351,15 @@ static void fadd(TestContext *context, int argc, char *argv[])
  */
 void faccept(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
     CarrierContext *wctx = context->carrier;
     int rc;
 
     CHK_ARGS(argc == 2);
-    rc = ela_accept_friend(w, argv[1]);
+    rc = carrier_accept_friend(w, argv[1]);
     if (rc < 0) {
         vlogE("Accept friend request from user %s error (0x%x)",
-              argv[1], ela_get_error());
+              argv[1], carrier_get_error());
         write_ack("fadd failed\n");
         return;
     } else {
@@ -369,7 +369,7 @@ void faccept(TestContext *context, int argc, char *argv[])
     }
 
     status_cond_wait(wctx->friend_status_cond, w, argv[1],
-                     ElaConnectionStatus_Connected);
+                     CarrierConnectionStatus_Connected);
     write_ack("fadd succeeded\n");
 }
 
@@ -378,15 +378,15 @@ void faccept(TestContext *context, int argc, char *argv[])
  */
 static void fmsg(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
     int rc;
 
     CHK_ARGS(argc == 3);
 
-    rc = ela_send_friend_message(w, argv[1], argv[2], strlen(argv[2]), NULL, NULL, NULL);
+    rc = carrier_send_friend_message(w, argv[1], argv[2], strlen(argv[2]), NULL, NULL, NULL);
     if (rc < 0)
         vlogE("Send message to friend %s error (0x%x)",
-              argv[1], ela_get_error());
+              argv[1], carrier_get_error());
     else
         vlogD("Send message to friend %s success", argv[1]);
 }
@@ -396,20 +396,20 @@ static void fmsg(TestContext *context, int argc, char *argv[])
  */
 static void fremove(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
     CarrierContext *wctx = context->carrier;
     int rc;
 
     CHK_ARGS(argc == 2);
 
-    if (!ela_is_friend(w, argv[1])) {
+    if (!carrier_is_friend(w, argv[1])) {
         write_ack("fremove succeeded\n");
         return;
     }
 
-    rc = ela_remove_friend(w, argv[1]);
+    rc = carrier_remove_friend(w, argv[1]);
     if (rc < 0) {
-        vlogE("Remove friend %s error (0x%x)", argv[1], ela_get_error());
+        vlogE("Remove friend %s error (0x%x)", argv[1], carrier_get_error());
         write_ack("fremove failed\n");
         return;
     }
@@ -422,7 +422,7 @@ static void fremove(TestContext *context, int argc, char *argv[])
     write_ack("fremove succeeded\n");
 }
 
-static void invite_response_callback(ElaCarrier *w, const char *friendid, const char *bundle,
+static void invite_response_callback(Carrier *w, const char *friendid, const char *bundle,
                                      int status, const char *reason,
                                      const void *data, size_t len, void *context)
 {
@@ -442,16 +442,16 @@ static void invite_response_callback(ElaCarrier *w, const char *friendid, const 
  */
 static void finvite(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
     int rc;
 
     CHK_ARGS(argc == 3);
 
-    rc = ela_invite_friend(w, argv[1], NULL, argv[2], strlen(argv[2] + 1),
+    rc = carrier_invite_friend(w, argv[1], NULL, argv[2], strlen(argv[2] + 1),
                                invite_response_callback, NULL);
     if (rc < 0)
         vlogE("Send invite request to friend %s error (0x%x)",
-              argv[1], ela_get_error());
+              argv[1], carrier_get_error());
     else
         vlogD("Send invite request to friend %s success", argv[1]);
 }
@@ -461,7 +461,7 @@ static void finvite(TestContext *context, int argc, char *argv[])
  */
 static void freplyinvite(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
     int rc;
     int status = 0;
     const char *reason = NULL;
@@ -481,17 +481,17 @@ static void freplyinvite(TestContext *context, int argc, char *argv[])
         return;
     }
 
-    rc = ela_reply_friend_invite(w, argv[1], NULL, status, reason, msg, msg_len);
+    rc = carrier_reply_friend_invite(w, argv[1], NULL, status, reason, msg, msg_len);
     if (rc < 0)
         vlogE("Reply invite request from friend %s error (0x%x)",
-              argv[1], ela_get_error());
+              argv[1], carrier_get_error());
     else
         vlogD("Reply invite request from friend %s success", argv[1]);
 }
 
 static void freplyinvite_bigdata(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
     int rc;
     int status = 0;
     CarrierContextExtra *extra = context->carrier->extra;
@@ -515,10 +515,10 @@ static void freplyinvite_bigdata(TestContext *context, int argc, char *argv[])
         return;
     }
 
-    rc = ela_reply_friend_invite(w, argv[1], extra->bundle, status, reason, data, len);
+    rc = carrier_reply_friend_invite(w, argv[1], extra->bundle, status, reason, data, len);
     if (rc < 0)
         vlogE("Reply invite request from friend %s error (0x%x)",
-              argv[1], ela_get_error());
+              argv[1], carrier_get_error());
     else
         vlogD("Reply invite request from friend %s success", argv[1]);
 
@@ -531,19 +531,19 @@ static void freplyinvite_bigdata(TestContext *context, int argc, char *argv[])
  */
 static void wkill(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
 
     vlogI("Kill robot instance.");
-    ela_kill(w);
+    carrier_kill(w);
 }
 
 static void killnode(TestContext *context, int argc, char *argv[])
 {
     CarrierContextExtra *extra = context->carrier->extra;
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
 
     vlogI("Kill robot node instance.");
-    ela_kill(w);
+    carrier_kill(w);
 
     pthread_join(extra->tid, NULL);
     write_ack("killnode success\n");
@@ -629,7 +629,7 @@ static void robot_context_reset(TestContext *context)
  */
 static void sinit(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
     SessionContext *sctxt = context->session;
     int rc;
 
@@ -637,13 +637,13 @@ static void sinit(TestContext *context, int argc, char *argv[])
 
     robot_context_reset(context);
 
-    rc = ela_session_init(w);
+    rc = carrier_session_init(w);
     if (rc < 0) {
-        vlogE("session init failed: 0x%x", ela_get_error());
+        vlogE("session init failed: 0x%x", carrier_get_error());
         write_ack("sinit failed\n");
         return;
     } else {
-        ela_session_set_callback(w, NULL, sctxt->request_cb, sctxt);
+        carrier_session_set_callback(w, NULL, sctxt->request_cb, sctxt);
         vlogD("session init success.");
         sctxt->extra->init_flag = 1;
         write_ack("sinit success\n");
@@ -662,22 +662,22 @@ static void srequest(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 3 || argc == 4);
 
-    sctxt->session = ela_session_new(context->carrier->carrier, argv[1]);
+    sctxt->session = carrier_session_new(context->carrier->carrier, argv[1]);
     if (!sctxt->session) {
-        vlogE("New session to %s failed: 0x%x", argv[1], ela_get_error());
+        vlogE("New session to %s failed: 0x%x", argv[1], carrier_get_error());
         goto cleanup;
     }
 
-    stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
-                                        ElaStreamType_text, atoi(argv[2]),
+    stream_ctxt->stream_id = carrier_session_add_stream(sctxt->session,
+                                        CarrierStreamType_text, atoi(argv[2]),
                                         stream_ctxt->cbs, stream_ctxt);
     if (stream_ctxt->stream_id < 0) {
-        vlogE("Add text stream failed: 0x%x", ela_get_error());
+        vlogE("Add text stream failed: 0x%x", carrier_get_error());
         goto cleanup;
     }
 
     cond_wait(stream_ctxt->cond);
-    if (!(stream_ctxt->state_bits & (1 << ElaStreamState_initialized))) {
+    if (!(stream_ctxt->state_bits & (1 << CarrierStreamState_initialized))) {
         vlogE("Stream state not 'initialized' state");
         goto cleanup;
     }
@@ -687,9 +687,9 @@ static void srequest(TestContext *context, int argc, char *argv[])
     else
         bundle = NULL;
 
-    rc = ela_session_request(sctxt->session, bundle, sctxt->request_complete_cb, context);
+    rc = carrier_session_request(sctxt->session, bundle, sctxt->request_complete_cb, context);
     if (rc < 0) {
-        vlogE("Session request failed: 0x%x", ela_get_error());
+        vlogE("Session request failed: 0x%x", carrier_get_error());
         goto cleanup;
     }
 
@@ -702,12 +702,12 @@ static void srequest(TestContext *context, int argc, char *argv[])
 
 cleanup:
     if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        carrier_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
         stream_ctxt->stream_id = -1;
     }
 
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        carrier_session_close(sctxt->session);
         sctxt->session = NULL;
     }
 
@@ -727,10 +727,10 @@ static void sreply(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 4 || argc == 2);
 
-    sctxt->session = ela_session_new(context->carrier->carrier, sctxt->extra->test_peer_id);
+    sctxt->session = carrier_session_new(context->carrier->carrier, sctxt->extra->test_peer_id);
     if (!sctxt->session) {
         vlogE("New session to %s failed: 0x%x",
-              sctxt->extra->test_peer_id, ela_get_error());
+              sctxt->extra->test_peer_id, carrier_get_error());
         write_ack("sreply failed\n");
         return;
     }
@@ -739,27 +739,27 @@ static void sreply(TestContext *context, int argc, char *argv[])
         int stream_type    = atoi(argv[2]);
         int stream_options = atoi(argv[3]);
 
-        stream_ctxt->stream_id = ela_session_add_stream(sctxt->session,
+        stream_ctxt->stream_id = carrier_session_add_stream(sctxt->session,
                     stream_type, stream_options, stream_ctxt->cbs, stream_ctxt);
         if (stream_ctxt->stream_id < 0) {
-            vlogE("Add stream failed: 0x%x", ela_get_error());
+            vlogE("Add stream failed: 0x%x", carrier_get_error());
             goto cleanup;
         }
 
         cond_wait(stream_ctxt->cond);
-        if (!(stream_ctxt->state_bits & (1 << ElaStreamState_initialized))) {
+        if (!(stream_ctxt->state_bits & (1 << CarrierStreamState_initialized))) {
             vlogE("Stream is in %d state, not 'initialized'", stream_ctxt->state);
             goto cleanup;
         }
 
-        rc = ela_session_reply_request(sctxt->session, NULL, 0, NULL);
+        rc = carrier_session_reply_request(sctxt->session, NULL, 0, NULL);
         if (rc < 0) {
-            vlogE("Confirm session reply request failed: 0x%x", ela_get_error());
+            vlogE("Confirm session reply request failed: 0x%x", carrier_get_error());
             goto cleanup;
         }
 
         cond_wait(stream_ctxt->cond);
-        if (!(stream_ctxt->state_bits & (1 << ElaStreamState_transport_ready))) {
+        if (!(stream_ctxt->state_bits & (1 << CarrierStreamState_transport_ready))) {
             vlogE("Stream is in %d state, not 'transport ready'", stream_ctxt->state);
             goto cleanup;
         }
@@ -769,21 +769,21 @@ static void sreply(TestContext *context, int argc, char *argv[])
 
         need_sreply_ack = 0;
 
-        rc = ela_session_start(sctxt->session, sctxt->extra->remote_sdp,
+        rc = carrier_session_start(sctxt->session, sctxt->extra->remote_sdp,
                                    sctxt->extra->sdp_len);
         if (rc < 0) {
-            vlogE("Start session failed: 0x%x", ela_get_error());
+            vlogE("Start session failed: 0x%x", carrier_get_error());
             goto cleanup;
         }
 
         cond_wait(stream_ctxt->cond);
-        if (!(stream_ctxt->state_bits & (1 << ElaStreamState_connecting))) {
+        if (!(stream_ctxt->state_bits & (1 << CarrierStreamState_connecting))) {
             vlogE("Stream is in %d state, not 'connecting'", stream_ctxt->state);
             goto cleanup;
         }
 
         cond_wait(stream_ctxt->cond);
-        if (!(stream_ctxt->state_bits & (1 << ElaStreamState_connected))) {
+        if (!(stream_ctxt->state_bits & (1 << CarrierStreamState_connected))) {
             vlogE("Stream is in %d state, not 'connected'", stream_ctxt->state);
             goto cleanup;
         }
@@ -792,9 +792,9 @@ static void sreply(TestContext *context, int argc, char *argv[])
         return;
     }
     else if (strcmp(argv[1], "refuse") == 0) {
-        rc = ela_session_reply_request(sctxt->session, NULL, 1, "testing");
+        rc = carrier_session_reply_request(sctxt->session, NULL, 1, "testing");
         if (rc < 0) {
-            vlogE("Refuse session request failed: 0x%x", ela_get_error());
+            vlogE("Refuse session request failed: 0x%x", carrier_get_error());
             goto cleanup;
         }
 
@@ -811,15 +811,15 @@ static void sreply(TestContext *context, int argc, char *argv[])
 
 cleanup:
     if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        carrier_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
         stream_ctxt->stream_id = -1;
     }
 
     if (need_sreply_ack && sctxt->session)
-        ela_session_reply_request(sctxt->session, NULL, 2, "Error");
+        carrier_session_reply_request(sctxt->session, NULL, 2, "Error");
 
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        carrier_session_close(sctxt->session);
         sctxt->session = NULL;
     }
 
@@ -831,28 +831,28 @@ cleanup:
 
 static void sfree(TestContext *context, int argc, char *argv[])
 {
-    ElaCarrier *w = context->carrier->carrier;
+    Carrier *w = context->carrier->carrier;
     SessionContext *sctxt = context->session;
     StreamContext *stream_ctxt = context->stream;
 
     CHK_ARGS(argc == 1);
 
     if (stream_ctxt->stream_id > 0) {
-        ela_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
+        carrier_session_remove_stream(sctxt->session, stream_ctxt->stream_id);
 
         cond_wait(stream_ctxt->cond);
-        if (stream_ctxt->state != ElaStreamState_closed)
+        if (stream_ctxt->state != CarrierStreamState_closed)
             vlogE("Stream should be closed, but (%d)", stream_ctxt->state);
         stream_ctxt->stream_id = -1;
     }
 
     if (sctxt->session) {
-        ela_session_close(sctxt->session);
+        carrier_session_close(sctxt->session);
         sctxt->session = NULL;
     }
 
     if (sctxt->extra->init_flag) {
-        ela_session_cleanup(w);
+        carrier_session_cleanup(w);
         sctxt->extra->init_flag = 0;
     }
 
@@ -861,7 +861,7 @@ static void sfree(TestContext *context, int argc, char *argv[])
 
 static void spfsvcadd(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    CarrierSession *session = context->session->session;
     int rc;
     PortForwardingProtocol protocol;
 
@@ -875,9 +875,9 @@ static void spfsvcadd(TestContext *context, int argc, char *argv[])
         return;
     }
 
-    rc = ela_session_add_service(session, argv[1], protocol, argv[3], argv[4]);
+    rc = carrier_session_add_service(session, argv[1], protocol, argv[3], argv[4]);
     if (rc < 0) {
-        vlogE("Add service %s failed (0x%x)", argv[1], ela_get_error());
+        vlogE("Add service %s failed (0x%x)", argv[1], carrier_get_error());
         write_ack("spfsvcadd failed\n");
         return;
     }
@@ -1059,18 +1059,18 @@ static void spfrecvdata(TestContext *context, int argc, char *argv[])
 
 static void spfsvcremove(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    CarrierSession *session = context->session->session;
 
     CHK_ARGS(argc == 2);
 
-    ela_session_remove_service(session, argv[1]);
+    carrier_session_remove_service(session, argv[1]);
 
     vlogD("Service %s removed", argv[1]);
 }
 
 static void spf_open(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    CarrierSession *session = context->session->session;
     StreamContext *stream_ctxt = context->stream;
     PortForwardingProtocol protocol;
     int pfid;
@@ -1087,16 +1087,16 @@ static void spf_open(TestContext *context, int argc, char *argv[])
 
     // Double check.
     if (stream_ctxt->extra->portforwarding_id > 0) {
-        ela_stream_close_port_forwarding(session, stream_ctxt->stream_id,
+        carrier_stream_close_port_forwarding(session, stream_ctxt->stream_id,
                                         stream_ctxt->extra->portforwarding_id);
         stream_ctxt->extra->portforwarding_id = -1;
     }
 
-    pfid = ela_stream_open_port_forwarding(session, stream_ctxt->stream_id,
+    pfid = carrier_stream_open_port_forwarding(session, stream_ctxt->stream_id,
                                         argv[1], protocol, argv[3], argv[4]);
     if (pfid <= 0) {
         vlogE("Open portforwarding for service %s failed: 0x%x",
-              argv[1], ela_get_error());
+              argv[1], carrier_get_error());
         write_ack("spfopen failed\n");
         return;
     }
@@ -1134,19 +1134,19 @@ static void spfsenddata(TestContext *context, int argc, char *argv[])
 
 static void spf_close(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    CarrierSession *session = context->session->session;
     StreamContext *stream_ctxt = context->stream;
     int rc;
 
     CHK_ARGS(argc == 1);
 
     if (stream_ctxt->extra->portforwarding_id > 0) {
-        rc = ela_stream_close_port_forwarding(session, stream_ctxt->stream_id,
+        rc = carrier_stream_close_port_forwarding(session, stream_ctxt->stream_id,
                                         stream_ctxt->extra->portforwarding_id);
         stream_ctxt->extra->portforwarding_id = -1;
 
         if (rc < 0) {
-            vlogE("Close portforwarding failed: 0x%x", ela_get_error());
+            vlogE("Close portforwarding failed: 0x%x", carrier_get_error());
             write_ack("spfclose failed\n");
             return;
         }
@@ -1182,7 +1182,7 @@ static void cready2open(TestContext *context, int argc, char *argv[])
 
 static void cpend(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    CarrierSession *session = context->session->session;
     StreamContext *stream_ctxt = context->stream;
     int rc;
 
@@ -1190,13 +1190,13 @@ static void cpend(TestContext *context, int argc, char *argv[])
 
     cond_wait(&stream_ctxt->extra->channel_opened_cond);
 
-    rc = ela_stream_pend_channel(session, stream_ctxt->stream_id,
+    rc = carrier_stream_pend_channel(session, stream_ctxt->stream_id,
                                  stream_ctxt->extra->channels[0].channel_id);
     if (rc < 0) {
         vlogE("Pending stream %d channel %d failed: 0x%x",
               stream_ctxt->stream_id,
               stream_ctxt->extra->channels[0].channel_id,
-              ela_get_error());
+              carrier_get_error());
 
         write_ack("cpend failed\n");
     } else {
@@ -1206,19 +1206,19 @@ static void cpend(TestContext *context, int argc, char *argv[])
 
 static void cresume(TestContext *context, int argc, char *argv[])
 {
-    ElaSession *session = context->session->session;
+    CarrierSession *session = context->session->session;
     StreamContext *stream_ctxt = context->stream;
     int rc;
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_stream_resume_channel(session, stream_ctxt->stream_id,
+    rc = carrier_stream_resume_channel(session, stream_ctxt->stream_id,
                                    stream_ctxt->extra->channels[0].channel_id);
     if (rc < 0) {
         vlogE("Resume stream %d channel %d failed: 0x%x",
               stream_ctxt->stream_id,
               stream_ctxt->extra->channels[0].channel_id,
-              ela_get_error());
+              carrier_get_error());
 
         write_ack("cresume failed\n");
     } else {
@@ -1235,14 +1235,14 @@ static void ginvite(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 2);
 
-    rc = ela_new_group(wctx->carrier, wextra->groupid, sizeof(wextra->groupid));
+    rc = carrier_new_group(wctx->carrier, wextra->groupid, sizeof(wextra->groupid));
     if (rc < 0) {
-        vlogE("ela_new_group failed");
+        vlogE("carrier_new_group failed");
         write_ack("ginvite failed\n");
         return;
     }
 
-    rc = ela_group_invite(wctx->carrier, wextra->groupid, argv[1]);
+    rc = carrier_group_invite(wctx->carrier, wextra->groupid, argv[1]);
     if (rc < 0) {
         write_ack("ginvite failed\n");
         return;
@@ -1260,7 +1260,7 @@ static void gjoin(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_group_join(wctx->carrier, wextra->gfrom, wextra->gcookie,
+    rc = carrier_group_join(wctx->carrier, wextra->gfrom, wextra->gcookie,
                         wextra->gcookie_len, wextra->groupid,
                         sizeof(wextra->groupid));
     if (rc < 0) {
@@ -1287,7 +1287,7 @@ static void gleave(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_leave_group(wctx->carrier, wextra->groupid);
+    rc = carrier_leave_group(wctx->carrier, wextra->groupid);
     if (rc < 0) {
         write_ack("gleave failed\n");
         return;
@@ -1296,9 +1296,9 @@ static void gleave(TestContext *context, int argc, char *argv[])
     write_ack("gleave succeeded\n");
 }
 
-static void ft_connect_cb(ElaCarrier *carrier,
+static void ft_connect_cb(Carrier *carrier,
                           const char *address,
-                          const ElaFileTransferInfo *fileinfo,
+                          const CarrierFileTransferInfo *fileinfo,
                           void *context)
 {
     write_ack("ft_connect received\n");
@@ -1333,7 +1333,7 @@ static void ft_init(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_filetransfer_init(wctx->carrier, ft_connect_cb, &test_context);
+    rc = carrier_filetransfer_init(wctx->carrier, ft_connect_cb, &test_context);
     if (rc < 0) {
         write_ack("ft_init failed\n");
         return;
@@ -1348,7 +1348,7 @@ static void ft_new(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 2);
 
-    wctx->ft = ela_filetransfer_new(wctx->carrier, argv[1], NULL,
+    wctx->ft = carrier_filetransfer_new(wctx->carrier, argv[1], NULL,
                               wctx->ft_cbs, context);
     if (wctx->ft == NULL) {
         write_ack("ft_new failed\n");
@@ -1365,7 +1365,7 @@ static void ft_connect(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_filetransfer_connect(wctx->ft);
+    rc = carrier_filetransfer_connect(wctx->ft);
     if (rc < 0) {
         write_ack("ft_connect failed\n");
         return;
@@ -1381,7 +1381,7 @@ static void ft_accept(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_filetransfer_accept_connect(wctx->ft);
+    rc = carrier_filetransfer_accept_connect(wctx->ft);
     if (rc < 0) {
         write_ack("ft_accept failed\n");
         return;
@@ -1398,7 +1398,7 @@ static void ft_pull(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_filetransfer_pull(wctx->ft, extra->fileid, 0);
+    rc = carrier_filetransfer_pull(wctx->ft, extra->fileid, 0);
     if (rc < 0) {
         write_ack("ft_pull failed\n");
         return;
@@ -1415,7 +1415,7 @@ static void ft_pend(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_filetransfer_pend(wctx->ft, extra->fileid);
+    rc = carrier_filetransfer_pend(wctx->ft, extra->fileid);
     if (rc < 0) {
         write_ack("ft_pend failed\n");
         return;
@@ -1432,7 +1432,7 @@ static void ft_resume(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 1);
 
-    rc = ela_filetransfer_resume(wctx->ft, extra->fileid);
+    rc = carrier_filetransfer_resume(wctx->ft, extra->fileid);
     if (rc < 0) {
         write_ack("ft_resume failed\n");
         return;
@@ -1449,7 +1449,7 @@ static void ft_cancel(TestContext *context, int argc, char *argv[])
 
     CHK_ARGS(argc == 3);
 
-    rc = ela_filetransfer_cancel(wctx->ft, extra->fileid, atoi(argv[1]), argv[2]);
+    rc = carrier_filetransfer_cancel(wctx->ft, extra->fileid, atoi(argv[1]), argv[2]);
     if (rc < 0) {
         write_ack("ft_cancel failed\n");
         return;
@@ -1462,13 +1462,13 @@ static void ft_send(TestContext *context, int argc, char *argv[])
     TestContext *ctx = (TestContext *)context;
     CarrierContext *wctx = ctx->carrier;
     CarrierContextExtra *extra = wctx->extra;
-    ElaFileProgressCallbacks file_progress_cb = {0};
+    CarrierFileProgressCallbacks file_progress_cb = {0};
     int rc;
 
     CHK_ARGS(argc == 2);
 
     file_progress_cb.sent = fp_sent;
-    rc = ela_file_send(wctx->carrier, argv[1], extra->recv_file,
+    rc = carrier_file_send(wctx->carrier, argv[1], extra->recv_file,
                        &file_progress_cb, context);
     if (rc < 0)
         write_ack("ft_send failed\n");
@@ -1481,7 +1481,7 @@ static void ft_recv(TestContext *context, int argc, char *argv[])
     TestContext *ctx = (TestContext *)context;
     CarrierContext *wctx = ctx->carrier;
     CarrierContextExtra *extra = wctx->extra;
-    ElaFileProgressCallbacks file_progress_cb = {0};
+    CarrierFileProgressCallbacks file_progress_cb = {0};
     char path[PATH_MAX] = {0};
     char *p;
     int rc;
@@ -1522,12 +1522,12 @@ static void ft_recv(TestContext *context, int argc, char *argv[])
     }
 
     file_progress_cb.received = fp_received;
-    rc = ela_file_recv(wctx->carrier, argv[1], extra->recv_file,
+    rc = carrier_file_recv(wctx->carrier, argv[1], extra->recv_file,
                        &file_progress_cb, context);
     if (rc == 0)
         write_ack("ft_recv succeeded\n");
     else {
-        vlogE("Receive failed: 0x%x", ela_get_error());
+        vlogE("Receive failed: 0x%x", carrier_get_error());
         write_ack("ft_recv failed\n");
     }
 }
@@ -1594,11 +1594,11 @@ static void ft_cleanup(TestContext *context, int argc, char *argv[])
     CHK_ARGS(argc == 1);
 
     if (wctx->ft) {
-        ela_filetransfer_close(wctx->ft);
+        carrier_filetransfer_close(wctx->ft);
         wctx->ft = NULL;
     }
 
-    ela_filetransfer_cleanup(wctx->carrier);
+    carrier_filetransfer_cleanup(wctx->carrier);
     write_ack("ft_cleanup succeeded\n");
 }
 
@@ -1705,7 +1705,7 @@ void stop_cmd_listener(void)
     }
 }
 
-static char cmd_buffer[ELA_MAX_APP_BULKMSG_LEN + 1024];
+static char cmd_buffer[CARRIER_MAX_APP_BULKMSG_LEN + 1024];
 static char *cmd_ptr = cmd_buffer;
 static int cmd_len = 0;
 
@@ -1828,7 +1828,7 @@ void do_cmd(TestContext *context, char *line)
 int write_ack(const char *what, ...)
 {
     va_list ap;
-    char *ack = malloc(ELA_MAX_APP_BULKMSG_LEN);
+    char *ack = malloc(CARRIER_MAX_APP_BULKMSG_LEN);
     assert(ack != NULL);
 
     assert(cmd_sock != INVALID_SOCKET);

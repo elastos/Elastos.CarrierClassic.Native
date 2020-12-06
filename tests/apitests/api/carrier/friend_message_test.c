@@ -27,7 +27,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
+#include <carrier.h>
 
 #include "cond.h"
 #include "test_helper.h"
@@ -49,23 +49,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -74,7 +74,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void friend_message_cb(ElaCarrier *w, const char *from, const void *msg, size_t len,
+static void friend_message_cb(Carrier *w, const char *from, const void *msg, size_t len,
                               int64_t timestamp, bool is_offline, void *context)
 {
     CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
@@ -86,7 +86,7 @@ static void friend_message_cb(ElaCarrier *w, const char *from, const void *msg, 
     wakeup(context);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -139,10 +139,10 @@ static void test_send_message_to_friend(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     memset(msg, 'm', sizeof(msg) -1 );
-    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg),
+    rc = carrier_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg),
                                  NULL, NULL, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
@@ -155,7 +155,7 @@ static void test_send_message_from_friend(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
     char msg[256] = {0};
     int rc;
     bool bRet;
@@ -164,9 +164,9 @@ static void test_send_message_from_friend(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
-    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
 
     memset(msg, 'm', sizeof(msg) - 1);
     rc = write_cmd("fmsg %s %s\n", userid, msg);
@@ -195,31 +195,31 @@ static void test_send_message_to_stranger(void)
 
     rc = remove_friend_anyway(&test_context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_FALSE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     memset(msg, '0', sizeof(msg) -1);
-    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg), NULL, NULL, NULL);
+    rc = carrier_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg), NULL, NULL, NULL);
     CU_ASSERT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
 }
 
 static void test_send_message_to_self(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char userid[ELA_MAX_ID_LEN + 1];
-    char nodeid[ELA_MAX_ID_LEN + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
+    char nodeid[CARRIER_MAX_ID_LEN + 1];
     char msg[1024] = {0};
     int rc;
 
     test_context.context_reset(&test_context);
 
-    (void)ela_get_userid(wctxt->carrier, userid, sizeof(userid));
-    (void)ela_get_nodeid(wctxt->carrier, nodeid, sizeof(nodeid));
+    (void)carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
+    (void)carrier_get_nodeid(wctxt->carrier, nodeid, sizeof(nodeid));
 
     memset(msg, 'm', sizeof(msg) -1 );
-    rc = ela_send_friend_message(wctxt->carrier, userid, msg, sizeof(msg), NULL, NULL, NULL);
+    rc = carrier_send_friend_message(wctxt->carrier, userid, msg, sizeof(msg), NULL, NULL, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL_FATAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    CU_ASSERT_EQUAL_FATAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
 }
 
 static void test_send_bulkmsg_to_friend(void)
@@ -235,7 +235,7 @@ static void test_send_bulkmsg_to_friend(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE(carrier_is_friend(wctxt->carrier, robotid));
 
     bulkmsg = (char *)calloc(1, bulksz);
     if (!bulkmsg) {
@@ -244,7 +244,7 @@ static void test_send_bulkmsg_to_friend(void)
     }
     memset(bulkmsg, 'b', bulksz - 1);
 
-    rc = ela_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz, NULL, NULL, NULL);
+    rc = carrier_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz, NULL, NULL, NULL);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     rc = read_ack("%31s %d", buf, &size);

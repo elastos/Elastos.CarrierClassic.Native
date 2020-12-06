@@ -23,8 +23,8 @@
 #ifndef __TEST_CONTEXT_H__
 #define __TEST_CONTEXT_H__
 
-#include "carrier.h"
-#include "carrier_session.h"
+#include <carrier.h>
+#include <carrier_session.h>
 #include "carrier_filetransfer.h"
 
 #include "cond.h"
@@ -36,9 +36,9 @@ typedef struct SessionContextExtra SessionContextExtra;
 typedef struct StreamContextExtra  StreamContextExtra;
 
 typedef struct StreamContext {
-    ElaStreamCallbacks *cbs;
+    CarrierStreamCallbacks *cbs;
     int stream_id;
-    ElaStreamState state;
+    CarrierStreamState state;
     uint8_t state_bits;
     Condition *cond;
 
@@ -46,25 +46,25 @@ typedef struct StreamContext {
 } StreamContext;
 
 typedef struct SessionContext {
-    ElaSessionRequestCallback *request_cb;
+    CarrierSessionRequestCallback *request_cb;
     int request_received;
     Condition *request_cond;
 
-    ElaSessionRequestCompleteCallback *request_complete_cb;
+    CarrierSessionRequestCompleteCallback *request_complete_cb;
     int request_complete_status;
     Condition *request_complete_cond;
 
-    ElaSession *session;
+    CarrierSession *session;
 
     SessionContextExtra *extra;
 } SessionContext;
 
 typedef struct CarrierContext {
-    ElaCallbacks *cbs;
-    ElaCarrier *carrier;
-    ElaFileTransfer *ft;
-    ElaFileTransferInfo *ft_info;
-    ElaFileTransferCallbacks *ft_cbs;
+    CarrierCallbacks *cbs;
+    Carrier *carrier;
+    CarrierFileTransfer *ft;
+    CarrierFileTransferInfo *ft_info;
+    CarrierFileTransferCallbacks *ft_cbs;
     Condition *ft_cond;
     Condition *ready_cond;
     Condition *cond;
@@ -82,8 +82,8 @@ typedef struct CarrierContext {
      * 3. we received peer online notification
      */
 
-    char groupid[ELA_MAX_ID_LEN + 1];
-    char joined_groupid[ELA_MAX_ID_LEN + 1];
+    char groupid[CARRIER_MAX_ID_LEN + 1];
+    char joined_groupid[CARRIER_MAX_ID_LEN + 1];
     int peer_list_cnt;
 
     CarrierContextExtra *extra;

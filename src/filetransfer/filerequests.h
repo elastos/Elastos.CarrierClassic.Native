@@ -37,7 +37,7 @@ typedef struct FileRequest {
     hash_entry_t he;
 
     struct timeval expire_time;
-    char from[ELA_MAX_ID_LEN + 1 + 36];
+    char from[CARRIER_MAX_ID_LEN + 1 + 36];
     char *sdp;
     size_t sdp_len;
 } FileRequest;

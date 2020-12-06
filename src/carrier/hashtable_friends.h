@@ -33,7 +33,7 @@ typedef struct FriendInfo {
     hash_entry_t he;
 
     uint32_t friend_number;
-    ElaFriendInfo info;
+    CarrierFriendInfo info;
 } FriendInfo;
 
 static

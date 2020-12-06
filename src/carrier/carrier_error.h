@@ -29,13 +29,30 @@
 extern "C" {
 #endif
 
+/**
+ * \~English
+ * Set carrier last error code.
+ *
+ * @param
+ *      err         [in] The error code to be set.
+ */
 CARRIER_API
-void ela_set_error(int error);
+void carrier_set_error(int error);
 
 typedef int (*strerror_t)(int errnum, char *, size_t);
 
+/**
+ * \~Egnlish
+ * register an customized error processing routine for specific error facility
+ *
+ * @param
+ *      facility    [in] facility
+ *      strerr      [in] the routine to process error.
+ * @return
+ *      return 0 on success, otherwise return -1.
+ */
 CARRIER_API
-int ela_register_strerror(int facility, strerror_t strerr);
+int carrier_register_strerror(int facility, strerror_t strerr);
 
 #ifdef __cplusplus
 }

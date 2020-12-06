@@ -25,7 +25,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "carrier.h"
+#include <carrier.h>
 #include "carrier_filetransfer.h"
 #include "carrier_easyfile.h"
 
@@ -38,18 +38,18 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -58,7 +58,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -74,9 +74,9 @@ static ElaCallbacks callbacks = {
     .friend_invite   = NULL
 };
 
-static void ft_connect_cb(ElaCarrier *carrier,
+static void ft_connect_cb(Carrier *carrier,
                           const char *address,
-                          const ElaFileTransferInfo *fileinfo,
+                          const CarrierFileTransferInfo *fileinfo,
                           void *context)
 {
     TestContext *wtxt = (TestContext*)context;
@@ -114,7 +114,7 @@ static void received_cb(size_t length, uint64_t totalsz, void *context)
 }
 
 struct CarrierContextExtra {
-    char file_name[ELA_MAX_FILE_NAME_LEN + 1];
+    char file_name[CARRIER_MAX_FILE_NAME_LEN + 1];
 };
 
 static CarrierContextExtra extra = {
@@ -158,9 +158,9 @@ static void test_filetransfer_file(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    ElaFileProgressCallbacks fp_callbacks = {0};
+    CarrierFileProgressCallbacks fp_callbacks = {0};
     FILE *fp = NULL;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
     char cmd[32] = {0};
     char result[32] = {0};
     const char *data = "hello";
@@ -171,7 +171,7 @@ static void test_filetransfer_file(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     // Create a file to transfer.
     fp = fopen(extra->file_name, "w+b");
@@ -180,7 +180,7 @@ static void test_filetransfer_file(void)
     fclose(fp);
     CU_ASSERT_NOT_EQUAL_FATAL(rc, EOF);
 
-    rc = ela_filetransfer_init(wctxt->carrier, NULL, &test_context);
+    rc = carrier_filetransfer_init(wctxt->carrier, NULL, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = write_cmd("ft_init\n");
@@ -193,7 +193,7 @@ static void test_filetransfer_file(void)
 
     fp_callbacks.state_changed = ft_state_changed_cb;
     fp_callbacks.sent = sent_cb;
-    rc = ela_file_send(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
+    rc = carrier_file_send(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = read_ack("%32s %32s", cmd, result);
@@ -201,7 +201,7 @@ static void test_filetransfer_file(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_connect") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "received") == 0);
 
-    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     rc = write_cmd("ft_recv %s\n", userid);
     CU_ASSERT_FATAL(rc > 0);
 
@@ -248,7 +248,7 @@ static void test_filetransfer_file(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_cleanup") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    ela_filetransfer_cleanup(wctxt->carrier);
+    carrier_filetransfer_cleanup(wctxt->carrier);
 
     // Delete the file created before.
     rc = remove(extra->file_name);
@@ -259,9 +259,9 @@ static void test_filetransfer_receive_file(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    ElaFileProgressCallbacks fp_callbacks = {0};
+    CarrierFileProgressCallbacks fp_callbacks = {0};
     FILE *fp = NULL;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
     char cmd[32] = {0};
     char result[32] = {0};
     char path[PATH_MAX] = {0};
@@ -274,7 +274,7 @@ static void test_filetransfer_receive_file(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     // Tell the robot to create a file to transfer.
     rc = write_cmd("ft_file %s\n", data);
@@ -285,7 +285,7 @@ static void test_filetransfer_receive_file(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_file") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    rc = ela_filetransfer_init(wctxt->carrier, ft_connect_cb, &test_context);
+    rc = carrier_filetransfer_init(wctxt->carrier, ft_connect_cb, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = write_cmd("ft_init\n");
@@ -296,7 +296,7 @@ static void test_filetransfer_receive_file(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_init") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     rc = write_cmd("ft_send %s\n", userid);
     CU_ASSERT_FATAL(rc > 0);
 
@@ -316,7 +316,7 @@ static void test_filetransfer_receive_file(void)
 
     fp_callbacks.state_changed = ft_state_changed_cb;
     fp_callbacks.received = received_cb;
-    rc = ela_file_recv(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
+    rc = carrier_file_recv(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     /* Wait for the ft_state_changed_cb to be invoked. After invocation,
@@ -358,7 +358,7 @@ static void test_filetransfer_receive_file(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_cleanup") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    ela_filetransfer_cleanup(wctxt->carrier);
+    carrier_filetransfer_cleanup(wctxt->carrier);
 
     // Delete the file created before.
     rc = remove(extra->file_name);
@@ -369,9 +369,9 @@ static void test_filetransfer_file_resume_interrupted_transferring(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    ElaFileProgressCallbacks fp_callbacks = {0};
+    CarrierFileProgressCallbacks fp_callbacks = {0};
     FILE *fp = NULL;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
     char cmd[32] = {0};
     char result[32] = {0};
     const char *data = "abcd";
@@ -382,7 +382,7 @@ static void test_filetransfer_file_resume_interrupted_transferring(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     // Create a file to transfer.
     fp = fopen(extra->file_name, "w+b");
@@ -391,7 +391,7 @@ static void test_filetransfer_file_resume_interrupted_transferring(void)
     CU_ASSERT_NOT_EQUAL_FATAL(rc, EOF);
     fclose(fp);
 
-    rc = ela_filetransfer_init(wctxt->carrier, NULL, &test_context);
+    rc = carrier_filetransfer_init(wctxt->carrier, NULL, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = write_cmd("ft_init\n");
@@ -404,7 +404,7 @@ static void test_filetransfer_file_resume_interrupted_transferring(void)
 
     fp_callbacks.state_changed = ft_state_changed_cb;
     fp_callbacks.sent = sent_cb;
-    rc = ela_file_send(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
+    rc = carrier_file_send(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = read_ack("%32s %32s", cmd, result);
@@ -412,7 +412,7 @@ static void test_filetransfer_file_resume_interrupted_transferring(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_connect") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "received") == 0);
 
-    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     rc = write_cmd("ft_recv %s %s\n", userid, "ab");
     CU_ASSERT_FATAL(rc > 0);
 
@@ -459,7 +459,7 @@ static void test_filetransfer_file_resume_interrupted_transferring(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_cleanup") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    ela_filetransfer_cleanup(wctxt->carrier);
+    carrier_filetransfer_cleanup(wctxt->carrier);
 
     // Delete the file created before.
     rc = remove(extra->file_name);
@@ -470,9 +470,9 @@ static void test_filetransfer_resume_receiving_file(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    ElaFileProgressCallbacks fp_callbacks = {0};
+    CarrierFileProgressCallbacks fp_callbacks = {0};
     FILE *fp = NULL;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
     char tmp_file[512] = {0};
     char cmd[32] = {0};
     char result[32] = {0};
@@ -486,7 +486,7 @@ static void test_filetransfer_resume_receiving_file(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     strcat(tmp_file, extra->file_name);
     strcat(tmp_file, ".ft~part");
@@ -505,7 +505,7 @@ static void test_filetransfer_resume_receiving_file(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_file") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    rc = ela_filetransfer_init(wctxt->carrier, ft_connect_cb, &test_context);
+    rc = carrier_filetransfer_init(wctxt->carrier, ft_connect_cb, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = write_cmd("ft_init\n");
@@ -516,7 +516,7 @@ static void test_filetransfer_resume_receiving_file(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_init") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     rc = write_cmd("ft_send %s\n", userid);
     CU_ASSERT_FATAL(rc > 0);
 
@@ -536,7 +536,7 @@ static void test_filetransfer_resume_receiving_file(void)
 
     fp_callbacks.state_changed = ft_state_changed_cb;
     fp_callbacks.received = received_cb;
-    rc = ela_file_recv(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
+    rc = carrier_file_recv(wctxt->carrier, robotid, extra->file_name, &fp_callbacks, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     /* Wait for the ft_state_changed_cb to be invoked. After invocation,
@@ -578,7 +578,7 @@ static void test_filetransfer_resume_receiving_file(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_cleanup") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    ela_filetransfer_cleanup(wctxt->carrier);
+    carrier_filetransfer_cleanup(wctxt->carrier);
 
     // Delete the file created before.
     rc = remove(extra->file_name);

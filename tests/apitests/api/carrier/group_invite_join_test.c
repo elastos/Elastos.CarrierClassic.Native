@@ -29,7 +29,7 @@
 #include <crystal.h>
 #include <CUnit/Basic.h>
 
-#include "carrier.h"
+#include <carrier.h>
 #include "cond.h"
 #include "test_helper.h"
 
@@ -37,11 +37,11 @@ struct CarrierContextExtra {
     char* from;
     char *gfrom;
     // for friend request
-    ElaUserInfo info;
+    CarrierUserInfo info;
     char* hello;
     int len;
 
-    char groupid[ELA_MAX_ID_LEN + 1];
+    char groupid[CARRIER_MAX_ID_LEN + 1];
     char gcookie[128];
     int gcookie_len;
 };
@@ -62,23 +62,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -87,7 +87,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void group_invite_cb(ElaCarrier *w, const char *from,
+static void group_invite_cb(Carrier *w, const char *from,
                             const void *cookie, size_t len, void *context)
 {
     CarrierContext *wctx = (CarrierContext *)context;
@@ -103,7 +103,7 @@ static void group_invite_cb(ElaCarrier *w, const char *from,
     cond_signal(wctx->group_cond);
 }
 
-static void group_connected_cb(ElaCarrier *carrier, const char *groupid,
+static void group_connected_cb(Carrier *carrier, const char *groupid,
                                void *context)
 {
     CarrierContext *wctx = (CarrierContext *)context;
@@ -111,7 +111,7 @@ static void group_connected_cb(ElaCarrier *carrier, const char *groupid,
     cond_signal(wctx->group_cond);
 }
 
-static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
+static void peer_list_changed_cb(Carrier *carrier, const char *groupid,
                                  void *context)
 {
     CarrierContext *wctx = (CarrierContext *)context;
@@ -122,7 +122,7 @@ static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
     cond_signal(wctx->group_cond);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -184,10 +184,10 @@ static int group_invite_after_joining_cb(TestContext *ctx)
     char result[32] = {0};
     int rc;
 
-    rc = ela_group_invite(wctx->carrier, wctx->groupid, robotid);
+    rc = carrier_group_invite(wctx->carrier, wctx->groupid, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    rc = ela_group_send_message(wctx->carrier, wctx->groupid,
+    rc = carrier_group_send_message(wctx->carrier, wctx->groupid,
                                 msg, strlen(msg));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
@@ -236,7 +236,7 @@ static int group_leave_then_join_cb(TestContext *ctx)
     // wait until peer_list_changed callback invoked
     cond_wait(wctx->group_cond);
 
-    rc = ela_group_invite(wctx->carrier, wctx->groupid, robotid);
+    rc = carrier_group_invite(wctx->carrier, wctx->groupid, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     rc = read_ack("%32s %32s", cmd, result);
@@ -272,8 +272,8 @@ static void test_group_join(void)
 {
     CarrierContext *wctx = test_context.carrier;
     CarrierContextExtra *extra = wctx->extra;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
-    char useraddr[ELA_MAX_ADDRESS_LEN + 1] = {0};
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
+    char useraddr[CARRIER_MAX_ADDRESS_LEN + 1] = {0};
     const char *hello = "hello";
     int rc;
 
@@ -281,11 +281,11 @@ static void test_group_join(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctx->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctx->carrier, robotid));
 
     char cmd[32];
     char result[32];
-    ela_get_userid(wctx->carrier, userid, sizeof(userid));
+    carrier_get_userid(wctx->carrier, userid, sizeof(userid));
     rc = write_cmd("ginvite %s\n", userid);
     CU_ASSERT_FATAL(rc > 0);
 
@@ -297,7 +297,7 @@ static void test_group_join(void)
     cond_wait(wctx->group_cond);
     CU_ASSERT_TRUE_FATAL(strcmp(extra->gfrom, robotid) == 0);
     FREE_ANYWAY(extra->gfrom);
-    rc = ela_group_join(wctx->carrier, robotid, extra->gcookie,
+    rc = carrier_group_join(wctx->carrier, robotid, extra->gcookie,
                         extra->gcookie_len, extra->groupid,
                         sizeof(extra->groupid));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
@@ -321,14 +321,14 @@ static void test_group_join(void)
     // wait until peer_list_changed callback invoked
     cond_wait(wctx->group_cond);
 
-    rc = ela_leave_group(wctx->carrier, extra->groupid);
+    rc = carrier_leave_group(wctx->carrier, extra->groupid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 }
 
 static void test_group_invite_stranger(void)
 {
     CarrierContext *wctx = test_context.carrier;
-    char groupid[ELA_MAX_ID_LEN + 1] = {0};
+    char groupid[CARRIER_MAX_ID_LEN + 1] = {0};
     int rc;
 
     //TO make robot as stranger.
@@ -336,37 +336,37 @@ static void test_group_invite_stranger(void)
 
     rc = remove_friend_anyway(&test_context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FALSE_FATAL(ela_is_friend(wctx->carrier, robotid));
+    CU_ASSERT_FALSE_FATAL(carrier_is_friend(wctx->carrier, robotid));
 
-    rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
+    rc = carrier_new_group(wctx->carrier, groupid, sizeof(groupid));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_FATAL(strlen(groupid) > 0);
 
-    rc = ela_group_invite(wctx->carrier, groupid, robotid);
+    rc = carrier_group_invite(wctx->carrier, groupid, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
 
-    rc = ela_leave_group(wctx->carrier, groupid);
+    rc = carrier_leave_group(wctx->carrier, groupid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 }
 
 static void test_group_invite_myself(void)
 {
     CarrierContext *wctx = test_context.carrier;
-    char groupid[ELA_MAX_ID_LEN + 1] = {0};
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    char groupid[CARRIER_MAX_ID_LEN + 1] = {0};
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
     int rc;
 
-    rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
+    rc = carrier_new_group(wctx->carrier, groupid, sizeof(groupid));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_FATAL(strlen(groupid) > 0);
 
-    ela_get_userid(wctx->carrier, userid, sizeof(userid));
-    rc = ela_group_invite(wctx->carrier, groupid, userid);
+    carrier_get_userid(wctx->carrier, userid, sizeof(userid));
+    rc = carrier_group_invite(wctx->carrier, groupid, userid);
     CU_ASSERT_EQUAL_FATAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
 
-    rc = ela_leave_group(wctx->carrier, groupid);
+    rc = carrier_leave_group(wctx->carrier, groupid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 }
 
