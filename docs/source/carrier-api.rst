@@ -4,76 +4,76 @@ Elastos Carrier core APIs
 Constants
 ---------
 
-ELA_MAX_ADDRESS_LEN
-###################
-
-.. doxygendefine:: ELA_MAX_ADDRESS_LEN
-   :project: CarrierAPI
-
-ELA_MAX_ID_LEN
-##############
-
-.. doxygendefine:: ELA_MAX_ID_LEN
-   :project: CarrierAPI
-
-ELA_MAX_USER_NAME_LEN
-#####################
-
-.. doxygendefine:: ELA_MAX_USER_NAME_LEN
-   :project: CarrierAPI
-
-ELA_MAX_USER_DESCRIPTION_LEN
-############################
-
-.. doxygendefine:: ELA_MAX_USER_DESCRIPTION_LEN
-   :project: CarrierAPI
-
-ELA_MAX_PHONE_LEN
-#################
-
-.. doxygendefine:: ELA_MAX_PHONE_LEN
-   :project: CarrierAPI
-
-ELA_MAX_EMAIL_LEN
-#################
-
-.. doxygendefine:: ELA_MAX_EMAIL_LEN
-   :project: CarrierAPI
-
-ELA_MAX_REGION_LEN
-##################
-
-.. doxygendefine:: ELA_MAX_REGION_LEN
-   :project: CarrierAPI
-
-ELA_MAX_GENDER_LEN
-##################
-
-.. doxygendefine:: ELA_MAX_GENDER_LEN
-   :project: CarrierAPI
-
-ELA_MAX_NODE_NAME_LEN
-#####################
-
-.. doxygendefine:: ELA_MAX_NODE_NAME_LEN
-   :project: CarrierAPI
-
-ELA_MAX_NODE_DESCRIPTION_LEN
-############################
-
-.. doxygendefine:: ELA_MAX_NODE_DESCRIPTION_LEN
-   :project: CarrierAPI
-
-ELA_MAX_APP_MESSAGE_LEN
+CARRIER_MAX_ADDRESS_LEN
 #######################
 
-.. doxygendefine:: ELA_MAX_APP_MESSAGE_LEN
+.. doxygendefine:: CARRIER_MAX_ADDRESS_LEN
    :project: CarrierAPI
 
-ELA_MAX_APP_BULKMSG_LEN
+CARRIER_MAX_ID_LEN
+##################
+
+.. doxygendefine:: CARRIER_MAX_ID_LEN
+   :project: CarrierAPI
+
+CARRIER_MAX_USER_NAME_LEN
+#########################
+
+.. doxygendefine:: CARRIER_MAX_USER_NAME_LEN
+   :project: CarrierAPI
+
+CARRIER_MAX_USER_DESCRIPTION_LEN
+################################
+
+.. doxygendefine:: CARRIER_MAX_USER_DESCRIPTION_LEN
+   :project: CarrierAPI
+
+CARRIER_MAX_PHONE_LEN
+#####################
+
+.. doxygendefine:: CARRIER_MAX_PHONE_LEN
+   :project: CarrierAPI
+
+CARRIER_MAX_EMAIL_LEN
+#####################
+
+.. doxygendefine:: CARRIER_MAX_EMAIL_LEN
+   :project: CarrierAPI
+
+CARRIER_MAX_REGION_LEN
+######################
+
+.. doxygendefine:: CARRIER_MAX_REGION_LEN
+   :project: CarrierAPI
+
+CARRIER_MAX_GENDER_LEN
+######################
+
+.. doxygendefine:: CARRIER_MAX_GENDER_LEN
+   :project: CarrierAPI
+
+CARRIER_MAX_NODE_NAME_LEN
+#########################
+
+.. doxygendefine:: CARRIER_MAX_NODE_NAME_LEN
+   :project: CarrierAPI
+
+CARRIER_MAX_NODE_DESCRIPTION_LEN
+################################
+
+.. doxygendefine:: CARRIER_MAX_NODE_DESCRIPTION_LEN
+   :project: CarrierAPI
+
+CARRIER_MAX_APP_MESSAGE_LEN
 ###########################
 
-.. doxygendefine:: ELA_MAX_APP_BULKMSG_LEN
+.. doxygendefine:: CARRIER_MAX_APP_MESSAGE_LEN
+   :project: CarrierAPI
+
+CARRIER_MAX_APP_BULKMSG_LEN
+###########################
+
+.. doxygendefine:: CARRIER_MAX_APP_BULKMSG_LEN
    :project: CarrierAPI
 
 Data types
@@ -86,64 +86,64 @@ Bootstrap
    :project: CarrierAPI
    :members:
 
-ElaOptions
-##########
+CarrierOptions
+##############
 
-.. doxygenstruct:: ElaOptions
+.. doxygenstruct:: CarrierOptions
    :project: CarrierAPI
    :members:
 
 
-ElaConnectionStatus
-###################
+CarrierConnectionStatus
+#######################
 
-.. doxygenenum:: ElaConnectionStatus
+.. doxygenenum:: CarrierConnectionStatus
    :project: CarrierAPI
 
 
-ElaPresenceStatus
+CarrierPresenceStatus
+#####################
+
+.. doxygenenum:: CarrierPresenceStatus
+   :project: CarrierAPI
+
+CarrierLogLevel
+###############
+
+.. doxygenenum:: CarrierLogLevel
+   :project: CarrierAPI
+
+CarrierUserInfo
+###############
+
+.. doxygenstruct:: CarrierUserInfo
+   :project: CarrierAPI
+   :members:
+
+CarrierFriendInfo
 #################
 
-.. doxygenenum:: ElaPresenceStatus
-   :project: CarrierAPI
-
-ElaLogLevel
-###########
-
-.. doxygenenum:: ElaLogLevel
-   :project: CarrierAPI
-
-ElaUserInfo
-###########
-
-.. doxygenstruct:: ElaUserInfo
+.. doxygenstruct:: CarrierFriendInfo
    :project: CarrierAPI
    :members:
 
-ElaFriendInfo
-#############
+CarrierCallbacks
+################
 
-.. doxygenstruct:: ElaFriendInfo
+.. doxygenstruct:: CarrierCallbacks
    :project: CarrierAPI
    :members:
 
-ElaCallbacks
-############
+CarrierFriendsIterateCallback
+#############################
 
-.. doxygenstruct:: ElaCallbacks
-   :project: CarrierAPI
-   :members:
-
-ElaFriendsIterateCallback
-#########################
-
-.. doxygentypedef:: ElaFriendsIterateCallback
+.. doxygentypedef:: CarrierFriendsIterateCallback
    :project: CarrierAPI
 
-ElaFriendInviteResponseCallback
-###############################
+CarrierFriendInviteResponseCallback
+###################################
 
-.. doxygentypedef:: ElaFriendInviteResponseCallback
+.. doxygentypedef:: CarrierFriendInviteResponseCallback
    :project: CarrierAPI
 
 Functions
@@ -152,187 +152,187 @@ Functions
 Carrier instance
 ################
 
-ela_new
-~~~~~~~
+carrier_new
+~~~~~~~~~~~
 
-.. doxygenfunction:: ela_new
+.. doxygenfunction:: carrier_new
    :project: CarrierAPI
 
-ela_run
-~~~~~~~
+carrier_run
+~~~~~~~~~~~
 
-.. doxygenfunction:: ela_run
+.. doxygenfunction:: carrier_run
    :project: CarrierAPI
 
-ela_kill
-~~~~~~~~
-
-.. doxygenfunction:: ela_kill
-   :project: CarrierAPI
-
-ela_is_ready
+carrier_kill
 ~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_is_ready
+.. doxygenfunction:: carrier_kill
+   :project: CarrierAPI
+
+carrier_is_ready
+~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_is_ready
    :project: CarrierAPI
 
 Node Information
 ################
 
-ela_get_address
-~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_get_address
-   :project: CarrierAPI
-
-ela_get_nodeid
-~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_get_nodeid
-   :project: CarrierAPI
-
-ela_get_userid
-~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_get_userid
-   :project: CarrierAPI
-
-ela_get_id_by_address
-~~~~~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_get_id_by_address
-   :project: CarrierAPI
-
-ela_set_self_nospam
+carrier_get_address
 ~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_set_self_nospam
+.. doxygenfunction:: carrier_get_address
    :project: CarrierAPI
 
-ela_get_self_nospam
-~~~~~~~~~~~~~~~~~~~
+carrier_get_nodeid
+~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_get_self_nospam
+.. doxygenfunction:: carrier_get_nodeid
    :project: CarrierAPI
 
-ela_set_self_info
-~~~~~~~~~~~~~~~~~
+carrier_get_userid
+~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_set_self_info
+.. doxygenfunction:: carrier_get_userid
    :project: CarrierAPI
 
-ela_get_self_info
-~~~~~~~~~~~~~~~~~
+carrier_get_id_by_address
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_get_self_info
+.. doxygenfunction:: carrier_get_id_by_address
    :project: CarrierAPI
 
-ela_set_self_presence
+carrier_set_self_nospam
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_set_self_nospam
+   :project: CarrierAPI
+
+carrier_get_self_nospam
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_get_self_nospam
+   :project: CarrierAPI
+
+carrier_set_self_info
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_set_self_presence
+.. doxygenfunction:: carrier_set_self_info
    :project: CarrierAPI
 
-ela_get_self_presence
+carrier_get_self_info
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_get_self_presence
+.. doxygenfunction:: carrier_get_self_info
+   :project: CarrierAPI
+
+carrier_set_self_presence
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_set_self_presence
+   :project: CarrierAPI
+
+carrier_get_self_presence
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_get_self_presence
    :project: CarrierAPI
 
 
 Friend & interaction
 ####################
 
-ela_get_friends
-~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_get_friends
-   :project: CarrierAPI
-
-ela_get_friend_info
+carrier_get_friends
 ~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_get_friend_info
+.. doxygenfunction:: carrier_get_friends
    :project: CarrierAPI
 
-ela_set_friend_label
-~~~~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_set_friend_label
-   :project: CarrierAPI
-
-ela_is_friend
-~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_is_friend
-   :project: CarrierAPI
-
-ela_add_friend
-~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_add_friend
-   :project: CarrierAPI
-
-ela_accept_friend
-~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_accept_friend
-   :project: CarrierAPI
-
-ela_remove_friend
-~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_remove_friend
-   :project: CarrierAPI
-
-ela_send_friend_message
+carrier_get_friend_info
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_send_friend_message
+.. doxygenfunction:: carrier_get_friend_info
    :project: CarrierAPI
 
-ela_invite_friend
+carrier_set_friend_label
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_set_friend_label
+   :project: CarrierAPI
+
+carrier_is_friend
 ~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_invite_friend
+.. doxygenfunction:: carrier_is_friend
    :project: CarrierAPI
 
-ela_reply_friend_invite
-~~~~~~~~~~~~~~~~~~~~~~~
+carrier_add_friend
+~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_reply_friend_invite
+.. doxygenfunction:: carrier_add_friend
+   :project: CarrierAPI
+
+carrier_accept_friend
+~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_accept_friend
+   :project: CarrierAPI
+
+carrier_remove_friend
+~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_remove_friend
+   :project: CarrierAPI
+
+carrier_send_friend_message
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_send_friend_message
+   :project: CarrierAPI
+
+carrier_invite_friend
+~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_invite_friend
+   :project: CarrierAPI
+
+carrier_reply_friend_invite
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_reply_friend_invite
    :project: CarrierAPI
 
 
 Utility functions
 #################
 
-ela_get_version
-~~~~~~~~~~~~~~~
+carrier_get_version
+~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_get_version
+.. doxygenfunction:: carrier_get_version
    :project: CarrierAPI
 
-ela_address_is_valid
-~~~~~~~~~~~~~~~~~~~~
+carrier_address_is_valid
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_address_is_valid
+.. doxygenfunction:: carrier_address_is_valid
    :project: CarrierAPI
 
-ela_id_is_valid
-~~~~~~~~~~~~~~~
+carrier_id_is_valid
+~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_id_is_valid
+.. doxygenfunction:: carrier_id_is_valid
    :project: CarrierAPI
 
-ela_get_error
-~~~~~~~~~~~~~
+carrier_get_error
+~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_get_error
+.. doxygenfunction:: carrier_get_error
    :project: CarrierAPI
 
-ela_clear_error
-~~~~~~~~~~~~~~~
+carrier_clear_error
+~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_clear_error
+.. doxygenfunction:: carrier_clear_error
    :project: CarrierAPI

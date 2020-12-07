@@ -386,7 +386,7 @@ typedef struct CarrierOptions {
  * Get the current version of Carrier node.
  */
 CARRIER_API
-const char *Carrier_get_version(void);
+const char *carrier_get_version(void);
 
 /**
  * \~English
