@@ -37,38 +37,6 @@
 extern "C" {
 #endif
 
-#ifdef DEPRECATED_NO_WARNINGS
-  #define DEPRECATED_API
-  #define DEPRECATED_WITH(api)
-#else
-  #if defined(__GNUC__)
-    #define DEPRECATED_API \
-      __attribute__ ((__deprecated__ ("This function already deprecated. Consider stop using this function.")))
-
-    #define DEPRECATED_WITH(api) \
-      __attribute__ ((__deprecated__ ("This function already deprecated. Consider using "#api" instead.")))
-  #elif defined(_MSC_VER)
-    #define DEPRECATED_API \
-      __declspec(deprecated("This function already deprecated. Consider stop using this function."))
-
-    #define DEPRECATED_WITH(api) \
-      __declspec(deprecated("This function already deprecated. Consider using "#api" instead."))
-  #endif
-#endif
-
-#if defined(__GNUC__)
-  #if defined(__clang__)
-    #define ALIAS(__old, __new) \
-      asm("_"#__new)
-  #else
-    #define ALIAS(__old, __new) \
-      asm(#__new)
-  #endif
-#elif defined(_MSC_VER)
-  #define ALIAS(__old, __new) \
-    ; __pragma(comment(linker, "/alternatename:_"#__old"=_"#__new))
-#endif
-
 /**
  * \~English
  * Carrier transfer file name max length.
