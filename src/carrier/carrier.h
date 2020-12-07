@@ -1846,7 +1846,7 @@ int carrier_get_groups(Carrier *carrier, CarrierIterateGroupCallback *callback,
  * \~English
  * Carrier not ready.
  */
-#define ERROR_NOT_READY                            0x09
+#define ERROR_NOT_BEING_READY                      0x09
 
 /**
  * \~English

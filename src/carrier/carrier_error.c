@@ -99,7 +99,7 @@ const ErrorDesc error_codes[] = {
     { ERROR_INVALID_CONTROL_PACKET,      "Invalid control packet"  },
     { ERROR_INVALID_CREDENTIAL,          "Invalid credential"      },
     { ERROR_ALREADY_RUN,                 "Carrier is already being running" },
-    { ERROR_NOT_READY,                   "Carrier is not ready"    },
+    { ERROR_NOT_BEING_READY,             "Carrier is not being ready"    },
     { ERROR_NOT_EXIST,                   "Friend does not exist"   },
     { ERROR_ALREADY_EXIST,               "Friend already exists"   },
     { ERROR_NO_MATCHED_REQUEST,          "Unmatched request"       },

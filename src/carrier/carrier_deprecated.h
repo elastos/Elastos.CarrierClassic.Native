@@ -1895,7 +1895,7 @@ ALIAS(ela_get_groups, carrier_get_groups);
  * \~English
  * Carrier not ready.
  */
-#define ELAERR_NOT_READY                            ERROR_NOT_READY
+#define ELAERR_NOT_READY                            ERROR_NOT_BEING_READY
 
 /**
  * \~English

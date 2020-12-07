@@ -40,7 +40,7 @@ int carrier_get_turn_server(Carrier *w, CarrierTurnServer *turn_server)
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 

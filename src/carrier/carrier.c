@@ -3075,7 +3075,7 @@ int carrier_add_friend(Carrier *w, const char *address, const char *hello)
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -3179,7 +3179,7 @@ int carrier_accept_friend(Carrier *w, const char *userid)
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -3234,7 +3234,7 @@ int carrier_remove_friend(Carrier *w, const char *friendid)
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -3439,7 +3439,7 @@ static int send_friend_message_internal(Carrier *w, const char *to,
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -3733,7 +3733,7 @@ int carrier_invite_friend(Carrier *w, const char *to, const char *bundle,
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -3885,7 +3885,7 @@ int carrier_reply_friend_invite(Carrier *w, const char *to, const char *bundle,
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -3979,7 +3979,7 @@ int carrier_new_group(Carrier *w, char *groupid, size_t length)
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -4038,7 +4038,7 @@ int carrier_leave_group(Carrier *w, const char *groupid)
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -4073,7 +4073,7 @@ int carrier_group_invite(Carrier *w, const char *groupid, const char *friendid)
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -4115,7 +4115,7 @@ int carrier_group_join(Carrier *w, const char *friendid, const void *cookie,
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -4157,7 +4157,7 @@ int carrier_group_send_message(Carrier *w, const char *groupid, const void *msg,
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -4188,7 +4188,7 @@ int carrier_group_get_title(Carrier *w, const char *groupid, char *title,
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -4221,7 +4221,7 @@ int carrier_group_set_title(Carrier *w, const char *groupid, const char *title)
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -4267,7 +4267,7 @@ int carrier_group_get_peers(Carrier *w, const char *groupid,
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
@@ -4386,7 +4386,7 @@ int carrier_group_get_peer(Carrier *w, const char *groupid,
     }
 
     if (!w->is_ready) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_READY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_BEING_READY));
         return -1;
     }
 
