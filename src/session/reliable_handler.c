@@ -284,7 +284,7 @@ static PseudoTcpWriteResult pseudo_tcp_socket_write_packet(PseudoTcpSocket *sock
 
         flex_buffer_from(buf, FLEX_PADDING_LEN, buffer, len);
         rc = handler->next->write(handler->next, buf);
-        if (rc > 0 || rc == CARRIER_GENERAL_ERROR(ERROR_BUSY)) {
+        if (rc > 0 || rc == CARRIER_GENERAL_ERROR(ERROR_BEING_BUSY)) {
             return WR_SUCCESS; //TODO:
         }
     } else {

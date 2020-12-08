@@ -135,10 +135,10 @@ ERROR_WRONG_STATE
 .. doxygendefine:: ERROR_WRONG_STATE
    :project: CarrierAPI
 
-ERROR_BUSY
-##########
+ERROR_BEING_BUSY
+################
 
-.. doxygendefine:: ERROR_BUSY
+.. doxygendefine:: ERROR_BEING_BUSY
    :project: CarrierAPI
 
 ERROR_LANGUAGE_BINDING

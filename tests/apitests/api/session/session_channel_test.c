@@ -334,7 +334,7 @@ static int write_channel_data(CarrierSession *session, int stream, int channel,
         if (rc == 0) {
             assert(0);
         } else if (rc < 0) {
-            if (carrier_get_error() == CARRIER_GENERAL_ERROR(ERROR_BUSY)) {
+            if (carrier_get_error() == CARRIER_GENERAL_ERROR(ERROR_BEING_BUSY)) {
                 usleep(100);
                 continue;
             } else {

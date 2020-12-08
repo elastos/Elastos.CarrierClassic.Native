@@ -1888,7 +1888,7 @@ int carrier_get_groups(Carrier *carrier, CarrierIterateGroupCallback *callback,
  * \~English
  * Stream busy.
  */
-#define ERROR_BUSY                                 0x10
+#define ERROR_BEING_BUSY                           0x10
 
 /**
  * \~English

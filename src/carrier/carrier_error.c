@@ -106,7 +106,7 @@ const ErrorDesc error_codes[] = {
     { ERROR_INVALID_USERID,              "Invalid carrier userid"  },
     { ERROR_INVALID_NODEID,              "Invalid carrier nodeid"  },
     { ERROR_WRONG_STATE,                 "Being in wrong state"    },
-    { ERROR_BUSY,                        "Instance is being busy"  },
+    { ERROR_BEING_BUSY,                  "Instance is being busy"  },
     { ERROR_LANGUAGE_BINDING,            "Language binding error"  },
     { ERROR_ENCRYPT,                     "Encrypt error"           },
     { ERROR_SDP_TOO_LONG,                "SDP is too long"         },

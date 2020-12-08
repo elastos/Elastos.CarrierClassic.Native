@@ -66,7 +66,7 @@ extern "C" {
   #endif
 #elif defined(_MSC_VER)
   #define ALIAS(__old, __new) \
-    ; __pragma(comment(linker, "/alternatename:_"#__old"=_"#__new))
+    ; __pragma(comment(linker, "/alternatename:"#__old"="#__new))
 #endif
 
 /**
@@ -1937,7 +1937,7 @@ ALIAS(ela_get_groups, carrier_get_groups);
  * \~English
  * Stream busy.
  */
-#define ELAERR_BUSY                                 ERROR_BUSY
+#define ELAERR_BUSY                                 ERROR_BEING_BUSY
 
 /**
  * \~English

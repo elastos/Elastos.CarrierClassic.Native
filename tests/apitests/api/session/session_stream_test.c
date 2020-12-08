@@ -247,7 +247,7 @@ static void *bulk_write_routine(void *arg)
                                   (const char*)(packet + sent),
                                   total - sent);
             if (rc < 0) { //TODO: consider condition rc == 0.
-                if (carrier_get_error() == CARRIER_GENERAL_ERROR(ERROR_BUSY)) {
+                if (carrier_get_error() == CARRIER_GENERAL_ERROR(ERROR_BEING_BUSY)) {
                     usleep(100);
                     continue;
                 }

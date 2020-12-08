@@ -1091,7 +1091,7 @@ int ice_handler_write_packet(IceHandler *handler, int comp, IcePacket *packet)
         vlogW("Session: ICE handler %d sending data error: %s", stream->base.id,
               ice_strerror(status));
 
-        return status == PJ_EBUSY ? CARRIER_GENERAL_ERROR(ERROR_BUSY)
+        return status == PJ_EBUSY ? CARRIER_GENERAL_ERROR(ERROR_BEING_BUSY)
                                   : CARRIER_ICE_ERROR(status);
     }
 
