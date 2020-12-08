@@ -65,8 +65,13 @@ extern "C" {
       asm(#__new)
   #endif
 #elif defined(_MSC_VER)
+  #if defined(_WIN64)
+    #define MANGLE(name) #name
+  #else
+    #define MANGLE(name) "_"#name
+  #endif
   #define ALIAS(__old, __new) \
-    ; __pragma(comment(linker, "/alternatename:"#__old"="#__new))
+    ; __pragma(comment(linker, "/alternatename:"MANGLE(__old)"="MANGLE(__new)))
 #endif
 
 /**
