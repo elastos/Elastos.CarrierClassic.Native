@@ -28,12 +28,12 @@
 #include <crystal.h>
 #include <CUnit/Basic.h>
 
-#include "ela_carrier.h"
+#include <carrier.h>
 #include "cond.h"
 #include "test_helper.h"
 
 struct CarrierContextExtra {
-    ElaGroupPeer group_peers[2];
+    CarrierGroupPeer group_peers[2];
     int peer_count;
 };
 
@@ -47,23 +47,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -72,7 +72,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
+static void peer_list_changed_cb(Carrier *carrier, const char *groupid,
                                  void *context)
 {
     CarrierContext *wctx = (CarrierContext *)context;
@@ -84,20 +84,20 @@ static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
     cond_signal(wctx->group_cond);
 }
 
-static bool peer_iterate_cb(const ElaGroupPeer *peer, void *context)
+static bool peer_iterate_cb(const CarrierGroupPeer *peer, void *context)
 {
     CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
     assert(extra);
 
     if (peer) {
-        memcpy(&extra->group_peers[extra->peer_count], peer, sizeof(ElaGroupPeer));
+        memcpy(&extra->group_peers[extra->peer_count], peer, sizeof(CarrierGroupPeer));
         extra->peer_count++;
     }
 
     return true;
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -155,16 +155,16 @@ static TestContext test_context = {
 static int group_get_peer_cb(TestContext *ctx)
 {
     CarrierContext *wctx = test_context.carrier;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
-    ElaGroupPeer peer = {0};
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
+    CarrierGroupPeer peer = {0};
     int rc;
 
-    rc = ela_group_get_peer(wctx->carrier, wctx->groupid, robotid, &peer);
+    rc = carrier_group_get_peer(wctx->carrier, wctx->groupid, robotid, &peer);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_TRUE_FATAL(strcmp(robotid, peer.userid) == 0);
 
-    ela_get_userid(wctx->carrier, userid, sizeof(userid));
-    rc = ela_group_get_peer(wctx->carrier, wctx->groupid, userid, &peer);
+    carrier_get_userid(wctx->carrier, userid, sizeof(userid));
+    rc = carrier_group_get_peer(wctx->carrier, wctx->groupid, userid, &peer);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_TRUE_FATAL(strcmp(userid, peer.userid) == 0);
 
@@ -175,17 +175,17 @@ static int group_get_peers_cb(TestContext *ctx)
 {
     CarrierContext *wctx = test_context.carrier;
     CarrierContextExtra *extra = wctx->extra;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
     char *p;
     int rc;
     int i;
     int weight;
 
-    rc = ela_group_get_peers(wctx->carrier, wctx->groupid, peer_iterate_cb, wctx);
+    rc = carrier_group_get_peers(wctx->carrier, wctx->groupid, peer_iterate_cb, wctx);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_EQUAL_FATAL(extra->peer_count, 2);
 
-    p = ela_get_userid(wctx->carrier, userid, sizeof(userid));
+    p = carrier_get_userid(wctx->carrier, userid, sizeof(userid));
     CU_ASSERT_EQUAL_FATAL(p, userid);
 
     weight = 0;

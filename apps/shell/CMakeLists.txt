@@ -1,4 +1,4 @@
-project(elashell C)
+project(carrier-shell C)
 
 include(CarrierDefaults)
 include(CheckIncludeFile)
@@ -86,8 +86,8 @@ else()
 endif()
 
 set(LIBS
-    elacarrier
-    elasession
+    carrier
+    carriersession
     crystal)
 
 if(WIN32)

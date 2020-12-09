@@ -20,37 +20,42 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_UTILTIY_H__
-#define __CARRIER_UTILTIY_H__
+#ifndef __ELASTOS_CARRIER_ERROR_H__
+#define __ELASTOS_CARRIER_ERROR_H__
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#include "ela_carrier.h"
+#include "carrier.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-static inline ElaConnectionStatus connection_status(bool connected)
-{
-    return connected ? ElaConnectionStatus_Connected : ElaConnectionStatus_Disconnected;
-}
+/**
+ * \~English
+ * Set carrier last error code.
+ *
+ * @param
+ *      err         [in] The error code to be set.
+ */
+CARRIER_API
+void carrier_set_error(int error);
 
-static inline void gettimeofday_elapsed(struct timeval *tm, int elapsed)
-{
-    struct timeval interval;
+typedef int (*strerror_t)(int errnum, char *, size_t);
 
-    interval.tv_sec  = elapsed;
-    interval.tv_usec = 0;
-
-    gettimeofday(tm, NULL);
-    timeradd(tm, &interval, tm);
-}
+/**
+ * \~Egnlish
+ * register an customized error processing routine for specific error facility
+ *
+ * @param
+ *      facility    [in] facility
+ *      strerr      [in] the routine to process error.
+ * @return
+ *      return 0 on success, otherwise return -1.
+ */
+CARRIER_API
+int carrier_register_strerror(int facility, strerror_t strerr);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __CARRIER_UTILTIY_H__ */
+#endif /* __ELASTOS_CARRIER_ERROR_H__ */

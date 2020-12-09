@@ -1,4 +1,4 @@
-project(elaspeedtest C)
+project(carrier-speedtest C)
 
 include(CarrierDefaults)
 include(CheckIncludeFile)
@@ -92,8 +92,8 @@ if(WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
 endif()
 set(LIBS
-    elacarrier
-    elasession
+    carrier
+    carriersession
     crystal
     pthread
     config)

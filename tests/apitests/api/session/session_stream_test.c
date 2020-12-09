@@ -43,8 +43,8 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include <carrier.h>
+#include <carrier_session.h>
 
 #include "cond.h"
 #include "test_helper.h"
@@ -55,24 +55,24 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
 static
-void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -81,7 +81,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -110,7 +110,7 @@ static struct CarrierContext carrier_context = {
     .extra = NULL
 };
 
-static void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
+static void session_request_complete_callback(CarrierSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     SessionContext *sctxt = (SessionContext *)context;
@@ -123,7 +123,7 @@ static void session_request_complete_callback(ElaSession *ws, const char *bundle
     if (status == 0) {
         int rc;
 
-        rc = ela_session_start(ws, sdp, len);
+        rc = carrier_session_start(ws, sdp, len);
         CU_ASSERT_EQUAL(rc, 0);
     }
 
@@ -157,14 +157,14 @@ static StreamContextExtra stream_extra = {
     .return_val = -1,
 };
 
-static void stream_on_data(ElaSession *ws, int stream, const void *data,
+static void stream_on_data(CarrierSession *ws, int stream, const void *data,
                            size_t len, void *context)
 {
     vlogD("Stream [%d] received data [%.*s]", stream, (int)len, (char*)data);
 }
 
-static void stream_state_changed(ElaSession *ws, int stream,
-                                 ElaStreamState state, void *context)
+static void stream_state_changed(CarrierSession *ws, int stream,
+                                 CarrierStreamState state, void *context)
 {
     StreamContext *sc = (StreamContext *)context;
 
@@ -176,7 +176,7 @@ static void stream_state_changed(ElaSession *ws, int stream,
     cond_signal(sc->cond);
 }
 
-static ElaStreamCallbacks stream_callbacks = {
+static CarrierStreamCallbacks stream_callbacks = {
     .stream_data = stream_on_data,
     .state_changed = stream_state_changed
 };
@@ -243,16 +243,16 @@ static void *bulk_write_routine(void *arg)
         size_t sent = 0;
 
         do {
-            rc = ela_stream_write(sctxt->session, stream_ctxt->stream_id,
+            rc = carrier_stream_write(sctxt->session, stream_ctxt->stream_id,
                                   (const char*)(packet + sent),
                                   total - sent);
             if (rc < 0) { //TODO: consider condition rc == 0.
-                if (ela_get_error() == ELA_GENERAL_ERROR(ELAERR_BUSY)) {
+                if (carrier_get_error() == CARRIER_GENERAL_ERROR(ERROR_BEING_BUSY)) {
                     usleep(100);
                     continue;
                 }
                 else {
-                    vlogE("Write data failed (0x%x)", ela_get_error());
+                    vlogE("Write data failed (0x%x)", carrier_get_error());
                     return NULL;
                 }
             }
@@ -316,7 +316,7 @@ static int do_bulk_write(TestContext *context)
 static inline
 void test_stream_write(int stream_options)
 {
-    test_stream_scheme(ElaStreamType_text, stream_options,
+    test_stream_scheme(CarrierStreamType_text, stream_options,
                        &test_context, do_bulk_write);
 
 }
@@ -328,20 +328,20 @@ static void test_stream_unreliable(void)
 
 static void test_stream_unreliable_plain(void)
 {
-    test_stream_write(ELA_STREAM_PLAIN);
+    test_stream_write(CARRIER_STREAM_PLAIN);
 }
 
 static void test_stream_reliable(void)
 {
-    test_stream_write(ELA_STREAM_RELIABLE);
+    test_stream_write(CARRIER_STREAM_RELIABLE);
 }
 
 static void test_stream_reliable_plain(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_RELIABLE;
 
     test_stream_write(stream_options);
 }
@@ -350,7 +350,7 @@ static void test_stream_multiplexing(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
 
     test_stream_write(stream_options);
 }
@@ -359,8 +359,8 @@ static void test_stream_plain_multiplexing(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
 
     test_stream_write(stream_options);
 }
@@ -369,8 +369,8 @@ static void test_stream_reliable_multiplexing(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
 
     test_stream_write(stream_options);
 }
@@ -379,9 +379,9 @@ static void test_stream_reliable_plain_multiplexing(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
 
     test_stream_write(stream_options);
 }
@@ -390,9 +390,9 @@ static void test_stream_reliable_portforwarding(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_PORT_FORWARDING;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_PORT_FORWARDING;
 
     test_stream_write(stream_options);
 }
@@ -401,10 +401,10 @@ static void test_stream_reliable_plain_portforwarding(void)
 {
     int stream_options = 0;
 
-    stream_options |= ELA_STREAM_PLAIN;
-    stream_options |= ELA_STREAM_RELIABLE;
-    stream_options |= ELA_STREAM_MULTIPLEXING;
-    stream_options |= ELA_STREAM_PORT_FORWARDING;
+    stream_options |= CARRIER_STREAM_PLAIN;
+    stream_options |= CARRIER_STREAM_RELIABLE;
+    stream_options |= CARRIER_STREAM_MULTIPLEXING;
+    stream_options |= CARRIER_STREAM_PORT_FORWARDING;
 
     test_stream_write(stream_options);
 }

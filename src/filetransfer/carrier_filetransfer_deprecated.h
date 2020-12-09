@@ -20,13 +20,13 @@
  * SOFTWARE.
  */
 
-#ifndef __ELA_FILETRANSFER_H__
-#define __ELA_FILETRANSFER_H__
+#ifndef __ELASTOS_CARRIER_FILETRANSFER_DEPRECATED_H__
+#define __ELASTOS_CARRIER_FILETRANSFER_DEPRECATED_H__
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <limits.h>
-#include <ela_carrier.h>
+#include <carrier.h>
 
 #if defined(__APPLE__)
 #pragma GCC diagnostic push
@@ -37,37 +37,17 @@
 extern "C" {
 #endif
 
-#if defined(CARRIER_STATIC)
-#define CARRIER_API
-#elif defined(CARRIER_DYNAMIC)
-  #ifdef CARRIER_BUILD
-    #if defined(_WIN32) || defined(_WIN64)
-      #define CARRIER_API        __declspec(dllexport)
-    #else
-      #define CARRIER_API        __attribute__((visibility("default")))
-    #endif
-  #else
-    #if defined(_WIN32) || defined(_WIN64)
-      #define CARRIER_API        __declspec(dllimport)
-    #else
-      #define CARRIER_API        __attribute__((visibility("default")))
-    #endif
-  #endif
-#else
-#define CARRIER_API
-#endif
-
 /**
  * \~English
  * Carrier transfer file name max length.
  */
-#define ELA_MAX_FILE_NAME_LEN   255
+#define ELA_MAX_FILE_NAME_LEN   CARRIER_MAX_FILE_NAME_LEN
 
 /**
  * \~English
  * Carrier transfer file ID max length.
  */
-#define ELA_MAX_FILE_ID_LEN     ELA_MAX_ID_LEN
+#define ELA_MAX_FILE_ID_LEN     CARRIER_MAX_FILE_ID_LEN
 
 /**
  * \~English
@@ -108,27 +88,6 @@ typedef struct ElaFileTransferInfo {
      */
     void *userdata;
 } ElaFileTransferInfo;
-
-/**
- * \~English
- * Carrier file transfer connection state enumeration.
- */
-typedef enum FileTransferConnection {
-    /** The file transfer connection is initialized. */
-    FileTransferConnection_initialized = 1,
-
-    /** The file transfer connection is connecting.*/
-    FileTransferConnection_connecting,
-
-    /** The file transfer connection has been established. */
-    FileTransferConnection_connected,
-
-    /** The file transfer connection is closed and disconnected. */
-    FileTransferConnection_closed,
-
-    /** The file transfer connection failed with some reason. */
-    FileTransferConnection_failed
-} FileTransferConnection;
 
 /**
  * \~English
@@ -274,8 +233,9 @@ typedef struct ElaFileTransferCallbacks {
  * @return
  *      The generated unique file identifier.
  */
-CARRIER_API
-char *ela_filetransfer_fileid(char *fileid, size_t length);
+DEPRECATED_WITH(carrier_filetransfer_fileid)
+char *ela_filetransfer_fileid(char *fileid, size_t length)
+ALIAS(ela_filetransfer_fileid, carrier_filetransfer_fileid);
 
 /**
  * \~English
@@ -313,22 +273,24 @@ typedef void ElaFileTransferConnectCallback(ElaCarrier *carrier,
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_filetransfer_init)
 int ela_filetransfer_init(ElaCarrier *carrier,
                           ElaFileTransferConnectCallback *callback,
-                          void *context);
+                          void *context)
+ALIAS(ela_filetransfer_init, carrier_filetransfer_init);
 
 /**
  * \~English
  * Clean up Carrier file transfer extension.
  *
- * The application should call ela_file_transfer_cleanup before quit,
+ * The application should call carrier_file_transfer_cleanup before quit,
  * to clean up the resources associated with the extension.
  *
  * If the extension is not initialized, this function has no effect.
  */
-CARRIER_API
-void ela_filetransfer_cleanup(ElaCarrier *carrier);
+DEPRECATED_WITH(carrier_filetransfer_cleanup)
+void ela_filetransfer_cleanup(ElaCarrier *carrier)
+ALIAS(ela_filetransfer_cleanup, carrier_filetransfer_cleanup);
 
 /**
  * \~English
@@ -358,12 +320,13 @@ void ela_filetransfer_cleanup(ElaCarrier *carrier);
  *      Return an ElaFileTransfer instance on success, NULL otherwise(The
  *      specific error code can be retrieved by calling ela_get_error()).
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_filetransfer_new)
 ElaFileTransfer *ela_filetransfer_new(ElaCarrier *carrier,
                                       const char *address,
                                       const ElaFileTransferInfo *fileinfo,
                                       ElaFileTransferCallbacks *callbacks,
-                                      void *context);
+                                      void *context)
+ALIAS(ela_filetransfer_new, carrier_filetransfer_new);
 
 /**
  * \~English
@@ -372,8 +335,9 @@ ElaFileTransfer *ela_filetransfer_new(ElaCarrier *carrier,
  * @param
  *      filetransfer    [in] A handle to the Carrier file transfer instance.
  */
-CARRIER_API
-void ela_filetransfer_close(ElaFileTransfer *filetransfer);
+DEPRECATED_WITH(carrier_filetransfer_close)
+void ela_filetransfer_close(ElaFileTransfer *filetransfer)
+ALIAS(ela_filetransfer_close, carrier_filetransfer_close);
 
 /**
  * \~English
@@ -395,11 +359,11 @@ void ela_filetransfer_close(ElaFileTransfer *filetransfer);
  *      otherwise, NULL value is returned. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_filetransfer_get_fileid)
 char *ela_filetransfer_get_fileid(ElaFileTransfer *filetransfer,
                                   const char *filename,
-                                  char *fileid, size_t length);
-
+                                  char *fileid, size_t length)
+ALIAS(ela_filetransfer_get_fileid, carrier_filetransfer_get_fileid);
 /**
  * \~English
  * Get file name by fileid.
@@ -420,10 +384,11 @@ char *ela_filetransfer_get_fileid(ElaFileTransfer *filetransfer,
  *      otherwise, NULL value is returned. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_filetransfer_get_filename)
 char *ela_filetransfer_get_filename(ElaFileTransfer *filetransfer,
                                     const char *fileid,
-                                    char *filename, size_t length);
+                                    char *filename, size_t length)
+ALIAS(ela_filetransfer_get_filename, carrier_filetransfer_get_filename);
 
 /**
  * \~English
@@ -436,8 +401,9 @@ char *ela_filetransfer_get_filename(ElaFileTransfer *filetransfer,
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_filetransfer_connect(ElaFileTransfer *filetransfer);
+DEPRECATED_WITH(carrier_filetransfer_connect)
+int ela_filetransfer_connect(ElaFileTransfer *filetransfer)
+ALIAS(ela_filetransfer_connect, carrier_filetransfer_connect);
 
 /**
  * \~English
@@ -450,8 +416,9 @@ int ela_filetransfer_connect(ElaFileTransfer *filetransfer);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_filetransfer_accept_connect(ElaFileTransfer *filetransfer);
+DEPRECATED_WITH(carrier_filetransfer_accept_connect)
+int ela_filetransfer_accept_connect(ElaFileTransfer *filetransfer)
+ALIAS(ela_filetransfer_accept_connect, carrier_filetransfer_accept_connect);
 
 /**
  * \~English
@@ -466,9 +433,10 @@ int ela_filetransfer_accept_connect(ElaFileTransfer *filetransfer);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_filetransfer_add)
 int ela_filetransfer_add(ElaFileTransfer *filetransfer,
-                         const ElaFileTransferInfo *fileinfo);
+                         const ElaFileTransferInfo *fileinfo)
+ALIAS(ela_filetransfer_add, carrier_filetransfer_add);
 
 /**
  * \~English
@@ -485,9 +453,10 @@ int ela_filetransfer_add(ElaFileTransfer *filetransfer,
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_filetransfer_pull)
 int ela_filetransfer_pull(ElaFileTransfer *filetransfer, const char *fileid,
-                          uint64_t offset);
+                          uint64_t offset)
+ALIAS(ela_filetransfer_pull, carrier_filetransfer_pull);
 
 /**
  * \~English
@@ -510,9 +479,10 @@ int ela_filetransfer_pull(ElaFileTransfer *filetransfer, const char *fileid,
  *      Sent bytes on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_filetransfer_send)
 ssize_t ela_filetransfer_send(ElaFileTransfer *filetransfer, const char *fileid,
-                          const uint8_t *data, size_t length);
+                          const uint8_t *data, size_t length)
+ALIAS(ela_filetransfer_send, carrier_filetransfer_send);
 
 /**
  * \~English
@@ -531,9 +501,10 @@ ssize_t ela_filetransfer_send(ElaFileTransfer *filetransfer, const char *fileid,
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_filetransfer_cancel)
 int ela_filetransfer_cancel(ElaFileTransfer *filetransfer, const char *fileid,
-                            int status, const char *reason);
+                            int status, const char *reason)
+ALIAS(ela_filetransfer_cancel, carrier_filetransfer_cancel);
 
 /**
  * \~English
@@ -548,8 +519,9 @@ int ela_filetransfer_cancel(ElaFileTransfer *filetransfer, const char *fileid,
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_filetransfer_pend(ElaFileTransfer *filetransfer, const char *fileid);
+DEPRECATED_WITH(carrier_filetransfer_pend)
+int ela_filetransfer_pend(ElaFileTransfer *filetransfer, const char *fileid)
+ALIAS(ela_filetransfer_pend, carrier_filetransfer_pend);
 
 /**
  * \~English
@@ -564,8 +536,9 @@ int ela_filetransfer_pend(ElaFileTransfer *filetransfer, const char *fileid);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_filetransfer_resume(ElaFileTransfer *filetransfer, const char *fileid);
+DEPRECATED_WITH(carrier_filetransfer_resume)
+int ela_filetransfer_resume(ElaFileTransfer *filetransfer, const char *fileid)
+ALIAS(ela_filetransfer_resume, carrier_filetransfer_resume);
 
 
 /**
@@ -583,9 +556,10 @@ int ela_filetransfer_resume(ElaFileTransfer *filetransfer, const char *fileid);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_filetransfer_set_userdata)
 int ela_filetransfer_set_userdata(ElaFileTransfer *filetransfer,
-                                  const char *fileid, void *userdata);
+                                  const char *fileid, void *userdata)
+ALIAS(ela_filetransfer_set_userdata, carrier_filetransfer_set_userdata);
 
 /**
  * \~English
@@ -600,8 +574,9 @@ int ela_filetransfer_set_userdata(ElaFileTransfer *filetransfer,
  *      userdata on success, or NULL if an error occurred. The specific error
  *      code can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-void *ela_filetransfer_get_userdata(ElaFileTransfer *ft, const char *fileid);
+DEPRECATED_WITH(carrier_filetransfer_get_userdata)
+void *ela_filetransfer_get_userdata(ElaFileTransfer *ft, const char *fileid)
+ALIAS(ela_filetransfer_get_userdata, carrier_filetransfer_get_userdata);
 
 #ifdef __cplusplus
 }
@@ -611,4 +586,4 @@ void *ela_filetransfer_get_userdata(ElaFileTransfer *ft, const char *fileid);
 #pragma GCC diagnostic pop
 #endif
 
-#endif /* __ELA_FILETRANSFER_H__ */
+#endif /* __ELASTOS_CARRIER_FILETRANSFER_DEPRECATED_H__ */

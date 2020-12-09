@@ -20,19 +20,19 @@
  * SOFTWARE.
  */
 
-#ifndef __THISTORY_H__
-#define __THISTORY_H__
+#ifndef __CARRIER_TRANSACTED_HISTROY_H__
+#define __CARRIER_TRANSACTED_HISTROY_H__
 
 #include <string.h>
 #include <assert.h>
 
 #include <crystal.h>
-#include "ela_carrier_impl.h"
-#include "ela_carrier.h"
+#include "carrier.h"
+#include "carrier_impl.h"
 
 typedef struct HistoryItem {
     hash_entry_t he;
-    char key[ELA_MAX_ID_LEN + ELA_MAX_EXTENSION_NAME_LEN + 4];
+    char key[CARRIER_MAX_ID_LEN + CARRIER_MAX_EXTENSION_NAME_LEN + 4];
     int64_t tid;
     void *user_data;
 } HistoryItem;
@@ -84,7 +84,7 @@ int64_t transaction_history_get_invite(hashtable_t *thistory, const char *userid
 {
     int64_t val = 0;
     HistoryItem *item;
-    char key[ELA_MAX_ID_LEN + ELA_MAX_EXTENSION_NAME_LEN + 4];
+    char key[CARRIER_MAX_ID_LEN + CARRIER_MAX_EXTENSION_NAME_LEN + 4];
 
     assert(thistory && userid);
 
@@ -101,7 +101,7 @@ int64_t transaction_history_get_invite(hashtable_t *thistory, const char *userid
 static inline
 void transaction_history_remove_invite(hashtable_t *thistory, const char *userid)
 {
-    char key[ELA_MAX_ID_LEN  + ELA_MAX_EXTENSION_NAME_LEN + 4];
+    char key[CARRIER_MAX_ID_LEN  + CARRIER_MAX_EXTENSION_NAME_LEN + 4];
 
     assert(thistory && userid);
 
@@ -109,4 +109,4 @@ void transaction_history_remove_invite(hashtable_t *thistory, const char *userid
     deref(hashtable_remove(thistory, key, strlen(key)));
 }
 
-#endif /* __THISTORY_H__ */
+#endif /* __CARRIER_TRANSACTED_HISTROY_H__ */

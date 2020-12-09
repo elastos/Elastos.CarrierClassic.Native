@@ -32,7 +32,7 @@
 #include <crystal.h>
 #include <CUnit/Basic.h>
 
-#include "ela_carrier.h"
+#include <carrier.h>
 #include "cond.h"
 #include "test_helper.h"
 
@@ -41,23 +41,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -65,7 +65,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
+static void peer_list_changed_cb(Carrier *carrier, const char *groupid,
                                  void *context)
 {
     CarrierContext *wctx = (CarrierContext *)context;
@@ -77,7 +77,7 @@ static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
     vlogD("Peer list of group (%s) changed (%d)", groupid, wctx->peer_list_cnt);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -134,7 +134,7 @@ static TestContext test_context = {
 static int set_title_routine(TestContext *ctx, size_t title_len)
 {
     CarrierContext *wctx = test_context.carrier;
-    char check[ELA_MAX_GROUP_TITLE_LEN + 1];
+    char check[CARRIER_MAX_GROUP_TITLE_LEN + 1];
     char *title;
     char cmd[128];
     char result[128];
@@ -144,10 +144,10 @@ static int set_title_routine(TestContext *ctx, size_t title_len)
     memset(title, 'D', title_len);
     title[title_len] = 0;
 
-    rc = ela_group_set_title(wctx->carrier, wctx->groupid, title);
+    rc = carrier_group_set_title(wctx->carrier, wctx->groupid, title);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    rc = ela_group_get_title(wctx->carrier, wctx->groupid, check,
+    rc = carrier_group_get_title(wctx->carrier, wctx->groupid, check,
                              sizeof(check));
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_STRING_EQUAL(title, check);
@@ -167,7 +167,7 @@ static int check_set_title(TestContext *ctxt)
 
 static int check_set_max_length_title(TestContext *ctxt)
 {
-    return set_title_routine(ctxt, ELA_MAX_GROUP_TITLE_LEN);
+    return set_title_routine(ctxt, CARRIER_MAX_GROUP_TITLE_LEN);
 }
 
 static void test_group_set_title(void)

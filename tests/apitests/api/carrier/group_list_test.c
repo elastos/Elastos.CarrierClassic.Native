@@ -29,7 +29,7 @@
 #include <crystal.h>
 #include <CUnit/Basic.h>
 
-#include "ela_carrier.h"
+#include <carrier.h>
 #include "cond.h"
 #include "test_helper.h"
 
@@ -46,9 +46,9 @@ static CarrierContextExtra extra = {
     .group_total = 32
 };
 
-extern int ela_leave_all_groups(ElaCarrier *);
+extern int carrier_leave_all_groups(Carrier *);
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
@@ -73,7 +73,7 @@ static bool group_iterate_cb(const char *groupid, void *context)
     return true;
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -114,30 +114,30 @@ static void test_group_get_groups(void)
 {
     CarrierContext *wctx = test_context.carrier;
     CarrierContextExtra *extra = wctx->extra;
-    char groupid[ELA_MAX_ID_LEN + 1] = {0};
+    char groupid[CARRIER_MAX_ID_LEN + 1] = {0};
     int rc;
     int i;
 
-    rc = ela_leave_all_groups(wctx->carrier);
+    rc = carrier_leave_all_groups(wctx->carrier);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     for (i = 0; i < extra->group_total; i++) {
         extra->groupids[i] = NULL;
 
-        rc = ela_new_group(wctx->carrier, groupid, sizeof(groupid));
+        rc = carrier_new_group(wctx->carrier, groupid, sizeof(groupid));
         CU_ASSERT_EQUAL_FATAL(rc, 0);
         CU_ASSERT_FATAL(strlen(groupid) > 0);
 
         extra->groupids[i] = strdup(groupid);
     }
 
-    rc = ela_get_groups(wctx->carrier, group_iterate_cb, extra);
+    rc = carrier_get_groups(wctx->carrier, group_iterate_cb, extra);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_EQUAL_FATAL(extra->group_count, extra->group_total);
     CU_ASSERT_EQUAL_FATAL(extra->groupids_mask, 0xFFFFFFFF);
 
     for (i = 0; i < extra->group_total; i++) {
-        rc = ela_leave_group(wctx->carrier, extra->groupids[i]);
+        rc = carrier_leave_group(wctx->carrier, extra->groupids[i]);
         CU_ASSERT_EQUAL_FATAL(rc, 0);
         free(extra->groupids[i]);
     }

@@ -27,57 +27,57 @@
 
 #include <crystal.h>
 
-#include "ela_error.h"
+#include "carrier_error.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #define __thread        __declspec(thread)
 #endif
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__linux__)
-static __thread int ela_error;
+static __thread int carrier_error;
 #elif defined(__APPLE__)
 #include <pthread.h>
-static pthread_once_t ela_key_once = PTHREAD_ONCE_INIT;
-static pthread_key_t ela_error;
-static void ela_setup_error(void)
+static pthread_once_t carrier_key_once = PTHREAD_ONCE_INIT;
+static pthread_key_t carrier_error;
+static void carrier_setup_error(void)
 {
-    (void)pthread_key_create(&ela_error, NULL);
+    (void)pthread_key_create(&carrier_error, NULL);
 }
 #else
 #error "Unsupported OS yet"
 #endif
 
-int ela_get_error(void)
+int carrier_get_error(void)
 {
 #if defined(_WIN32) || defined(_WIN64) || defined(__linux__)
-    return ela_error;
+    return carrier_error;
 #elif defined(__APPLE__)
-    return (int)pthread_getspecific(ela_error);
+    return (int)pthread_getspecific(carrier_error);
 #else
 #error "Unsupported OS yet"
 #endif
 }
 
-void ela_clear_error(void)
+void carrier_clear_error(void)
 {
 #if defined(_WIN32) || defined(_WIN64) || defined(__linux__)
-    ela_error = ELASUCCESS;
+    carrier_error = CARRIER_SUCCESS;
 #elif defined(__APPLE__)
-    (void)pthread_setspecific(ela_error, 0);
+    (void)pthread_setspecific(carrier_error, 0);
 #else
 #error "Unsupported OS yet"
 #endif
 }
 
-void ela_set_error(int err)
+void carrier_set_error(int err)
 {
 #if defined(_WIN32) || defined(_WIN64) || defined(__linux__)
-    ela_error = err;
+    carrier_error = err;
 #elif defined(__APPLE__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-    (void)pthread_once(&ela_key_once, ela_setup_error);
-    (void)pthread_setspecific(ela_error, (void*)err);
+    (void)pthread_once(&carrier_key_once, carrier_setup_error);
+    (void)pthread_setspecific(carrier_error, (void*)err);
 #pragma GCC diagnostic pop
 #else
 #error "Unsupported OS yet"
@@ -91,41 +91,41 @@ typedef struct ErrorDesc {
 
 static
 const ErrorDesc error_codes[] = {
-    { ELAERR_INVALID_ARGS,                "Invalid argument(s)"     },
-    { ELAERR_OUT_OF_MEMORY,               "Out of memory"           },
-    { ELAERR_BUFFER_TOO_SMALL,            "Too small buffer size"   },
-    { ELAERR_BAD_PERSISTENT_DATA,         "Bad persistent data"     },
-    { ELAERR_INVALID_PERSISTENCE_FILE,    "Invalid persistent file" },
-    { ELAERR_INVALID_CONTROL_PACKET,      "Invalid control packet"  },
-    { ELAERR_INVALID_CREDENTIAL,          "Invalid credential"      },
-    { ELAERR_ALREADY_RUN,                 "Carrier is already being running" },
-    { ELAERR_NOT_READY,                   "Carrier is not ready"    },
-    { ELAERR_NOT_EXIST,                   "Friend does not exist"   },
-    { ELAERR_ALREADY_EXIST,               "Friend already exists"   },
-    { ELAERR_NO_MATCHED_REQUEST,          "Unmatched request"       },
-    { ELAERR_INVALID_USERID,              "Invalid carrier userid"  },
-    { ELAERR_INVALID_NODEID,              "Invalid carrier nodeid"  },
-    { ELAERR_WRONG_STATE,                 "Being in wrong state"    },
-    { ELAERR_BUSY,                        "Instance is being busy"  },
-    { ELAERR_LANGUAGE_BINDING,            "Language binding error"  },
-    { ELAERR_ENCRYPT,                     "Encrypt error"           },
-    { ELAERR_SDP_TOO_LONG,                "SDP is too long"         },
-    { ELAERR_INVALID_SDP,                 "Invalid SDP"             },
-    { ELAERR_NOT_IMPLEMENTED,             "Not implemented yet"     },
-    { ELAERR_LIMIT_EXCEEDED,              "Exceeding the limit"     },
-    { ELAERR_PORT_ALLOC,                  "Allocate port error"     },
-    { ELAERR_BAD_PROXY_TYPE,              "Bad proxy type"          },
-    { ELAERR_BAD_PROXY_HOST,              "Bad proxy host"          },
-    { ELAERR_BAD_PROXY_PORT,              "Bad proxy port"          },
-    { ELAERR_PROXY_NOT_AVAILABLE,         "No proxy available"      },
-    { ELAERR_ENCRYPTED_PERSISTENT_DATA,   "Load encrypted persistent data error"},
-    { ELAERR_BAD_BOOTSTRAP_HOST,          "Bad bootstrap host"      },
-    { ELAERR_BAD_BOOTSTRAP_PORT,          "Bad bootstrap port"      },
-    { ELAERR_TOO_LONG,                    "Data content too long"   },
-    { ELAERR_ADD_SELF,                    "Try add myself as friend"},
-    { ELAERR_BAD_ADDRESS,                 "Bad carrier node address"},
-    { ELAERR_FRIEND_OFFLINE,              "Friend is being offline" },
-    { ELAERR_UNKNOWN,                     "Unknown error"           }
+    { ERROR_INVALID_ARGS,                "Invalid argument(s)"     },
+    { ERROR_OUT_OF_MEMORY,               "Out of memory"           },
+    { ERROR_BUFFER_TOO_SMALL,            "Too small buffer size"   },
+    { ERROR_BAD_PERSISTENT_DATA,         "Bad persistent data"     },
+    { ERROR_INVALID_PERSISTENCE_FILE,    "Invalid persistent file" },
+    { ERROR_INVALID_CONTROL_PACKET,      "Invalid control packet"  },
+    { ERROR_INVALID_CREDENTIAL,          "Invalid credential"      },
+    { ERROR_ALREADY_RUN,                 "Carrier is already being running" },
+    { ERROR_NOT_BEING_READY,             "Carrier is not being ready"    },
+    { ERROR_NOT_EXIST,                   "Friend does not exist"   },
+    { ERROR_ALREADY_EXIST,               "Friend already exists"   },
+    { ERROR_NO_MATCHED_REQUEST,          "Unmatched request"       },
+    { ERROR_INVALID_USERID,              "Invalid carrier userid"  },
+    { ERROR_INVALID_NODEID,              "Invalid carrier nodeid"  },
+    { ERROR_WRONG_STATE,                 "Being in wrong state"    },
+    { ERROR_BEING_BUSY,                  "Instance is being busy"  },
+    { ERROR_LANGUAGE_BINDING,            "Language binding error"  },
+    { ERROR_ENCRYPT,                     "Encrypt error"           },
+    { ERROR_SDP_TOO_LONG,                "SDP is too long"         },
+    { ERROR_INVALID_SDP,                 "Invalid SDP"             },
+    { ERROR_NOT_IMPLEMENTED,             "Not implemented yet"     },
+    { ERROR_LIMIT_EXCEEDED,              "Exceeding the limit"     },
+    { ERROR_PORT_ALLOC,                  "Allocate port error"     },
+    { ERROR_BAD_PROXY_TYPE,              "Bad proxy type"          },
+    { ERROR_BAD_PROXY_HOST,              "Bad proxy host"          },
+    { ERROR_BAD_PROXY_PORT,              "Bad proxy port"          },
+    { ERROR_PROXY_NOT_AVAILABLE,         "No proxy available"      },
+    { ERROR_ENCRYPTED_PERSISTENT_DATA,   "Load encrypted persistent data error"},
+    { ERROR_BAD_BOOTSTRAP_HOST,          "Bad bootstrap host"      },
+    { ERROR_BAD_BOOTSTRAP_PORT,          "Bad bootstrap port"      },
+    { ERROR_TOO_LONG,                    "Data content too long"   },
+    { ERROR_ADD_SELF,                    "Try add myself as friend"},
+    { ERROR_BAD_ADDRESS,                 "Bad carrier node address"},
+    { ERROR_FRIEND_OFFLINE,              "Friend is being offline" },
+    { ERROR_UNKNOWN,                     "Unknown error"           }
 };
 
 static int general_error(int errcode, char *buf, size_t len)
@@ -139,7 +139,7 @@ static int general_error(int errcode, char *buf, size_t len)
     }
 
     if (i >= size || len <= strlen(error_codes[i].errdesc))
-        return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        return CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS);
 
     strcpy(buf, error_codes[i].errdesc);
     return 0;
@@ -154,7 +154,7 @@ static int system_error(int errcode, char *buf, size_t len)
     rc = strerror_r(errcode, buf, len);
 #endif
     if (rc < 0)
-        return ELA_SYS_ERROR(ELAERR_INVALID_ARGS);
+        return CARRIER_SYS_ERROR(ERROR_INVALID_ARGS);
 
     return 0;
 }
@@ -170,7 +170,7 @@ static int dht_error(int errcode, char *buf, size_t len)
     }
 
     if (i >= size || len <= strlen(error_codes[i].errdesc))
-        return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        return CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS);
 
     strcpy(buf, error_codes[i].errdesc);
     return 0;
@@ -187,7 +187,7 @@ static int express_error(int errcode, char *buf, size_t len)
     }
 
     if (i >= size || len <= strlen(error_codes[i].errdesc))
-        return ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS);
+        return CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS);
 
     strcpy(buf, error_codes[i].errdesc);
     return 0;
@@ -199,16 +199,16 @@ typedef struct FacilityDesc {
 } FacilityDesc;
 
 static FacilityDesc facility_codes[] = {
-    { "[General] ",         general_error },    //ELAF_GENERAL
-    { "[System] ",          system_error },     //ELAF_SYS
-    { "Reserved facility",  NULL },             //ELAF_RESERVED1
-    { "Reserved facility",  NULL },             //ELAF_RESERVED2
-    { "[ICE] ",             NULL },             //ELAF_ICE
-    { "[DHT] ",             dht_error },        //ELAF_DHT
-    { "[Express] ",         express_error },    //ELAF_EXPRESS
+    { "[General] ",         general_error },    //FACILITY_GENERAL
+    { "[System] ",          system_error },     //FACILITY_SYS
+    { "Reserved facility",  NULL },             //FACILITY_RESERVED1
+    { "Reserved facility",  NULL },             //FACILITY_RESERVED2
+    { "[ICE] ",             NULL },             //FACILITY_ICE
+    { "[DHT] ",             dht_error },        //FACILITY_DHT
+    { "[Express] ",         express_error },    //FACILITY_EXPRESS
 };
 
-char *ela_get_strerror(int error, char *buf, size_t len)
+char *carrier_get_strerror(int error, char *buf, size_t len)
 {
     FacilityDesc *faci_desc;
     bool negative;
@@ -224,14 +224,14 @@ char *ela_get_strerror(int error, char *buf, size_t len)
 
     if (!buf || !negative || facility <= 0 ||
         facility > sizeof(facility_codes)/sizeof(FacilityDesc)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return NULL;
     }
 
     faci_desc = (FacilityDesc*)&facility_codes[facility - 1];
     desc_len = strlen(faci_desc->desc);
     if (len < desc_len) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_BUFFER_TOO_SMALL));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_BUFFER_TOO_SMALL));
         return NULL;
     }
 
@@ -243,19 +243,19 @@ char *ela_get_strerror(int error, char *buf, size_t len)
         rc = faci_desc->errstring(errcode, p, len);
 
     if (rc < 0) {
-        ela_set_error(rc);
+        carrier_set_error(rc);
         return NULL;
     }
 
     return buf;
 }
 
-int ela_register_strerror(int facility, strerror_t user_strerr)
+int carrier_register_strerror(int facility, strerror_t user_strerr)
 {
     FacilityDesc *faci_desc;
 
-    if (facility <= 0 || facility > ELAF_DHT) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    if (facility <= 0 || facility > FACILITY_DHT) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 

@@ -27,8 +27,8 @@
 extern "C" {
 #endif
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include <carrier.h>
+#include <carrier_session.h>
 #include "test_context.h"
 
 enum {
@@ -41,7 +41,7 @@ enum {
 struct CarrierContextExtra {
     pthread_t tid;
     pthread_mutex_t mutex;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
     char *bundle;
     char *data;
     int len;
@@ -55,11 +55,11 @@ struct CarrierContextExtra {
 
     char gcookie[128];
     int gcookie_len;
-    char gfrom[ELA_MAX_ID_LEN + 1];
-    char groupid[ELA_MAX_ID_LEN + 1];
+    char gfrom[CARRIER_MAX_ID_LEN + 1];
+    char groupid[CARRIER_MAX_ID_LEN + 1];
 
-    char fileid[ELA_MAX_FILE_ID_LEN + 1];
-    char recv_file[ELA_MAX_FILE_NAME_LEN + 1];
+    char fileid[CARRIER_MAX_FILE_ID_LEN + 1];
+    char recv_file[CARRIER_MAX_FILE_NAME_LEN + 1];
 };
 
 #ifdef __cplusplus

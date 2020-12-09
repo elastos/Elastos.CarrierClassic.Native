@@ -31,7 +31,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include <carrier.h>
 
 #include "cond.h"
 #include "test_helper.h"
@@ -59,23 +59,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -84,7 +84,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -126,7 +126,7 @@ static TestContext test_context = {
     .context_reset = test_context_reset
 };
 
-static void friend_invite_response_cb(ElaCarrier *w, const char *from, const char *bundle,
+static void friend_invite_response_cb(Carrier *w, const char *from, const char *bundle,
                                       int status, const char *reason, const void *content,
                                       size_t len, void *context)
 {
@@ -151,7 +151,7 @@ static void test_friend_invite_assembly_confirm(int hello_len, const char *bundl
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
     char *hello = calloc(1, hello_len);
     int rc;
     bool is_wakeup;
@@ -163,14 +163,14 @@ static void test_friend_invite_assembly_confirm(int hello_len, const char *bundl
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     memset(hello, 'H', hello_len);
-    rc = ela_invite_friend(wctxt->carrier, robotid, bundle, hello, hello_len,
+    rc = carrier_invite_friend(wctxt->carrier, robotid, bundle, hello, hello_len,
                            friend_invite_response_cb, wctxt);
-    if (bundle && (strlen(bundle) == 0 || strlen(bundle) > ELA_MAX_BUNDLE_LEN)) {
+    if (bundle && (strlen(bundle) == 0 || strlen(bundle) > CARRIER_MAX_BUNDLE_LEN)) {
         CU_ASSERT_EQUAL(rc, -1);
-        CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return;
     } else {
         CU_ASSERT_EQUAL_FATAL(rc, 0);
@@ -184,7 +184,7 @@ static void test_friend_invite_assembly_confirm(int hello_len, const char *bundl
     CU_ASSERT_STRING_EQUAL(val[1], "bigdata");
     CU_ASSERT_EQUAL_FATAL(len, hello_len);
 
-    (void)ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    (void)carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     rc = write_cmd("freplyinvite_bigdata %s confirm\n", userid);
     CU_ASSERT_FATAL(rc > 0);
 
@@ -243,21 +243,21 @@ static void test_friend_invite_assembly_confirm_d2550_b20(void)
 
 static void test_friend_invite_assembly_confirm_d2550_bmaxlen(void)
 {
-    char bundle[ELA_MAX_BUNDLE_LEN + 1] = {0};
+    char bundle[CARRIER_MAX_BUNDLE_LEN + 1] = {0};
     memset(bundle, 'B', sizeof(bundle) - 1);
     test_friend_invite_assembly_confirm(2550, bundle);
 }
 
 static void test_friend_invite_assembly_confirm_dmaxlen_bnull(void)
 {
-    test_friend_invite_assembly_confirm(ELA_MAX_INVITE_DATA_LEN, NULL);
+    test_friend_invite_assembly_confirm(CARRIER_MAX_INVITE_DATA_LEN, NULL);
 }
 
 static void test_friend_invite_assembly_reject_base(const char *bundle, const char *reason)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *extra = wctxt->extra;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
     char *hello = "hello";
     int rc;
     bool is_wakup;
@@ -267,9 +267,9 @@ static void test_friend_invite_assembly_reject_base(const char *bundle, const ch
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_invite_friend(wctxt->carrier, robotid, bundle, hello, strlen(hello) + 1,
+    rc = carrier_invite_friend(wctxt->carrier, robotid, bundle, hello, strlen(hello) + 1,
                            friend_invite_response_cb, wctxt);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
@@ -279,7 +279,7 @@ static void test_friend_invite_assembly_reject_base(const char *bundle, const ch
     CU_ASSERT_STRING_EQUAL(val[0], "data");
     CU_ASSERT_STRING_EQUAL(val[1], hello);
 
-    (void)ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    (void)carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     rc = write_cmd("freplyinvite_bigdata %s refuse %s\n", userid, reason);
     CU_ASSERT_FATAL(rc > 0);
 
@@ -318,15 +318,15 @@ static void test_friend_invite_assembly_reject_bnull_r20(void)
 
 static void test_friend_invite_assembly_reject_bnull_rmaxlen(void)
 {
-    char reason[ELA_MAX_INVITE_REPLY_REASON_LEN + 1] = {0};
+    char reason[CARRIER_MAX_INVITE_REPLY_REASON_LEN + 1] = {0};
     memset(reason, 'R', sizeof(reason) - 1);
     test_friend_invite_assembly_reject_base(NULL, reason);
 }
 
 static void test_friend_invite_assembly_reject_bmaxlen_rmaxlen(void)
 {
-    char bundle[ELA_MAX_BUNDLE_LEN + 1] = {0};
-    char reason[ELA_MAX_INVITE_REPLY_REASON_LEN + 1] = {0};
+    char bundle[CARRIER_MAX_BUNDLE_LEN + 1] = {0};
+    char reason[CARRIER_MAX_INVITE_REPLY_REASON_LEN + 1] = {0};
     memset(bundle, 'B', sizeof(bundle) - 1);
     memset(reason, 'R', sizeof(reason) - 1);
     test_friend_invite_assembly_reject_base(bundle, reason);
@@ -335,20 +335,20 @@ static void test_friend_invite_assembly_reject_bmaxlen_rmaxlen(void)
 static void test_friend_invite_with_overlong_data(void)
 {
     CarrierContext *wctxt = test_context.carrier;
-    char data[ELA_MAX_INVITE_DATA_LEN + 1] = {0};
+    char data[CARRIER_MAX_INVITE_DATA_LEN + 1] = {0};
     int rc;
 
     test_context.context_reset(&test_context);
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
-    memset(data, 'T', ELA_MAX_INVITE_DATA_LEN);
-    rc = ela_invite_friend(wctxt->carrier, NULL, robotid, data, sizeof(data),
+    memset(data, 'T', CARRIER_MAX_INVITE_DATA_LEN);
+    rc = carrier_invite_friend(wctxt->carrier, NULL, robotid, data, sizeof(data),
                            friend_invite_response_cb, wctxt);
     CU_ASSERT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
 }
 
 static CU_TestInfo cases[] = {

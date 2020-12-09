@@ -37,14 +37,12 @@
 
 #include <crystal.h>
 
-#include "ela_session.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define FLEX_PADDING_LEN        128
-#define FLEX_BUFFER_MAX_LEN     (FLEX_PADDING_LEN * 2 + ELA_MAX_USER_DATA_LEN)
+#define FLEX_BUFFER_MAX_LEN     (FLEX_PADDING_LEN * 2 + CARRIER_MAX_USER_DATA_LEN)
 
 /*
  * To reduce the times of buffer copy, using flex buffer mechanism.

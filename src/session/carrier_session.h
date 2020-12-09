@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-#ifndef __ELA_SESSION_H__
-#define __ELA_SESSION_H__
+#ifndef __ELASTOS_CARRIER_SESSION_H__
+#define __ELASTOS_CARRIER_SESSION_H__
 
 #include <stddef.h>
 #include <stdbool.h>
 #include <sys/types.h>
 
-#include <ela_carrier.h>
+#include <carrier.h>
 
 #if defined(__APPLE__)
 #pragma GCC diagnostic push
@@ -58,12 +58,12 @@ extern "C" {
 #define CARRIER_API
 #endif
 
-#define ELA_MAX_IP_STRING_LEN   45
+#define CARRIER_MAX_IP_STRING_LEN   45
 
-#define ELA_MAX_USER_DATA_LEN   2048
+#define CARRIER_MAX_USER_DATA_LEN   2048
 
-typedef struct ElaSession ElaSession;
-typedef ptrdiff_t       ssize_t;
+typedef struct CarrierSession CarrierSession;
+typedef ptrdiff_t   ssize_t;
 
 /**
  * \~English
@@ -73,98 +73,98 @@ typedef ptrdiff_t       ssize_t;
  *      https://tools.ietf.org/html/rfc4566#section-8
  *
  */
-typedef enum ElaStreamType {
+typedef enum CarrierStreamType {
     /**
      * \~English
      *  Audio stream.
      */
-    ElaStreamType_audio = 0,
+    CarrierStreamType_audio = 0,
     /**
      * \~English
      *  Video stream.
      */
-    ElaStreamType_video,
+    CarrierStreamType_video,
     /**
      * \~English
      *  Text stream.
      */
-    ElaStreamType_text,
+    CarrierStreamType_text,
     /**
      * \~English
      *  Application stream.
      */
-    ElaStreamType_application,
+    CarrierStreamType_application,
     /**
      * \~English
      *  Message stream.
      */
-    ElaStreamType_message
-} ElaStreamType;
+    CarrierStreamType_message
+} CarrierStreamType;
 
 /**
  * \~English
  * Stream address type.
  */
-typedef enum ElaCandidateType {
+typedef enum CandidateType {
     /**
      * \~English
      * The address is host local address.
      */
-    ElaCandidateType_Host,
+    CandidateType_Host,
     /**
      * \~English
      * The address is server reflexive address.
      */
-    ElaCandidateType_ServerReflexive,
+    CandidateType_ServerReflexive,
     /**
      * \~English
      * The address is peer reflexive address.
      */
-    ElaCandidateType_PeerReflexive,
+    CandidateType_PeerReflexive,
     /**
      * \~English
      * The address is relayed address.
      */
-    ElaCandidateType_Relayed,
-} ElaCandidateType;
+    CandidateType_Relayed,
+} CandidateType;
 
 /**
  * \~English
  * Peers network topology type.
  */
-typedef enum ElaNetworkTopology {
+typedef enum NetworkTopology {
     /**
      * \~English
      * The stream peers is in LAN, using direct connection.
      */
-    ElaNetworkTopology_LAN,
+    NetworkTopology_LAN,
     /**
      * \~English
      * The stream peers behind NAT, using P2P direct connection.
      */
-    ElaNetworkTopology_P2P,
+    NetworkTopology_P2P,
     /**
      * \~English
      * The stream peers behind NAT, using relayed connection.
      */
-    ElaNetworkTopology_RELAYED,
-} ElaNetworkTopology;
+    NetworkTopology_RELAYED,
+} NetworkTopology;
 
 /**
  * \~English
  * Carrier stream address information.
  */
-typedef struct ElaAddressInfo {
+typedef struct CarrierAddressInfo {
     /**
      * \~English
      * The candidate address type.
      */
-    ElaCandidateType type;
+    CandidateType type;
     /**
      * \~English
      * The IP/host of the address.
      */
-    char addr[ELA_MAX_IP_STRING_LEN + 1];
+    char addr[CARRIER_MAX_IP_STRING_LEN + 1];
     /**
      * \~English
      * The port of the address.
@@ -174,35 +174,35 @@ typedef struct ElaAddressInfo {
      * \~English
      * The IP/host of the related address.
      */
-    char related_addr[ELA_MAX_IP_STRING_LEN + 1];
+    char related_addr[CARRIER_MAX_IP_STRING_LEN + 1];
     /**
      * \~English
      * The port of the related address.
      */
     int related_port;
-} ElaAddressInfo;
+} CarrierAddressInfo;
 
 /**
  * \~English
  * Carrier stream transport information.
  */
-typedef struct ElaTransportInfo {
+typedef struct CarrierTransportInfo {
     /**
      * \~English
      * The network topology type: LAN, P2P or relayed.
      */
-    ElaNetworkTopology topology;
+    NetworkTopology topology;
     /**
      * \~English
      * The local address information.
      */
-    ElaAddressInfo local;
+    CarrierAddressInfo local;
     /**
      * \~English
      * The remote address information.
      */
-    ElaAddressInfo remote;
-} ElaTransportInfo;
+    CarrierAddressInfo remote;
+} CarrierTransportInfo;
 
 /* Global session APIs */
 
@@ -215,17 +215,17 @@ typedef struct ElaTransportInfo {
  */
 #if defined(__ANDROID__)
 CARRIER_API
-bool ela_session_jni_onload(void *vm, void *reserved);
+bool carrier_session_jni_onload(void *vm, void *reserved);
 #endif
 
 /**
  * \~English
  * An application-defined function that handle session requests.
  *
- * ElaSessionRequestCallback is the callback function type.
+ * CarrierSessionRequestCallback is the callback function type.
  *
  * @param
- *      carrier     [in] A handle to the ElaCarrier node instance.
+ *      carrier     [in] A handle to the Carrier node instance.
  * @param
  *      from        [in] The id from who send the message.
  * @param
@@ -238,7 +238,7 @@ bool ela_session_jni_onload(void *vm, void *reserved);
  * @param
  *      context     [in] The application defined context data.
  */
-typedef void ElaSessionRequestCallback(ElaCarrier *carrier, const char *from,
+typedef void CarrierSessionRequestCallback(Carrier *carrier, const char *from,
         const char *bundle, const char *sdp, size_t len, void *context);
 
 /**
@@ -253,16 +253,16 @@ typedef void ElaSessionRequestCallback(ElaCarrier *carrier, const char *from,
  *
  * @return
  *      0 on success, or -1 if an error occurred. The specific error code
- *      can be retrieved by calling ela_get_error().
+ *      can be retrieved by calling carrier_get_error().
  */
 CARRIER_API
-int ela_session_init(ElaCarrier *carrier);
+int carrier_session_init(Carrier *carrier);
 
 /**
  * \~English
  * Clean up Carrier session extension.
  *
- * The application should call ela_session_cleanup before quit,
+ * The application should call carrier_session_cleanup before quit,
  * to clean up the resources associated with the extension.
  *
  * If the extension is not initialized, this function has no effect.
@@ -271,7 +271,7 @@ int ela_session_init(ElaCarrier *carrier);
  *      carrier [in] A handle to the carrier node instance.
  */
 CARRIER_API
-void ela_session_cleanup(ElaCarrier *carrier);
+void carrier_session_cleanup(Carrier *carrier);
 
 /**
  * \~English
@@ -292,11 +292,11 @@ void ela_session_cleanup(ElaCarrier *carrier);
  * @return
  *      If no error occurs, return 0.
  *      Otherwise, return -1, and a specific error code can be
- *      retrieved by calling ela_get_error().
+ *      retrieved by calling carrier_get_error().
  */
 CARRIER_API
-int ela_session_set_callback(ElaCarrier *carrier, const char *bundle_prefix,
-        ElaSessionRequestCallback *callback, void *context);
+int carrier_session_set_callback(Carrier *carrier, const char *bundle_prefix,
+        CarrierSessionRequestCallback *callback, void *context);
 
 /**
  * \~English
@@ -310,12 +310,12 @@ int ela_session_set_callback(ElaCarrier *carrier, const char *bundle_prefix,
  *      address     [in] The target address.
  *
  * @return
- *      If no error occurs, return the pointer of ElaSession object.
+ *      If no error occurs, return the pointer of CarrierSession object.
  *      Otherwise, return NULL, and a specific error code can be
- *      retrieved by calling ela_get_error().
+ *      retrieved by calling carrier_get_error().
  */
 CARRIER_API
-ElaSession *ela_session_new(ElaCarrier *carrier, const char *address);
+CarrierSession *carrier_session_new(Carrier *carrier, const char *address);
 
 /**
  * \~English
@@ -326,7 +326,7 @@ ElaSession *ela_session_new(ElaCarrier *carrier, const char *address);
  *      session     [in] A handle to the carrier session.
  */
 CARRIER_API
-void ela_session_close(ElaSession *session);
+void carrier_session_close(CarrierSession *session);
 
 /**
  * \~English
@@ -345,7 +345,7 @@ void ela_session_close(ElaSession *session);
  *      The remote peer string address, or NULL if buffer is too small.
  */
 CARRIER_API
-char *ela_session_get_peer(ElaSession *session, char *address, size_t len);
+char *carrier_session_get_peer(CarrierSession *session, char *address, size_t len);
 
 /**
  * \~English
@@ -357,7 +357,7 @@ char *ela_session_get_peer(ElaSession *session, char *address, size_t len);
  *      userdata    [in] Arbitary user data to be associated with this session.
  */
 CARRIER_API
-void ela_session_set_userdata(ElaSession *session, void *userdata);
+void carrier_session_set_userdata(CarrierSession *session, void *userdata);
 
 /**
  * \~English
@@ -370,17 +370,17 @@ void ela_session_set_userdata(ElaSession *session, void *userdata);
  *      The user data associated with session.
  */
 CARRIER_API
-void *ela_session_get_userdata(ElaSession *session);
+void *carrier_session_get_userdata(CarrierSession *session);
 
 /**
  * \~English
  * An application-defined function that receive session request complete
  * event.
  *
- * ElaSessionRequestCompleteCallback is the callback function type.
+ * CarrierSessionRequestCompleteCallback is the callback function type.
  *
  * @param
- *      session     [in] A handle to the ElaSession.
+ *      session     [in] A handle to the CarrierSession.
  * @param
  *      bundle      [in] The bundle of this session.
  * @param
@@ -396,7 +396,7 @@ void *ela_session_get_userdata(ElaSession *session);
  * @param
  *      context     [in] The application defined context data.
  */
-typedef void ElaSessionRequestCompleteCallback(ElaSession *session,
+typedef void CarrierSessionRequestCompleteCallback(CarrierSession *session,
         const char *bundle, int status, const char *reason,
         const char *sdp, size_t len, void *context);
 
@@ -405,11 +405,11 @@ typedef void ElaSessionRequestCompleteCallback(ElaSession *session,
  * Send session request to the friend.
  *
  * @param
- *      session     [in] A handle to the ElaSession.
+ *      session     [in] A handle to the CarrierSession.
  * @param
  *      bundle      [in] The bundle of this session.
  * @param
- *      callback    [in] A pointer to ElaSessionRequestCompleteCallback
+ *      callback    [in] A pointer to CarrierSessionRequestCompleteCallback
  *                       function to receive the session response.
  * @param
  *      context      [in] The application defined context data.
@@ -417,11 +417,11 @@ typedef void ElaSessionRequestCompleteCallback(ElaSession *session,
  * @return
  *      0 if the session request successfully send to the friend.
  *      Otherwise, return -1, and a specific error code can be
- *      retrieved by calling ela_get_error().
+ *      retrieved by calling carrier_get_error().
  */
 CARRIER_API
-int ela_session_request(ElaSession *session, const char *bundle,
-        ElaSessionRequestCompleteCallback *callback, void *context);
+int carrier_session_request(CarrierSession *session, const char *bundle,
+        CarrierSessionRequestCompleteCallback *callback, void *context);
 
 /**
  * \~English
@@ -430,7 +430,7 @@ int ela_session_request(ElaSession *session, const char *bundle,
  * This function will send a session response to friend.
  *
  * @param
- *      session     [in] A handle to the ElaSession.
+ *      session     [in] A handle to the CarrierSession.
  * @param
  *      bundle      [in] The bundle of this session.
  * @param
@@ -443,10 +443,10 @@ int ela_session_request(ElaSession *session, const char *bundle,
  * @return
  *      0 if the session response successfully send to the friend.
  *      Otherwise, return -1, and a specific error code can be
- *      retrieved by calling ela_get_error().
+ *      retrieved by calling carrier_get_error().
  */
 CARRIER_API
-int ela_session_reply_request(ElaSession *session, const char *bundle,
+int carrier_session_reply_request(CarrierSession *session, const char *bundle,
         int status, const char* reason);
 
 /**
@@ -457,7 +457,7 @@ int ela_session_reply_request(ElaSession *session, const char *bundle,
  * the stream status will update to application by stream's callbacks.
  *
  * @param
- *      session     [in] A handle to the ElaSession.
+ *      session     [in] A handle to the CarrierSession.
  * @param
  *      sdp         [in] The remote users SDP. End the null terminal.
  *                       Reference: https://tools.ietf.org/html/rfc4566
@@ -466,10 +466,10 @@ int ela_session_reply_request(ElaSession *session, const char *bundle,
  *
  * @return
  *      0 on success, or -1 if an error occurred. The specific error code
- *      can be retrieved by calling ela_get_error().
+ *      can be retrieved by calling carrier_get_error().
  */
 CARRIER_API
-int ela_session_start(ElaSession *session, const char *sdp, size_t len);
+int carrier_session_start(CarrierSession *session, const char *sdp, size_t len);
 
 /* Session stream APIs */
 
@@ -478,22 +478,22 @@ int ela_session_start(ElaSession *session, const char *sdp, size_t len);
  * Carrier stream state.
  * The stream status will be changed according to the phase of the stream.
  */
-typedef enum ElaStreamState {
+typedef enum CarrierStreamState {
     /** Initialized stream */
-    ElaStreamState_initialized = 1,
+    CarrierStreamState_initialized = 1,
     /** The underlying transport is ready for the stream. */
-    ElaStreamState_transport_ready,
+    CarrierStreamState_transport_ready,
     /** The stream is trying to connecting the remote. */
-    ElaStreamState_connecting,
+    CarrierStreamState_connecting,
     /** The stream connected with remote */
-    ElaStreamState_connected,
+    CarrierStreamState_connected,
     /** The stream is deactivated */
-    ElaStreamState_deactivated,
+    CarrierStreamState_deactivated,
     /** The stream closed normally */
-    ElaStreamState_closed,
+    CarrierStreamState_closed,
     /** The stream is failed, cannot to continue. */
-    ElaStreamState_failed
-} ElaStreamState;
+    CarrierStreamState_failed
+} CarrierStreamState;
 
 /**
  * \~English
@@ -524,23 +524,23 @@ typedef enum CloseReason {
  * Include stream status callback, stream data callback, and multiplexing
  * callbacks.
  */
-typedef struct ElaStreamCallbacks {
+typedef struct CarrierStreamCallbacks {
     /* Common callbacks */
     /**
      * \~English
      * Callback to report status of various stream operations.
      *
      * @param
-     *      session     [in] The handle to the ElaSession.
+     *      session     [in] The handle to the CarrierSession.
      * @param
      *      stream      [in] The stream ID.
      * @param
-     *      state       [in] Stream state defined in ElaStreamState.
+     *      state       [in] Stream state defined in CarrierStreamState.
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*state_changed)(ElaSession *session, int stream,
-                          ElaStreamState state, void *context);
+    void (*state_changed)(CarrierSession *session, int stream,
+                          CarrierStreamState state, void *context);
 
     /* Stream callbacks */
     /**
@@ -553,7 +553,7 @@ typedef struct ElaStreamCallbacks {
      * as multiplexing channel data.
      *
      * @param
-     *      session     [in] The handle to the ElaSession.
+     *      session     [in] The handle to the CarrierSession.
      * @param
      *      stream      [in] The stream ID.
      * @param
@@ -563,7 +563,7 @@ typedef struct ElaStreamCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*stream_data)(ElaSession *session, int stream,
+    void (*stream_data)(CarrierSession *session, int stream,
                         const void *data, size_t len, void *context);
 
     /* Multiplexer callbacks */
@@ -572,7 +572,7 @@ typedef struct ElaStreamCallbacks {
      * Callback will be called when new multiplexing channel request to open.
      *
      * @param
-     *      session     [in] The handle to the ElaSession.
+     *      session     [in] The handle to the CarrierSession.
      * @param
      *      stream      [in] The stream ID.
      * @param
@@ -587,7 +587,7 @@ typedef struct ElaStreamCallbacks {
      *      The channel will continue to open only this callback return true,
      *      otherwise the channel will be closed.
      */
-    bool (*channel_open)(ElaSession *session, int stream, int channel,
+    bool (*channel_open)(CarrierSession *session, int stream, int channel,
                          const char *cookie, void *context);
 
     /**
@@ -595,7 +595,7 @@ typedef struct ElaStreamCallbacks {
      * Callback will be called when new multiplexing channel opened.
      *
      * @param
-     *      session     [in] The handle to the ElaSession.
+     *      session     [in] The handle to the CarrierSession.
      * @param
      *      stream      [in] The stream ID.
      * @param
@@ -603,7 +603,7 @@ typedef struct ElaStreamCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*channel_opened)(ElaSession *session, int stream, int channel,
+    void (*channel_opened)(CarrierSession *session, int stream, int channel,
                            void *context);
 
     /**
@@ -611,7 +611,7 @@ typedef struct ElaStreamCallbacks {
      * Callback will be called when channel close.
      *
      * @param
-     *      session     [in] The handle to the ElaSession.
+     *      session     [in] The handle to the CarrierSession.
      * @param
      *      stream      [in] The stream ID.
      * @param
@@ -621,7 +621,7 @@ typedef struct ElaStreamCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*channel_close)(ElaSession *session, int stream, int channel,
+    void (*channel_close)(CarrierSession *session, int stream, int channel,
                           CloseReason reason, void *context);
 
     /**
@@ -629,7 +629,7 @@ typedef struct ElaStreamCallbacks {
      * Callback will be called when channel received incoming data.
      *
      * @param
-     *      session     [in] The handle to the ElaSession.
+     *      session     [in] The handle to the CarrierSession.
      * @param
      *      stream      [in] The stream ID.
      * @param
@@ -646,7 +646,7 @@ typedef struct ElaStreamCallbacks {
      *      If this callback return false, the channel will be closed
      *      with CloseReason_Error.
      */
-    bool (*channel_data)(ElaSession *session, int stream, int channel,
+    bool (*channel_data)(CarrierSession *session, int stream, int channel,
                          const void *data, size_t len, void *context);
 
     /**
@@ -654,7 +654,7 @@ typedef struct ElaStreamCallbacks {
      * Callback will be called when remote peer ask to pend data sending.
      *
      * @param
-     *      session     [in] The handle to the ElaSession.
+     *      session     [in] The handle to the CarrierSession.
      * @param
      *      stream      [in] The stream ID.
      * @param
@@ -662,7 +662,7 @@ typedef struct ElaStreamCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*channel_pending)(ElaSession *session, int stream, int channel,
+    void (*channel_pending)(CarrierSession *session, int stream, int channel,
                             void *context);
 
     /**
@@ -670,7 +670,7 @@ typedef struct ElaStreamCallbacks {
      * Callback will be called when remote peer ask to resume data sending.
      *
      * @param
-     *      session     [in] The handle to the ElaSession.
+     *      session     [in] The handle to the CarrierSession.
      * @param
      *      stream      [in] The stream ID.
      * @param
@@ -678,21 +678,21 @@ typedef struct ElaStreamCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*channel_resume)(ElaSession *session, int stream, int channel,
+    void (*channel_resume)(CarrierSession *session, int stream, int channel,
                            void *context);
-} ElaStreamCallbacks;
+} CarrierStreamCallbacks;
 
 /**
  * Compress option, indicates data would be compressed before transmission.
  * For now, just reserved this bit option for future implement.
  */
-#define ELA_STREAM_COMPRESS             0x01
+#define CARRIER_STREAM_COMPRESS             0x01
 
 /**
  * Encrypt option, indicates data would be transmitted with plain mode.
  * which means that transmitting data would be encrypted in default.
  */
-#define ELA_STREAM_PLAIN                0x02
+#define CARRIER_STREAM_PLAIN                0x02
 
 /**
  * Relaible option, indicates data transmission would be reliable, and be
@@ -700,21 +700,21 @@ typedef struct ElaStreamCallbacks {
  * protocol. Without this option bitwised, the transmission would be
  * unreliable as UDP transmission protocol.
  */
-#define ELA_STREAM_RELIABLE             0x04
+#define CARRIER_STREAM_RELIABLE             0x04
 
 /**
  * Multiplexing option, indicates multiplexing would be activated on
  * enstablished stream, and need to use multipexing APIs related with channel
  * instread of APIs related strema to send/receive data.
  */
-#define ELA_STREAM_MULTIPLEXING         0x08
+#define CARRIER_STREAM_MULTIPLEXING         0x08
 
 /**
  * PortForwarding option, indicates port forwarding would be activated
  * on established stream. This options should bitwise with 'Multiplexing'
  * option.
  */
-#define ELA_STREAM_PORT_FORWARDING      0x10
+#define CARRIER_STREAM_PORT_FORWARDING      0x10
 
 /**
  * \~English
@@ -732,54 +732,54 @@ typedef struct ElaStreamCallbacks {
  *  not provide reliable transport.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
- *      type        [in] The stream type defined in ElaStreamType.
+ *      type        [in] The stream type defined in CarrierStreamType.
  * @param
  *      options     [in] The stream mode options. options are constructed
  *                       by a bitwise-inclusive OR of flags from the
  *                       following list:
  *
- *                       - ELA_STREAM_PLAIN
+ *                       - CARRIER_STREAM_PLAIN
  *                         Plain mode.
- *                       - ELA_STREAM_RELIABLE
+ *                       - CARRIER_STREAM_RELIABLE
  *                         Reliable mode.
- *                       - ELA_STREAM_MULTIPLEXING
+ *                       - CARRIER_STREAM_MULTIPLEXING
  *                         Multiplexing mode.
- *                       - ELA_STREAM_PORT_FORWARDING
+ *                       - CARRIER_STREAM_PORT_FORWARDING
  *                         Support portforwarding over multiplexing.
  *
  * @param
  *      callbacks   [in] The Application defined callback functions in
- *                       ElaStreamCallbacks.
+ *                       CarrierStreamCallbacks.
  * @param
  *      context     [in] The application defined context data.
  *
  * @return
  *      Return stream id on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_session_add_stream(ElaSession *session, ElaStreamType type,
-                 int options, ElaStreamCallbacks *callbacks, void *context);
+int carrier_session_add_stream(CarrierSession *session, CarrierStreamType type,
+                 int options, CarrierStreamCallbacks *callbacks, void *context);
 
 /**
  * \~English
  * Remove a stream from session.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream id to be removed.
  *
  * @return
  *      0 on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_session_remove_stream(ElaSession *session, int stream);
+int carrier_session_remove_stream(CarrierSession *session, int stream);
 
 /**
  * \~English
@@ -789,7 +789,7 @@ int ela_session_remove_stream(ElaSession *session, int stream);
  * request.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      service     [in] The new service name, should be unique
  *                       in session scope.
@@ -803,10 +803,10 @@ int ela_session_remove_stream(ElaSession *session, int stream);
  * @return
  *      0 on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_session_add_service(ElaSession *session, const char *service,
+int carrier_session_add_service(CarrierSession *session, const char *service,
         PortForwardingProtocol protocol, const char *host, const char *port);
 
 /**
@@ -816,59 +816,59 @@ int ela_session_add_service(ElaSession *session, const char *service,
  * This function has not effect on existing portforwarings.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      service     [in] The service name.
  */
 CARRIER_API
-void ela_session_remove_service(ElaSession *session, const char *service);
+void carrier_session_remove_service(CarrierSession *session, const char *service);
 
 /**
  * \~English
  * Get the carrier stream type.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
- *      type        [out] The stream type defined in ElaStreamType.
+ *      type        [out] The stream type defined in CarrierStreamType.
  *
  * @return
  *      0 on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_stream_get_type(ElaSession *session, int stream,
-                            ElaStreamType *type);
+int carrier_stream_get_type(CarrierSession *session, int stream,
+                        CarrierStreamType *type);
 
 /**
  * \~English
  * Get the carrier stream current state.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
- *      state       [out] The stream state defined in ElaStreamState.
+ *      state       [out] The stream state defined in CarrierStreamState.
  *
  * @return
  *      0 on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_stream_get_state(ElaSession *session, int stream,
-                         ElaStreamState *state);
+int carrier_stream_get_state(CarrierSession *session, int stream,
+                         CarrierStreamState *state);
 
 /**
  * \~English
  * Get the carrier stream transport information.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
@@ -878,11 +878,11 @@ int ela_stream_get_state(ElaSession *session, int stream,
  * @return
  *      0 on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_stream_get_transport_info(ElaSession *session, int stream,
-                                      ElaTransportInfo *info);
+int carrier_stream_get_transport_info(CarrierSession *session, int stream,
+                                  CarrierTransportInfo *info);
 
 /**
  * \~English
@@ -893,7 +893,7 @@ int ela_stream_get_transport_info(ElaSession *session, int stream,
  * on multiplexing mode stream, it will return error.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
@@ -904,11 +904,11 @@ int ela_stream_get_transport_info(ElaSession *session, int stream,
  * @return
  *      Sent bytes on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-ssize_t ela_stream_write(ElaSession *session, int stream,
-                             const void *data, size_t len);
+ssize_t carrier_stream_write(CarrierSession *session, int stream,
+                         const void *data, size_t len);
 
 /**
  * \~English
@@ -917,7 +917,7 @@ ssize_t ela_stream_write(ElaSession *session, int stream,
  * If the stream is not multiplexing this function will fail.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
@@ -926,11 +926,11 @@ ssize_t ela_stream_write(ElaSession *session, int stream,
  * @return
  *      New channel ID on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_stream_open_channel(ElaSession *session, int stream,
-                                const char *cookie);
+int carrier_stream_open_channel(CarrierSession *session, int stream,
+                            const char *cookie);
 
 /**
  * \~English
@@ -939,7 +939,7 @@ int ela_stream_open_channel(ElaSession *session, int stream,
  * If the stream is not multiplexing this function will fail.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
@@ -948,10 +948,10 @@ int ela_stream_open_channel(ElaSession *session, int stream,
  * @return
  *      0 on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_stream_close_channel(ElaSession *session, int stream, int channel);
+int carrier_stream_close_channel(CarrierSession *session, int stream, int channel);
 
 /**
  * \~English
@@ -960,7 +960,7 @@ int ela_stream_close_channel(ElaSession *session, int stream, int channel);
  * If the stream is not multiplexing this function will fail.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
@@ -969,16 +969,16 @@ int ela_stream_close_channel(ElaSession *session, int stream, int channel);
  *      data        [in] The outgoing data(MUST be NULL if @len is zero).
  * @param
  *      len         [in] The outgoing data length(COULD be zero, the receiver
- *                       will get ElaStreamCallbacks::channel_data callback with
+ *                       will get CarrierStreamCallbacks::channel_data callback with
  *                       argument @len being zero).
  *
  * @return
  *      Sent bytes on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-ssize_t ela_stream_write_channel(ElaSession *session, int stream,
+ssize_t carrier_stream_write_channel(CarrierSession *session, int stream,
                     int channel, const void *data, size_t len);
 
 /**
@@ -988,7 +988,7 @@ ssize_t ela_stream_write_channel(ElaSession *session, int stream,
  * If the stream is not multiplexing this function will fail.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
@@ -997,10 +997,10 @@ ssize_t ela_stream_write_channel(ElaSession *session, int stream,
  * @return
  *      0 on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_stream_pend_channel(ElaSession *session, int stream, int channel);
+int carrier_stream_pend_channel(CarrierSession *session, int stream, int channel);
 
 /**
  * \~English
@@ -1009,7 +1009,7 @@ int ela_stream_pend_channel(ElaSession *session, int stream, int channel);
  * If the stream is not multiplexing this function will fail.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
@@ -1018,10 +1018,10 @@ int ela_stream_pend_channel(ElaSession *session, int stream, int channel);
  * @return
  *      0 on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_stream_resume_channel(ElaSession *session, int stream, int channel);
+int carrier_stream_resume_channel(CarrierSession *session, int stream, int channel);
 
 /**
  * \~English
@@ -1030,7 +1030,7 @@ int ela_stream_resume_channel(ElaSession *session, int stream, int channel);
  * If the stream is not multiplexing this function will fail.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
@@ -1046,10 +1046,10 @@ int ela_stream_resume_channel(ElaSession *session, int stream, int channel);
  * @return
  *      Portforwarding ID on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_stream_open_port_forwarding(ElaSession *session, int stream,
+int carrier_stream_open_port_forwarding(CarrierSession *session, int stream,
         const char *service, PortForwardingProtocol protocol,
         const char *host, const char *port);
 
@@ -1060,7 +1060,7 @@ int ela_stream_open_port_forwarding(ElaSession *session, int stream,
  * If the stream is not multiplexing this function will fail.
  *
  * @param
- *      session     [in] The handle to the ElaSession.
+ *      session     [in] The handle to the CarrierSession.
  * @param
  *      stream      [in] The stream ID.
  * @param
@@ -1069,10 +1069,10 @@ int ela_stream_open_port_forwarding(ElaSession *session, int stream,
  * @return
  *      0 on success, or -1 if an error occurred.
  *      The specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int ela_stream_close_port_forwarding(ElaSession *session, int stream,
+int carrier_stream_close_port_forwarding(CarrierSession *session, int stream,
                                      int portforwarding);
 
 #ifdef __cplusplus
@@ -1083,4 +1083,6 @@ int ela_stream_close_port_forwarding(ElaSession *session, int stream,
 #pragma GCC diagnostic pop
 #endif
 
-#endif /* __ELA_SESSION_H__ */
+#include <carrier_session_deprecated.h>
+
+#endif /* __ELASTOS_CARRIER_SESSION_H__ */

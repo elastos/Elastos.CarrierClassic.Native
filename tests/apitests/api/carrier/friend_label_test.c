@@ -24,7 +24,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include <carrier.h>
 
 #include "cond.h"
 #include "test_helper.h"
@@ -34,23 +34,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -59,7 +59,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -103,50 +103,50 @@ static TestContext test_context = {
 
 static void test_set_friend_label(void)
 {
-    ElaCarrier *w = test_context.carrier->carrier;
-    ElaFriendInfo info;
+    Carrier *w = test_context.carrier->carrier;
+    CarrierFriendInfo info;
     int rc;
 
     test_context.context_reset(&test_context);
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);;
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(w, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(w, robotid));
 
-    rc = ela_set_friend_label(w, robotid, "test_robot");
+    rc = carrier_set_friend_label(w, robotid, "test_robot");
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    rc = ela_get_friend_info(w, robotid, &info);
+    rc = carrier_get_friend_info(w, robotid, &info);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
     CU_ASSERT_STRING_EQUAL(info.label, "test_robot");
 }
 
 static void test_set_stranger_label(void)
 {
-    ElaCarrier *w = test_context.carrier->carrier;
+    Carrier *w = test_context.carrier->carrier;
     int rc;
 
     test_context.context_reset(&test_context);
 
     rc = remove_friend_anyway(&test_context, robotid);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_FALSE_FATAL(ela_is_friend(w, robotid));
+    CU_ASSERT_FALSE_FATAL(carrier_is_friend(w, robotid));
 
-    rc = ela_set_friend_label(w, robotid, "test_robot");
+    rc = carrier_set_friend_label(w, robotid, "test_robot");
     CU_ASSERT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
 }
 
 static void test_set_self_label(void)
 {
-    ElaCarrier *w = test_context.carrier->carrier;
-    char userid[ELA_MAX_ID_LEN + 1];
+    Carrier *w = test_context.carrier->carrier;
+    char userid[CARRIER_MAX_ID_LEN + 1];
     int rc;
 
-    (void)ela_get_userid(w, userid, sizeof(userid));
-    rc = ela_set_friend_label(w, userid, "test_robot");
+    (void)carrier_get_userid(w, userid, sizeof(userid));
+    rc = carrier_set_friend_label(w, userid, "test_robot");
     CU_ASSERT_EQUAL(rc, -1);
-    CU_ASSERT_EQUAL(ela_get_error(), ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+    CU_ASSERT_EQUAL(carrier_get_error(), CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
 }
 
 static CU_TestInfo cases[] = {

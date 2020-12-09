@@ -20,29 +20,29 @@
  * SOFTWARE.
  */
 
-#include "ela_carrier.h"
-#include "ela_error.h"
-#include "extension_apis.h"
-#include "extensions.h"
+#include "carrier.h"
+#include "carrier_error.h"
+#include "extensions_helper.h"
+#include "hashtable_extensions.h"
 
-int carrier_register_extension(ElaCarrier *w, const char *name,
-                               CarrierExtension *ext, ElaCallbacks *callbacks)
+int carrier_register_extension(Carrier *w, const char *name,
+                               CarrierExtension *ext, CarrierCallbacks *callbacks)
 {
     ExtensionHolder *holder;
 
     if (!w || !name || !*name || strlen(name) > CARRIER_MAX_EXTENSION_NAME_LEN) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
     if (extensions_exist(w->exts, name)) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_ALREADY_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_ALREADY_EXIST));
         return -1;
     }
 
     holder = (ExtensionHolder *)rc_alloc(sizeof(ExtensionHolder), NULL);
     if (!holder) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
         return -1;
     }
 
@@ -65,19 +65,19 @@ int carrier_register_extension(ElaCarrier *w, const char *name,
     return 0;
 }
 
-CarrierExtension *carrier_get_extension(ElaCarrier *w, const char *name)
+CarrierExtension *carrier_get_extension(Carrier *w, const char *name)
 {
     ExtensionHolder *holder;
     CarrierExtension *ext;
 
     if (!w || !name || !*name) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_INVALID_ARGS));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return NULL;
     }
 
     holder = extensions_get(w->exts, name);
     if (!holder) {
-        ela_set_error(ELA_GENERAL_ERROR(ELAERR_NOT_EXIST));
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST));
         return NULL;
     }
 
@@ -87,7 +87,7 @@ CarrierExtension *carrier_get_extension(ElaCarrier *w, const char *name)
     return ext;
 }
 
-void carrier_unregister_extension(ElaCarrier *w, const char *name)
+void carrier_unregister_extension(Carrier *w, const char *name)
 {
     ExtensionHolder *holder;
 

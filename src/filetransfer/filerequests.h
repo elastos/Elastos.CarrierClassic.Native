@@ -31,15 +31,13 @@
 #include <sys/time.h>
 #endif
 
-#include "ela_filetransfer.h"
-
 #define FILE_TRANSFER_REQUEST_EXPIRE_INTERVAL (5 * 60) // 5m
 
 typedef struct FileRequest {
     hash_entry_t he;
 
     struct timeval expire_time;
-    char from[ELA_MAX_ID_LEN + 1 + 36];
+    char from[CARRIER_MAX_ID_LEN + 1 + 36];
     char *sdp;
     size_t sdp_len;
 } FileRequest;

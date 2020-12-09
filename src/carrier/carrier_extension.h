@@ -20,11 +20,11 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_EXT_H__
-#define __CARRIER_EXT_H__
+#ifndef __ELASTOS_CARRIER_EXTENSION_H__
+#define __ELASTOS_CARRIER_EXTENSION_H__
 
 #include <stdint.h>
-#include "ela_carrier.h"
+#include "carrier.h"
 
 #if defined(__APPLE__)
 #pragma GCC diagnostic push
@@ -88,12 +88,12 @@ typedef struct ExtensionAPIs {
      * @return
      *      0 if the invite request successfully send to the friend.
      *      Otherwise, return -1, and a specific error code can be
-     *      retrieved by calling ela_get_error().
+     *      retrieved by calling carrier_get_error().
      */
     int (*invite_friend)(CarrierExtension *extension, const char *address,
                          const char *bundle,
                          const char *data, size_t len,
-                         ElaFriendInviteResponseCallback *callback,
+                         CarrierFriendInviteResponseCallback *callback,
                          void *context);
 
     /**
@@ -124,7 +124,7 @@ typedef struct ExtensionAPIs {
      * @return
      *      0 if the invite response successfully send to the friend.
      *      Otherwise, return -1, and a specific error code can be
-     *      retrieved by calling ela_get_error().
+     *      retrieved by calling carrier_get_error().
      */
     int (*reply_friend_invite)(CarrierExtension *extension, const char *address,
                                const char *bundle,
@@ -153,7 +153,7 @@ struct CarrierExtension {
      * \~English
      * Carrier client instance.
      */
-    ElaCarrier *carrier;
+    Carrier *carrier;
 
     /*
      * \~English
@@ -180,12 +180,12 @@ struct CarrierExtension {
  * @return
  *      0 if the extension register successfully. Otherwise, return -1,
  *      and a specific error code can be retrieved by calling
- *      ela_get_error().
+ *      carrier_get_error().
  */
 CARRIER_API
-int carrier_register_extension(ElaCarrier *carrier, const char *name,
+int carrier_register_extension(Carrier *carrier, const char *name,
                                CarrierExtension *ext,
-                               ElaCallbacks *callbacks);
+                               CarrierCallbacks *callbacks);
 
 /**
  * \~English
@@ -200,7 +200,7 @@ int carrier_register_extension(ElaCarrier *carrier, const char *name,
  *      The extension object pointer, or NULL if not exist.
  */
 CARRIER_API
-CarrierExtension *carrier_get_extension(ElaCarrier *carrier, const char *name);
+CarrierExtension *carrier_get_extension(Carrier *carrier, const char *name);
 
 /**
  * \~English
@@ -212,17 +212,7 @@ CarrierExtension *carrier_get_extension(ElaCarrier *carrier, const char *name);
  *      name        [in] The name of new extension.
  */
 CARRIER_API
-void carrier_unregister_extension(ElaCarrier *carrier, const char *name);
-
-/**
- * \~English
- * Set carrier last error code.
- *
- * @param
- *      err         [in] The error code to be set.
- */
-CARRIER_API
-void ela_set_error(int err);
+void carrier_unregister_extension(Carrier *carrier, const char *name);
 
 #ifdef __cplusplus
 }
@@ -232,4 +222,4 @@ void ela_set_error(int err);
 #pragma GCC diagnostic pop
 #endif
 
-#endif /* __CARRIER_EXT_H__ */
+#endif /* __ELASTOS_CARRIER_EXTENSION_H__ */

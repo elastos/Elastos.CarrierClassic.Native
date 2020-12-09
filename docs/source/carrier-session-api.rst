@@ -4,41 +4,41 @@ Elastos Carrier session APIs
 Data types
 ----------
 
-ElaStreamType
-#############
+CarrierStreamType
+#################
 
-.. doxygenenum:: ElaStreamType
+.. doxygenenum:: CarrierStreamType
    :project: CarrierAPI
 
-ElaStreamState
-##############
-
-.. doxygenenum:: ElaStreamState
-   :project: CarrierAPI
-
-ElaCandidateType
-################
-
-.. doxygenenum:: ElaCandidateType
-   :project: CarrierAPI
-
-ElaNetworkTopology
+CarrierStreamState
 ##################
 
-.. doxygenenum:: ElaNetworkTopology
+.. doxygenenum:: CarrierStreamState
    :project: CarrierAPI
 
-ElaAddressInfo
-##############
+CandidateType
+#############
 
-.. doxygenstruct:: ElaAddressInfo
+.. doxygenenum:: CandidateType
+   :project: CarrierAPI
+
+NetworkTopology
+###############
+
+.. doxygenenum:: NetworkTopology
+   :project: CarrierAPI
+
+CarrierAddressInfo
+##################
+
+.. doxygenstruct:: CarrierAddressInfo
    :project: CarrierAPI
    :members:
 
-ElaTransportInfo
-################
+CarrierTransportInfo
+####################
 
-.. doxygenstruct:: ElaTransportInfo
+.. doxygenstruct:: CarrierTransportInfo
    :project: CarrierAPI
    :members:
 
@@ -54,23 +54,23 @@ CloseReason
 .. doxygenenum:: CloseReason
    :project: CarrierAPI
 
-ElaStreamCallbacks
-##################
+CarrierStreamCallbacks
+######################
 
-.. doxygenstruct:: ElaStreamCallbacks
+.. doxygenstruct:: CarrierStreamCallbacks
    :project: CarrierAPI
    :members:
 
-ElaSessionRequestCallback
-#########################
+CarrierSessionRequestCallback
+#############################
 
-.. doxygentypedef:: ElaSessionRequestCallback
+.. doxygentypedef:: CarrierSessionRequestCallback
    :project: CarrierAPI
 
-ElaSessionRequestCompleteCallback
-#################################
+CarrierSessionRequestCompleteCallback
+#####################################
 
-.. doxygentypedef:: ElaSessionRequestCompleteCallback
+.. doxygentypedef:: CarrierSessionRequestCompleteCallback
    :project: CarrierAPI
 
 Functions
@@ -79,164 +79,164 @@ Functions
 Global session functions
 ########################
 
-ela_session_init
-~~~~~~~~~~~~~~~~
+carrier_session_init
+~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_session_init
+.. doxygenfunction:: carrier_session_init
    :project: CarrierAPI
 
-ela_session_cleanup
-~~~~~~~~~~~~~~~~~~~
+carrier_session_cleanup
+~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_session_cleanup
+.. doxygenfunction:: carrier_session_cleanup
    :project: CarrierAPI
 
 Session instance functions
 ##########################
 
-ela_session_new
-~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_session_new
-   :project: CarrierAPI
-
-ela_session_close
-~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_session_close
-   :project: CarrierAPI
-
-
-ela_session_get_peer
-~~~~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_session_get_peer
-   :project: CarrierAPI
-
-ela_session_set_userdata
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_session_set_userdata
-   :project: CarrierAPI
-
-ela_session_get_userdata
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_session_get_userdata
-   :project: CarrierAPI
-
-ela_session_request
+carrier_session_new
 ~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_session_request
+.. doxygenfunction:: carrier_session_new
+   :project: CarrierAPI
+
+carrier_session_close
+~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_session_close
    :project: CarrierAPI
 
 
-ela_session_reply_request
-~~~~~~~~~~~~~~~~~~~~~~~~~
+carrier_session_get_peer
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_session_reply_request
+.. doxygenfunction:: carrier_session_get_peer
    :project: CarrierAPI
 
-ela_session_start
-~~~~~~~~~~~~~~~~~
+carrier_session_set_userdata
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_session_start
+.. doxygenfunction:: carrier_session_set_userdata
+   :project: CarrierAPI
+
+carrier_session_get_userdata
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction::carrier_session_get_userdata
+   :project: CarrierAPI
+
+carrier_session_request
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_session_request
+   :project: CarrierAPI
+
+
+carrier_session_reply_request
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_session_reply_request
+   :project: CarrierAPI
+
+carrier_session_start
+~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_session_start
    :project: CarrierAPI
 
 Stream functions
 ################
 
-ela_session_add_stream
-~~~~~~~~~~~~~~~~~~~~~~
+Carrier_session_add_stream
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_session_add_stream
+.. doxygenfunction:: carrier_session_add_stream
    :project: CarrierAPI
 
-ela_session_remove_stream
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_session_remove_stream
-   :project: CarrierAPI
-
-ela_stream_get_type
-~~~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_stream_get_type
-   :project: CarrierAPI
-
-ela_stream_get_state
-~~~~~~~~~~~~~~~~~~~~
-
-.. doxygenfunction:: ela_stream_get_state
-   :project: CarrierAPI
-
-ela_stream_get_transport_info
+carrier_session_remove_stream
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_stream_get_transport_info
+.. doxygenfunction:: carrier_session_remove_stream
    :project: CarrierAPI
 
-ela_stream_write
+carrier_stream_get_type
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_stream_get_type
+   :project: CarrierAPI
+
+carrier_stream_get_state
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_stream_get_state
+   :project: CarrierAPI
+
+carrier_stream_get_transport_info
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenfunction:: carrier_stream_get_transport_info
+   :project: CarrierAPI
+
+carrier_stream_write
 ~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_stream_write
+.. doxygenfunction:: carrier_stream_write
    :project: CarrierAPI
 
-ela_stream_open_channel
-~~~~~~~~~~~~~~~~~~~~~~~
+carrier_stream_open_channel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_stream_open_channel
+.. doxygenfunction:: carrier_stream_open_channel
    :project: CarrierAPI
 
-ela_stream_close_channel
-~~~~~~~~~~~~~~~~~~~~~~~~
+carrier_stream_close_channel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_stream_close_channel
+.. doxygenfunction:: carrier_stream_close_channel
    :project: CarrierAPI
 
-ela_stream_write_channel
-~~~~~~~~~~~~~~~~~~~~~~~~
+carrier_stream_write_channel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_stream_write_channel
+.. doxygenfunction:: carrier_stream_write_channel
    :project: CarrierAPI
 
-ela_stream_pend_channel
-~~~~~~~~~~~~~~~~~~~~~~~
+carrier_stream_pend_channel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_stream_pend_channel
+.. doxygenfunction:: carrier_stream_pend_channel
    :project: CarrierAPI
 
-ela_stream_resume_channel
-~~~~~~~~~~~~~~~~~~~~~~~~~
+carrier_stream_resume_channel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_stream_resume_channel
+.. doxygenfunction:: carrier_stream_resume_channel
    :project: CarrierAPI
 
 PortForwarding functions
 ########################
 
-ela_session_add_service
-~~~~~~~~~~~~~~~~~~~~~~~
+carrier_session_add_service
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_session_add_service
+.. doxygenfunction:: carrier_session_add_service
    :project: CarrierAPI
 
-ela_session_remove_service
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+carrier_session_remove_service
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_session_remove_service
+.. doxygenfunction:: carrier_session_remove_service
    :project: CarrierAPI
 
-ela_stream_open_port_forwarding
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+carrier_stream_open_port_forwarding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_stream_open_port_forwarding
+.. doxygenfunction:: carrier_stream_open_port_forwarding
    :project: CarrierAPI
 
-ela_stream_close_port_forwarding
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+carrier_stream_close_port_forwarding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. doxygenfunction:: ela_stream_close_port_forwarding
+.. doxygenfunction:: carrier_stream_close_port_forwarding
    :project: CarrierAPI
 

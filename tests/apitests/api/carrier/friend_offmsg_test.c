@@ -31,7 +31,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include <carrier.h>
 
 #include "cond.h"
 #include "test_helper.h"
@@ -53,23 +53,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -78,7 +78,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void friend_message_cb(ElaCarrier *w, const char *from, const void *msg, size_t len,
+static void friend_message_cb(Carrier *w, const char *from, const void *msg, size_t len,
                               int64_t timestamp, bool is_offline, void *context)
 {
     CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
@@ -90,7 +90,7 @@ static void friend_message_cb(ElaCarrier *w, const char *from, const void *msg, 
     wakeup(context);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -146,7 +146,7 @@ static void send_offmsg_to_friend(int count, int timeout)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     rc = write_cmd("killnode\n");
     CU_ASSERT_FATAL(rc > 0);
@@ -157,7 +157,7 @@ static void send_offmsg_to_friend(int count, int timeout)
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                     robotid, ElaConnectionStatus_Disconnected);
+                     robotid, CarrierConnectionStatus_Disconnected);
 
     sprintf(prefix, "%ld:", time(NULL));
     rc = write_cmd("offmsgprefix %s\n", prefix);
@@ -171,7 +171,7 @@ static void send_offmsg_to_friend(int count, int timeout)
     for (i = 0; i < count; i++) {
         memset(out, 0, sizeof(out));
         sprintf(out, "%s%d", prefix, (count > 1) ? (i + 1) : i);
-        rc = ela_send_friend_message(wctxt->carrier, robotid, out, strlen(out), NULL, NULL, NULL);
+        rc = carrier_send_friend_message(wctxt->carrier, robotid, out, strlen(out), NULL, NULL, NULL);
         CU_ASSERT_EQUAL_FATAL(rc, 0);
     }
 
@@ -186,7 +186,7 @@ static void send_offmsg_to_friend(int count, int timeout)
     // in offmsg casd,  robot will not ack "ready" to testcase,
     // directly wating for friend connection.
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                     robotid, ElaConnectionStatus_Connected);
+                     robotid, CarrierConnectionStatus_Connected);
 
     if (count > 1) {
         int recv_count = 0;

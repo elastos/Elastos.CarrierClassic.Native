@@ -6,18 +6,18 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include <carrier.h>
 
 #include "config.h"
 #include "cond.h"
 #include "test_helper.h"
 
-static void ready_cb(ElaCarrier *c, void *context)
+static void ready_cb(Carrier *c, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -52,15 +52,15 @@ static TestContext test_context = {
 
 static void test_node_login(void)
 {
-    ElaCarrier *carrier = test_context.carrier->carrier;
-    char userid[ELA_MAX_ID_LEN + 1];
-    char nodeid[ELA_MAX_ID_LEN + 1];
+    Carrier *carrier = test_context.carrier->carrier;
+    char userid[CARRIER_MAX_ID_LEN + 1];
+    char nodeid[CARRIER_MAX_ID_LEN + 1];
     char *p, *q;
 
-    p = ela_get_userid(carrier, userid, sizeof(userid));
+    p = carrier_get_userid(carrier, userid, sizeof(userid));
     CU_ASSERT_PTR_NOT_NULL_FATAL(p);
 
-    q = ela_get_nodeid(carrier, nodeid, sizeof(nodeid));
+    q = carrier_get_nodeid(carrier, nodeid, sizeof(nodeid));
     CU_ASSERT_PTR_NOT_NULL_FATAL(q);
 
     CU_ASSERT_STRING_EQUAL(p, q);

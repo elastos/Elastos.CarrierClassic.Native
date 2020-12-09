@@ -20,14 +20,13 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_TCALLBACKS_H__
-#define __CARRIER_TCALLBACKS_H__
+#ifndef __CARRIER_TRANSACTED_CALLBACKS_H__
+#define __CARRIER_TRANSACTED_CALLBACKS_H__
 
 #include <stdint.h>
 #include <assert.h>
 
 #include <crystal.h>
-#include "utility.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -161,4 +160,4 @@ void transacted_callbacks_iterator_remove(hashtable_iterator_t *iterator)
 }
 #endif
 
-#endif /* __CARRIER_TCALLBACKS_H__ */
+#endif /* __CARRIER_TRANSACTED_CALLBACKS_H__ */

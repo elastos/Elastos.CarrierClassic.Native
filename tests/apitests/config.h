@@ -26,12 +26,12 @@
 #include <limits.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include <carrier.h>
 
 #define CARRIER_MAX_SERVER_URI_LEN 127
 
 typedef struct TestConfig {
-    ElaOptions shared_options;
+    CarrierOptions shared_options;
 
     int shuffle;
     int log2file;

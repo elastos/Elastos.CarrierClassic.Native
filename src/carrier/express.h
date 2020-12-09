@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef __ELASTOS_CARRIER_EXPRESS__
-#define __ELASTOS_CARRIER_EXPRESS__
+#ifndef __CARRIER_EXPRESS__
+#define __CARRIER_EXPRESS__
 
 #include <stdint.h>
 
@@ -36,15 +36,15 @@ typedef enum {
 } ExpressMessageType;
 
 typedef struct ExpConnector     ExpressConnector;
-typedef void (*ExpressOnRecvCallback)(ElaCarrier *carrier,
+typedef void (*ExpressOnRecvCallback)(Carrier *carrier,
                                       const char *from,
                                       const uint8_t *data, size_t size,
                                       uint64_t timestamp);
-typedef void (*ExpressOnStatCallback)(ElaCarrier *carrier,
+typedef void (*ExpressOnStatCallback)(Carrier *carrier,
                                       const char *from, ExpressMessageType type,
                                       uint32_t msgid, int errcode);
 
-ExpressConnector *express_connector_create(ElaCarrier *carrier,
+ExpressConnector *express_connector_create(Carrier *carrier,
                                            ExpressOnRecvCallback on_msg_cb,
                                            ExpressOnRecvCallback on_req_cb,
                                            ExpressOnStatCallback on_stat_cb);
@@ -66,4 +66,4 @@ int express_enqueue_pull_messages(ExpressConnector *connector);
 } // extern "C"
 #endif
 
-#endif //__ELASTOS_CARRIER_EXPRESS__
+#endif //__CARRIER_EXPRESS__

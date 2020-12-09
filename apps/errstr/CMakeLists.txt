@@ -25,8 +25,8 @@ link_directories(
     ${CMAKE_CURRENT_BINARY_DIR}/../../src/session)
 
 set(LIBS
-    elacarrier
-    elasession
+    carrier
+    carriersession
     crystal)
 
 if(WIN32)
