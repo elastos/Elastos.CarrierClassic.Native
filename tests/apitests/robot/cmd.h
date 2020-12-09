@@ -27,8 +27,8 @@
 extern "C" {
 #endif
 
-#include "ela_carrier.h"
-#include "ela_session.h"
+#include <carrier.h>
+#include <carrier_session.h>
 #include "test_context.h"
 
 #define MAX_CHANNEL_COUNT   256

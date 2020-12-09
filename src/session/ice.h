@@ -89,12 +89,12 @@ typedef struct IceWorker {
 } IceWorker;
 
 typedef struct IceTransport {
-    ElaTransport        base;
+    CarrierTransport    base;
     pthread_key_t       pj_thread_ctx;
 } IceTransport;
 
 typedef struct IceSession {
-    ElaSession          base;
+    CarrierSession      base;
 
     pj_ice_sess_role    role;
     char                ufrag[PJ_ICE_UFRAG_LEN+1];
@@ -102,7 +102,7 @@ typedef struct IceSession {
 } IceSession;
 
 typedef struct IceStream {
-    ElaStream           base;
+    CarrierStream       base;
     StreamHandler       *handler;
 
     struct timeval      local_timestamp;
@@ -127,7 +127,7 @@ typedef struct IceHandler {
     } remote;
 } IceHandler;
 
-int ice_transport_create(ElaTransport **transport);
+int ice_transport_create(CarrierTransport **transport);
 
 #ifdef __cplusplus
 }

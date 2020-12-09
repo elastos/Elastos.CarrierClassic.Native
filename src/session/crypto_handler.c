@@ -37,7 +37,7 @@ typedef struct CryptoHandler {
 static
 ssize_t crypto_handler_write(StreamHandler *handler, FlexBuffer *buf)
 {
-    ElaSession *ws = handler->stream->session;
+    CarrierSession *ws = handler->stream->session;
     FlexBuffer *cipher_buf;
     ssize_t cipher_len;
     ssize_t written;
@@ -63,7 +63,7 @@ ssize_t crypto_handler_write(StreamHandler *handler, FlexBuffer *buf)
     if (cipher_len <= 0) {
         vlogE("Stream: %d crypto handler encrypt data error.",
               handler->stream->id);
-        return ELA_GENERAL_ERROR(ELAERR_ENCRYPT);
+        return CARRIER_GENERAL_ERROR(ERROR_ENCRYPT);
     } else {
         vlogT("Stream: %d crypto handler encrypted %zu bytes data.",
               handler->stream->id, cipher_len - ZERO_BYTES);
@@ -81,7 +81,7 @@ ssize_t crypto_handler_write(StreamHandler *handler, FlexBuffer *buf)
 static
 void crypto_handler_on_rx_data(StreamHandler *handler, FlexBuffer *buf)
 {
-    ElaSession *ws = handler->stream->session;
+    CarrierSession *ws = handler->stream->session;
     FlexBuffer *plain_buf;
     ssize_t plain_len;
 
@@ -129,13 +129,13 @@ static void crypto_handler_destroy(void *p)
     vlogD("Stream: %d crypto handler destroyed.", handler->base.stream->id);
 }
 
-int crypto_handler_create(ElaStream *s, StreamHandler **handler)
+int crypto_handler_create(CarrierStream *s, StreamHandler **handler)
 {
     CryptoHandler *_handler = NULL;
 
     _handler = (CryptoHandler *)rc_zalloc(sizeof(CryptoHandler), crypto_handler_destroy);
     if (!_handler)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
     _handler->base.name = "Crypto Handler";
     _handler->base.stream = s;

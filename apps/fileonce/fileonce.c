@@ -61,9 +61,9 @@
 #endif
 
 #include <crystal.h>
-#include <ela_carrier.h>
-#include <ela_filetransfer.h>
-#include <easyfile.h>
+#include <carrier.h>
+#include <carrier_filetransfer.h>
+#include <carrier_easyfile.h>
 
 #define CONFIG_NAME   "carrier.conf"
 
@@ -157,7 +157,7 @@ static void file_received(size_t length, uint64_t totalsz, void *context)
     }
 }
 
-static ElaFileProgressCallbacks progress_callbacks = {
+static CarrierFileProgressCallbacks progress_callbacks = {
     .received = file_received,
     .sent = file_sent,
     .state_changed = file_state_changed
@@ -207,7 +207,7 @@ static void friend_connection_callback(ElaCarrier *w, const char *friendid,
             if (fctx->receiver || strcmp(friendid, fctx->friendid) != 0)
                 return;
 
-            rc = ela_file_send(fctx->carrier, fctx->friendid, fctx->path,
+            rc = carrier_file_send(fctx->carrier, fctx->friendid, fctx->path,
                                &progress_callbacks, fctx);
             if (rc < 0) {
                 vlogE("Sender sending a  file [%s] to friend [%s] error (0x%x).",
@@ -277,7 +277,7 @@ static void transfer_connect_callback(ElaCarrier *w, const char *from,
         return;
     }
 
-    rc = ela_file_recv(w, from, fctx->path, &progress_callbacks, fctx);
+    rc = carrier_file_recv(w, from, fctx->path, &progress_callbacks, fctx);
     if (rc < 0) {
         vlogE(TAG "Receiver receiving file [%s] from user [%s] error (0x%x).",
               fileinfo->filename, from, ela_get_error());

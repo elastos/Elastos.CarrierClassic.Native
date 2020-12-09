@@ -20,11 +20,11 @@
  * SOFTWARE.
  */
 
-#ifndef __ELA_PFD_CONFIG_H__
-#define __ELA_PFD_CONFIG_H__
+#ifndef __PFD_CONFIG_H__
+#define __PFD_CONFIG_H__
 
-#include <ela_carrier.h>
-#include <ela_session.h>
+#include <carrier.h>
+#include <carrier_session.h>
 #include <crystal.h>
 
 #define MODE_CLIENT     1
@@ -58,4 +58,4 @@ typedef struct {
 PFConfig *load_config(const char *config_file, PFConfig *config);
 void free_config(PFConfig *config);
 
-#endif /* __ELA_PFD_CONFIG_H__ */
+#endif /* __PFD_CONFIG_H__ */

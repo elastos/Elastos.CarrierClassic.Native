@@ -39,8 +39,8 @@
 #include <getopt.h>
 #endif
 
-#include <ela_carrier.h>
-#include <ela_session.h>
+#include <carrier.h>
+#include <carrier_session.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <io.h>

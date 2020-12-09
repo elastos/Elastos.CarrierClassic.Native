@@ -28,7 +28,7 @@
 #include <io.h>
 #endif
 
-#include <ela_carrier.h>
+#include <carrier.h>
 #include <crystal.h>
 
 #include "carrier_config.h"
@@ -56,8 +56,8 @@ enum {
 };
 
 typedef struct TestCtx {
-    char remote_addr[ELA_MAX_ADDRESS_LEN + 1];
-    char remote_userid[ELA_MAX_ID_LEN + 1];
+    char remote_addr[CARRIER_MAX_ADDRESS_LEN + 1];
+    char remote_userid[CARRIER_MAX_ID_LEN + 1];
     bool connected;
     bool did_kill;
 
@@ -87,7 +87,7 @@ static void output_error()
     output_addr_userid("error", "error");
 }
 
-static void try_send_offmsg(ElaCarrier *w, TestCtx *ctx)
+static void try_send_offmsg(Carrier *w, TestCtx *ctx)
 {
     char buf[128] = {0};
     int error =  0;
@@ -114,10 +114,10 @@ send_msg:
         const char *msg = "hello";
         int ret = 0;
 
-        ret = ela_send_friend_message(w, ctx->remote_userid, msg, strlen(msg) + 1,
+        ret = carrier_send_friend_message(w, ctx->remote_userid, msg, strlen(msg) + 1,
                                       NULL, NULL, NULL);
         if (ret < 0) {
-            vlogE("Error: Send offline message error: 0x%x", ela_get_error());
+            vlogE("Error: Send offline message error: 0x%x", carrier_get_error());
             error |= 1;
         }
     }
@@ -125,10 +125,10 @@ send_msg:
 error_exit:
     ctx->error = error;
     ctx->did_kill = true;
-    ela_kill(w);
+    carrier_kill(w);
 }
 
-static void try_store_offmsg(ElaCarrier *w, TestCtx *ctx)
+static void try_store_offmsg(Carrier *w, TestCtx *ctx)
 {
     size_t rc = 0;
     char buf[32] = {0};
@@ -140,28 +140,28 @@ static void try_store_offmsg(ElaCarrier *w, TestCtx *ctx)
         vlogE("Error: write offmsg error");
         ctx->error = 1;
         ctx->did_kill = true;
-        ela_kill(w);
+        carrier_kill(w);
     }
 }
 
-static void idle_callback(ElaCarrier *w, void *context)
+static void idle_callback(Carrier *w, void *context)
 {
     TestCtx *ctx = (TestCtx *)context;
 
-    if (!ctx->connected || !ela_is_ready(w))
+    if (!ctx->connected || !carrier_is_ready(w))
         return;
 
     switch(ctx->tasktype) {
     case Task_addfriend: {
         int rc = 0;
 
-        if (!ela_is_friend(w, ctx->remote_userid)) {
-            rc = ela_add_friend(w, ctx->remote_addr, "offmsg_tests");
+        if (!carrier_is_friend(w, ctx->remote_userid)) {
+            rc = carrier_add_friend(w, ctx->remote_addr, "offmsg_tests");
             if (rc < 0) {
-                vlogE("Error: Add friend error: 0x%x", ela_get_error());
+                vlogE("Error: Add friend error: 0x%x", carrier_get_error());
                 ctx->error = 1;
                 ctx->did_kill = true;
-                ela_kill(w);
+                carrier_kill(w);
             }
         }
         break;
@@ -183,7 +183,7 @@ static void idle_callback(ElaCarrier *w, void *context)
                 try_store_offmsg(w, ctx);
                 ctx->error = 1;
                 ctx->did_kill = true;
-                ela_kill(w);
+                carrier_kill(w);
             }
         }
         break;
@@ -193,29 +193,29 @@ static void idle_callback(ElaCarrier *w, void *context)
     }
 }
 
-static void connection_callback(ElaCarrier *w, ElaConnectionStatus status,
+static void connection_callback(Carrier *w, CarrierConnectionStatus status,
                                 void *context)
 {
     TestCtx *ctx = (TestCtx *)context;
-    ctx->connected = (status == ElaConnectionStatus_Connected);
+    ctx->connected = (status == CarrierConnectionStatus_Connected);
 }
 
-static void friend_connection_callback(ElaCarrier *w, const char *friendid,
-                                       ElaConnectionStatus status, void *context)
+static void friend_connection_callback(Carrier *w, const char *friendid,
+                                       CarrierConnectionStatus status, void *context)
 {
     TestCtx *ctx = (TestCtx *)context;
 
     switch (status) {
-    case ElaConnectionStatus_Connected:
+    case CarrierConnectionStatus_Connected:
         vlogI("Friend[%s] connection changed to be online.", friendid);
         if (ctx->tasktype == Task_addfriend) {
             ctx->error = 0;
             ctx->did_kill = true;
-            ela_kill(w);
+            carrier_kill(w);
         }
         break;
 
-    case ElaConnectionStatus_Disconnected:
+    case CarrierConnectionStatus_Disconnected:
         vlogI("Friend[%s] connection changed to be offline.", friendid);
         break;
 
@@ -224,7 +224,7 @@ static void friend_connection_callback(ElaCarrier *w, const char *friendid,
     }
 }
 
-static void message_callback(ElaCarrier *w, const char *from,
+static void message_callback(Carrier *w, const char *from,
                              const void *msg, size_t len,
                              int64_t timestamp, bool is_offline,
                              void *context)
@@ -237,7 +237,7 @@ static void message_callback(ElaCarrier *w, const char *from,
         ctx->msg_cnt++;
 }
 
-static void ready_callback(ElaCarrier *w, void *context)
+static void ready_callback(Carrier *w, void *context)
 {
     TestCtx *ctx = (TestCtx *)context;
 
@@ -325,8 +325,8 @@ const char *get_config_path(const char *cfg_file, const char *cfg_files[])
 
 int main(int argc, char *argv[])
 {
-    ElaCallbacks callbacks = {0};
-    ElaCarrier *w = NULL;
+    CarrierCallbacks callbacks = {0};
+    Carrier *w = NULL;
     TestConfig config = {0};
     const char *config_file = NULL;
     char logfile[PATH_MAX] = {0};
@@ -395,12 +395,12 @@ int main(int argc, char *argv[])
 
         case 'a':
             if (optarg)
-                strncpy(ctx->remote_addr, optarg, ELA_MAX_ADDRESS_LEN);
+                strncpy(ctx->remote_addr, optarg, CARRIER_MAX_ADDRESS_LEN);
             break;
 
         case 'u':
             if (optarg)
-                strncpy(ctx->remote_userid, optarg, ELA_MAX_ID_LEN);
+                strncpy(ctx->remote_userid, optarg, CARRIER_MAX_ID_LEN);
             break;
 
         case 'm':
@@ -489,21 +489,21 @@ int main(int argc, char *argv[])
     callbacks.friend_message = message_callback;
     callbacks.ready = ready_callback;
 
-    w = ela_new(&config.shared_options, &callbacks, ctx);
+    w = carrier_new(&config.shared_options, &callbacks, ctx);
     carrier_config_free(&config.shared_options);
 
     if (!w) {
-        vlogE("Create carrier instance error: 0x%x", ela_get_error());
+        vlogE("Create carrier instance error: 0x%x", carrier_get_error());
         output_error();
         goto error_exit;
     }
 
     if (tasktype == Task_init) {
-        char addr[ELA_MAX_ADDRESS_LEN + 1];
-        char userid[ELA_MAX_ID_LEN + 1];
+        char addr[CARRIER_MAX_ADDRESS_LEN + 1];
+        char userid[CARRIER_MAX_ID_LEN + 1];
 
-        ela_get_address(w, addr, sizeof(addr));
-        ela_get_userid(w, userid, sizeof(userid));
+        carrier_get_address(w, addr, sizeof(addr));
+        carrier_get_userid(w, userid, sizeof(userid));
         output_addr_userid(addr, userid);
         goto error_exit;
     }
@@ -524,9 +524,9 @@ int main(int argc, char *argv[])
         ctx->offmsg_fp = fp;
     }
 
-    rc = ela_run(w, 10);
+    rc = carrier_run(w, 10);
     if (rc != 0) {
-        vlogE("Run carrier instance error: 0x%x", ela_get_error());
+        vlogE("Run carrier instance error: 0x%x", carrier_get_error());
         ctx->error = rc;
     }
 
@@ -539,7 +539,7 @@ error_exit:
         fclose(ctx->offmsg_fp);
 
     if (w && !ctx->did_kill)
-        ela_kill(w);
+        carrier_kill(w);
 
     return ctx->error;
 }

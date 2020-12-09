@@ -39,220 +39,220 @@ Example
 
 * 0x8 - Error
 * 0x6 - DHT
-* 0x21 - The error number(ELAERR_BAD_BOOTSTRAP_PORT)
+* 0x21 - The error number(ERROR_BAD_BOOTSTRAP_PORT)
 
 Error codes
 -----------
 
-ELAERR_INVALID_ARGS
+ERROR_INVALID_ARGS
+##################
+
+.. doxygendefine:: ERROR_INVALID_ARGS
+   :project: CarrierAPI
+
+
+ERROR_OUT_OF_MEMORY
 ###################
 
-.. doxygendefine:: ELAERR_INVALID_ARGS
+.. doxygendefine:: ERROR_OUT_OF_MEMORY
    :project: CarrierAPI
 
-
-ELAERR_OUT_OF_MEMORY
-####################
-
-.. doxygendefine:: ELAERR_OUT_OF_MEMORY
-   :project: CarrierAPI
-
-ELAERR_BUFFER_TOO_SMALL
-#######################
-
-.. doxygendefine:: ELAERR_BUFFER_TOO_SMALL
-   :project: CarrierAPI
-
-ELAERR_BAD_PERSISTENT_DATA
-##########################
-
-.. doxygendefine:: ELAERR_BAD_PERSISTENT_DATA
-   :project: CarrierAPI
-
-ELAERR_INVALID_PERSISTENCE_FILE
-###############################
-
-.. doxygendefine:: ELAERR_INVALID_PERSISTENCE_FILE
-   :project: CarrierAPI
-
-ELAERR_INVALID_CONTROL_PACKET
-#############################
-
-.. doxygendefine:: ELAERR_INVALID_CONTROL_PACKET
-   :project: CarrierAPI
-
-ELAERR_INVALID_CREDENTIAL
-#########################
-
-.. doxygendefine:: ELAERR_INVALID_CREDENTIAL
-   :project: CarrierAPI
-
-ELAERR_ALREADY_RUN
-##################
-
-.. doxygendefine:: ELAERR_ALREADY_RUN
-   :project: CarrierAPI
-
-ELAERR_NOT_READY
-################
-
-.. doxygendefine:: ELAERR_NOT_READY
-   :project: CarrierAPI
-
-ELAERR_NOT_EXIST
-################
-
-.. doxygendefine:: ELAERR_NOT_EXIST
-   :project: CarrierAPI
-
-ELAERR_ALREADY_EXIST
-####################
-
-.. doxygendefine:: ELAERR_ALREADY_EXIST
-   :project: CarrierAPI
-
-ELAERR_NO_MATCHED_REQUEST
-#########################
-
-.. doxygendefine:: ELAERR_NO_MATCHED_REQUEST
-   :project: CarrierAPI
-
-ELAERR_INVALID_USERID
-#####################
-
-.. doxygendefine:: ELAERR_INVALID_USERID
-   :project: CarrierAPI
-
-ELAERR_INVALID_NODEID
-#####################
-
-.. doxygendefine:: ELAERR_INVALID_NODEID
-   :project: CarrierAPI
-
-ELAERR_WRONG_STATE
-##################
-
-.. doxygendefine:: ELAERR_WRONG_STATE
-   :project: CarrierAPI
-
-ELAERR_BUSY
-###########
-
-.. doxygendefine:: ELAERR_BUSY
-   :project: CarrierAPI
-
-ELAERR_LANGUAGE_BINDING
-#######################
-
-.. doxygendefine:: ELAERR_LANGUAGE_BINDING
-   :project: CarrierAPI
-
-ELAERR_ENCRYPT
-##############
-
-.. doxygendefine:: ELAERR_ENCRYPT
-   :project: CarrierAPI
-
-ELAERR_SDP_TOO_LONG
-###################
-
-.. doxygendefine:: ELAERR_SDP_TOO_LONG
-   :project: CarrierAPI
-
-ELAERR_INVALID_SDP
-##################
-
-.. doxygendefine:: ELAERR_INVALID_SDP
-   :project: CarrierAPI
-
-ELAERR_NOT_IMPLEMENTED
+ERROR_BUFFER_TOO_SMALL
 ######################
 
-.. doxygendefine:: ELAERR_NOT_IMPLEMENTED
+.. doxygendefine:: ERROR_BUFFER_TOO_SMALL
    :project: CarrierAPI
 
-ELAERR_LIMIT_EXCEEDED
-#####################
+ERROR_BAD_PERSISTENT_DATA
+#########################
 
-.. doxygendefine:: ELAERR_LIMIT_EXCEEDED
+.. doxygendefine:: ERROR_BAD_PERSISTENT_DATA
    :project: CarrierAPI
 
-ELAERR_PORT_ALLOC
+ERROR_INVALID_PERSISTENCE_FILE
+##############################
+
+.. doxygendefine:: ERROR_INVALID_PERSISTENCE_FILE
+   :project: CarrierAPI
+
+ERROR_INVALID_CONTROL_PACKET
+############################
+
+.. doxygendefine:: ERROR_INVALID_CONTROL_PACKET
+   :project: CarrierAPI
+
+ERROR_INVALID_CREDENTIAL
+########################
+
+.. doxygendefine:: ERROR_INVALID_CREDENTIAL
+   :project: CarrierAPI
+
+ERROR_ALREADY_RUN
 #################
 
-.. doxygendefine:: ELAERR_PORT_ALLOC
+.. doxygendefine:: ERROR_ALREADY_RUN
    :project: CarrierAPI
 
-ELAERR_BAD_PROXY_TYPE
-#####################
-
-.. doxygendefine:: ELAERR_BAD_PROXY_TYPE
-   :project: CarrierAPI
-
-ELAERR_BAD_PROXY_HOST
-#####################
-
-.. doxygendefine:: ELAERR_BAD_PROXY_HOST
-   :project: CarrierAPI
-
-
-ELAERR_BAD_PROXY_PORT
-#####################
-
-.. doxygendefine:: ELAERR_BAD_PROXY_PORT
-   :project: CarrierAPI
-
-ELAERR_PROXY_NOT_AVAILABLE
-##########################
-
-.. doxygendefine:: ELAERR_PROXY_NOT_AVAILABLE
-   :project: CarrierAPI
-
-ELAERR_ENCRYPTED_PERSISTENT_DATA
-################################
-
-.. doxygendefine:: ELAERR_ENCRYPTED_PERSISTENT_DATA
-   :project: CarrierAPI
-
-ELAERR_BAD_BOOTSTRAP_HOST
-#########################
-
-.. doxygendefine:: ELAERR_BAD_BOOTSTRAP_HOST
-   :project: CarrierAPI
-
-ELAERR_BAD_BOOTSTRAP_PORT
-#########################
-
-.. doxygendefine:: ELAERR_BAD_BOOTSTRAP_PORT
-   :project: CarrierAPI
-
-ELAERR_TOO_LONG
+ERROR_NOT_READY
 ###############
 
-.. doxygendefine:: ELAERR_TOO_LONG
+.. doxygendefine:: ERROR_NOT_READY
    :project: CarrierAPI
 
-
-ELAERR_ADD_SELF
+ERROR_NOT_EXIST
 ###############
 
-.. doxygendefine:: ELAERR_ADD_SELF
+.. doxygendefine:: ERROR_NOT_EXIST
    :project: CarrierAPI
 
-ELAERR_BAD_ADDRESS
+ERROR_ALREADY_EXIST
+###################
+
+.. doxygendefine:: ERROR_ALREADY_EXIST
+   :project: CarrierAPI
+
+ERROR_NO_MATCHED_REQUEST
+########################
+
+.. doxygendefine:: ERROR_NO_MATCHED_REQUEST
+   :project: CarrierAPI
+
+ERROR_INVALID_USERID
+####################
+
+.. doxygendefine:: ERROR_INVALID_USERID
+   :project: CarrierAPI
+
+ERROR_INVALID_NODEID
+####################
+
+.. doxygendefine:: ERROR_INVALID_NODEID
+   :project: CarrierAPI
+
+ERROR_WRONG_STATE
+#################
+
+.. doxygendefine:: ERROR_WRONG_STATE
+   :project: CarrierAPI
+
+ERROR_BEING_BUSY
+################
+
+.. doxygendefine:: ERROR_BEING_BUSY
+   :project: CarrierAPI
+
+ERROR_LANGUAGE_BINDING
+######################
+
+.. doxygendefine:: ERROR_LANGUAGE_BINDING
+   :project: CarrierAPI
+
+ERROR_ENCRYPT
+#############
+
+.. doxygendefine:: ERROR_ENCRYPT
+   :project: CarrierAPI
+
+ERROR_SDP_TOO_LONG
 ##################
 
-.. doxygendefine:: ELAERR_BAD_ADDRESS
+.. doxygendefine:: ERROR_SDP_TOO_LONG
    :project: CarrierAPI
 
-ELAERR_FRIEND_OFFLINE
+ERROR_INVALID_SDP
+#################
+
+.. doxygendefine:: ERROR_INVALID_SDP
+   :project: CarrierAPI
+
+ERROR_NOT_IMPLEMENTED
 #####################
 
-.. doxygendefine:: ELAERR_FRIEND_OFFLINE
+.. doxygendefine:: ERROR_NOT_IMPLEMENTED
    :project: CarrierAPI
 
-ELAERR_UNKNOWN
+ERROR_LIMIT_EXCEEDED
+####################
+
+.. doxygendefine:: ERROR_LIMIT_EXCEEDED
+   :project: CarrierAPI
+
+ERROR_PORT_ALLOC
+################
+
+.. doxygendefine:: ERROR_PORT_ALLOC
+   :project: CarrierAPI
+
+ERROR_BAD_PROXY_TYPE
+####################
+
+.. doxygendefine:: ERROR_BAD_PROXY_TYPE
+   :project: CarrierAPI
+
+ERROR_BAD_PROXY_HOST
+####################
+
+.. doxygendefine:: ERROR_BAD_PROXY_HOST
+   :project: CarrierAPI
+
+
+ERROR_BAD_PROXY_PORT
+####################
+
+.. doxygendefine:: ERROR_BAD_PROXY_PORT
+   :project: CarrierAPI
+
+ERROR_PROXY_NOT_AVAILABLE
+#########################
+
+.. doxygendefine:: ERROR_PROXY_NOT_AVAILABLE
+   :project: CarrierAPI
+
+ERROR_ENCRYPTED_PERSISTENT_DATA
+###############################
+
+.. doxygendefine:: ERROR_ENCRYPTED_PERSISTENT_DATA
+   :project: CarrierAPI
+
+ERROR_BAD_BOOTSTRAP_HOST
+########################
+
+.. doxygendefine:: ERROR_BAD_BOOTSTRAP_HOST
+   :project: CarrierAPI
+
+ERROR_BAD_BOOTSTRAP_PORT
+########################
+
+.. doxygendefine:: ERROR_BAD_BOOTSTRAP_PORT
+   :project: CarrierAPI
+
+ERROR_TOO_LONG
 ##############
 
-.. doxygendefine:: ELAERR_UNKNOWN
+.. doxygendefine:: ERROR_TOO_LONG
+   :project: CarrierAPI
+
+
+ERROR_ADD_SELF
+##############
+
+.. doxygendefine:: ERROR_ADD_SELF
+   :project: CarrierAPI
+
+ERROR_BAD_ADDRESS
+#################
+
+.. doxygendefine:: ERROR_BAD_ADDRESS
+   :project: CarrierAPI
+
+ERROR_FRIEND_OFFLINE
+####################
+
+.. doxygendefine:: ERROR_FRIEND_OFFLINE
+   :project: CarrierAPI
+
+ERROR_UNKNOWN
+#############
+
+.. doxygendefine:: ERROR_UNKNOWN
    :project: CarrierAPI

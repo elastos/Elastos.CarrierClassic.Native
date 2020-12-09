@@ -78,15 +78,15 @@ else()
 endif()
 
 set(LIBS
-    elacarrier
-    elasession
-    elafiletrans
+    carrier
+    carriersession
+    carrierfiletrans
     crystal)
 
 set(DEPS
-    ela-carrier
-    ela-session
-    ela-filetransfer
+    carrier0
+    carrier-session
+    carrier-filetransfer
     libcrystal
     libconfig
     CUnit)

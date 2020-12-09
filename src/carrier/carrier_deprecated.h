@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef __ELA_CARRIER_H__
-#define __ELA_CARRIER_H__
+#ifndef __ELASTOS_CARRIER_DECRECATED_H__
+#define __ELASTOS_CARRIER_DECRECATED_H__
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -37,127 +37,144 @@
 extern "C" {
 #endif
 
-#if defined(CARRIER_STATIC)
-  #define CARRIER_API
-#elif defined(CARRIER_DYNAMIC)
-  #ifdef CARRIER_BUILD
-    #if defined(_WIN32) || defined(_WIN64)
-      #define CARRIER_API        __declspec(dllexport)
-    #else
-      #define CARRIER_API        __attribute__((visibility("default")))
-    #endif
-  #else
-    #if defined(_WIN32) || defined(_WIN64)
-      #define CARRIER_API        __declspec(dllimport)
-    #else
-      #define CARRIER_API        __attribute__((visibility("default")))
-    #endif
-  #endif
+#ifdef DEPRECATED_NO_WARNINGS
+  #define DEPRECATED_API
+  #define DEPRECATED_WITH(api)
 #else
-  #define CARRIER_API
+  #if defined(__GNUC__)
+    #define DEPRECATED_API \
+      __attribute__ ((__deprecated__ ("This function already deprecated. Consider stop using this function.")))
+
+    #define DEPRECATED_WITH(api) \
+      __attribute__ ((__deprecated__ ("This function already deprecated. Consider using "#api" instead.")))
+  #elif defined(_MSC_VER)
+    #define DEPRECATED_API \
+      __declspec(deprecated("This function already deprecated. Consider stop using this function."))
+
+    #define DEPRECATED_WITH(api) \
+      __declspec(deprecated("This function already deprecated. Consider using "#api" instead."))
+  #endif
+#endif
+
+#if defined(__GNUC__)
+  #if defined(__clang__)
+    #define ALIAS(__old, __new) \
+      asm("_"#__new)
+  #else
+    #define ALIAS(__old, __new) \
+      asm(#__new)
+  #endif
+#elif defined(_MSC_VER)
+  #if defined(_WIN64)
+    #define MANGLE(name) #name
+  #else
+    #define MANGLE(name) "_"#name
+  #endif
+  #define ALIAS(__old, __new) \
+    ; __pragma(comment(linker, "/alternatename:"MANGLE(__old)"="MANGLE(__new)))
 #endif
 
 /**
  * \~English
  * Carrier User address max length.
  */
-#define ELA_MAX_ADDRESS_LEN             52
+#define ELA_MAX_ADDRESS_LEN             CARRIER_MAX_ADDRESS_LEN
 
 /**
  * \~English
  * Carrier Node/User ID max length.
  */
-#define ELA_MAX_ID_LEN                  45
+#define ELA_MAX_ID_LEN                  CARRIER_MAX_ID_LEN
 
 /**
  * \~English
  * Carrier user name max length.
  */
-#define ELA_MAX_USER_NAME_LEN           63
+#define ELA_MAX_USER_NAME_LEN           CARRIER_MAX_USER_NAME_LEN
 
 /**
  * \~English
  * Carrier user description max length.
  */
-#define ELA_MAX_USER_DESCRIPTION_LEN    127
+#define ELA_MAX_USER_DESCRIPTION_LEN    CARRIER_MAX_USER_DESCRIPTION_LEN
 
 /**
  * \~English
  * Carrier user phone number max length.
  */
-#define ELA_MAX_PHONE_LEN               31
+#define ELA_MAX_PHONE_LEN               CARRIER_MAX_PHONE_LEN
 
 /**
  * \~English
  * Carrier user email address max length.
  */
-#define ELA_MAX_EMAIL_LEN               127
+#define ELA_MAX_EMAIL_LEN               CARRIER_MAX_EMAIL_LEN
 
 /**
  * \~English
  * Carrier user region max length.
  */
-#define ELA_MAX_REGION_LEN              127
+#define ELA_MAX_REGION_LEN              CARRIER_MAX_REGION_LEN
 
 /**
  * \~English
  * Carrier user gender max length.
  */
-#define ELA_MAX_GENDER_LEN              31
+#define ELA_MAX_GENDER_LEN              CARRIER_MAX_GENDER_LEN
 
 /**
  * \~English
  * Carrier node name max length.
  */
-#define ELA_MAX_NODE_NAME_LEN           63
+#define ELA_MAX_NODE_NAME_LEN           CARRIER_MAX_NODE_NAME_LEN
 
 /**
  * \~English
  * Carrier node description max length.
  */
-#define ELA_MAX_NODE_DESCRIPTION_LEN    127
+#define ELA_MAX_NODE_DESCRIPTION_LEN    CARRIER_MAX_NODE_DESCRIPTION_LEN
 
 /**
  * \~English
  * Carrier App message max length.
  */
-#define ELA_MAX_APP_MESSAGE_LEN         1024
+#define ELA_MAX_APP_MESSAGE_LEN         CARRIER_MAX_APP_MESSAGE_LEN
 
 /**
  * \~English
  * Carrier App max bulk message length.
  */
-#define ELA_MAX_APP_BULKMSG_LEN        (5 * 1024 * 1024)
+#define ELA_MAX_APP_BULKMSG_LEN         CARRIER_MAX_APP_BULKMSG_LEN
 
 /**
  * \~English
  * System reserved reply reason.
  */
-#define ELA_STATUS_TIMEOUT              1
+#define ELA_STATUS_TIMEOUT              CARRIER_STATUS_TIMEOUT
 
 /**
  * \~English
  * Carrier invite/reply max data length.
  */
-#define ELA_MAX_INVITE_DATA_LEN         8192
+#define ELA_MAX_INVITE_DATA_LEN         CARRIER_MAX_INVITE_DATA_LEN
 
 /**
  * \~English
  * Carrier invite/reply max bundle length.
  */
-#define ELA_MAX_BUNDLE_LEN              511
+#define ELA_MAX_BUNDLE_LEN              CARRIER_MAX_BUNDLE_LEN
 
 /**
  * \~English
  * Carrier invite reply max reason length.
  */
-#define ELA_MAX_INVITE_REPLY_REASON_LEN 255
+#define ELA_MAX_INVITE_REPLY_REASON_LEN CARRIER_MAX_INVITE_REPLY_REASON_LEN
 
 /**
  * \~English
  * Carrier group title max length.
  */
-#define ELA_MAX_GROUP_TITLE_LEN         127
+#define ELA_MAX_GROUP_TITLE_LEN         CARRIER_MAX_GROUP_TITLE_LEN
 
 /**
  * \~English
@@ -223,7 +240,7 @@ typedef enum ElaLogLevel {
 /******************************************************************************
  * Creation & destruction
  *****************************************************************************/
-
+#if 0
 /**
  * \~English
  * Bootstrap defines a couple of perperities to provide for Carrier nodes
@@ -293,6 +310,7 @@ typedef struct ExpressNode {
      */
     const char *public_key;
 } ExpressNode;
+#endif
 
 /**
  * \~English
@@ -385,8 +403,9 @@ typedef struct ElaOptions {
  * \~English
  * Get the current version of Carrier node.
  */
-CARRIER_API
-const char *ela_get_version(void);
+DEPRECATED_WITH(carrier_get_version)
+const char *ela_get_version(void)
+ALIAS(ela_get_version, carrier_get_version);
 
 /**
  * \~English
@@ -888,8 +907,9 @@ typedef struct ElaCallbacks {
  * @return
  *      true if address is valid, or false if address is not valid.
  */
-CARRIER_API
-bool ela_address_is_valid(const char *address);
+DEPRECATED_WITH(carrier_address_is_valid)
+bool ela_address_is_valid(const char *address)
+ALIAS(ela_address_is_valid, carrier_address_is_valid);
 
 /**
  * \~English
@@ -901,8 +921,9 @@ bool ela_address_is_valid(const char *address);
  * @return
  *      true if id is valid, or false if id is not valid.
  */
-CARRIER_API
-bool ela_id_is_valid(const char *id);
+DEPRECATED_WITH(carrier_id_is_valid)
+bool ela_id_is_valid(const char *id)
+ALIAS(ela_id_is_valid, carrier_id_is_valid);
 
 /**
  * \~English
@@ -920,8 +941,9 @@ bool ela_id_is_valid(const char *id);
  *      Otherwise, return NULL, and a specific error code can be
  *      retrieved by calling ela_get_error().
  */
-CARRIER_API
-char *ela_get_id_by_address(const char *address, char *userid, size_t len);
+DEPRECATED_WITH(carrier_get_id_by_address)
+char *ela_get_id_by_address(const char *address, char *userid, size_t len)
+ALIAS(ela_get_id_by_address, carrier_get_id_by_address);
 
 /**
  * \~English
@@ -940,9 +962,10 @@ char *ela_get_id_by_address(const char *address, char *userid, size_t len);
  *      Otherwise, return NULL, and a specific error code can be
  *      retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_new)
 ElaCarrier *ela_new(const ElaOptions *options, ElaCallbacks *callbacks,
-                    void *context);
+                    void *context)
+ALIAS(ela_new, carrier_new);
 
 /**
  * \~English
@@ -956,8 +979,9 @@ ElaCarrier *ela_new(const ElaOptions *options, ElaCallbacks *callbacks,
  *      carrier     [in] A handle identifying the Carrier node instance
  *                       to kill.
  */
-CARRIER_API
-void ela_kill(ElaCarrier *carrier);
+DEPRECATED_WITH(carrier_kill)
+void ela_kill(ElaCarrier *carrier)
+ALIAS(ela_kill, carrier_kill);
 
 /******************************************************************************
  * \~English
@@ -980,8 +1004,9 @@ void ela_kill(ElaCarrier *carrier);
  *      event loop. Otherwise, return -1, and a specific error code can be
  *      retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_run(ElaCarrier *carrier, int interval);
+DEPRECATED_WITH(carrier_run)
+int ela_run(ElaCarrier *carrier, int interval)
+ALIAS(ela_run, carrier_run);
 
 /******************************************************************************
  * Internal node information
@@ -1003,8 +1028,9 @@ int ela_run(ElaCarrier *carrier, int interval);
  * @return
  *      The address string pointer, or NULL if buffer is too small.
  */
-CARRIER_API
-char *ela_get_address(ElaCarrier *carrier, char *address, size_t len);
+DEPRECATED_WITH(carrier_get_address)
+char *ela_get_address(ElaCarrier *carrier, char *address, size_t len)
+ALIAS(ela_get_address, carrier_get_address);
 
 /**
  * \~English
@@ -1022,8 +1048,9 @@ char *ela_get_address(ElaCarrier *carrier, char *address, size_t len);
  * @return
  *      The nodeId string pointer, or NULL if buffer is too small.
  */
-CARRIER_API
-char *ela_get_nodeid(ElaCarrier *carrier, char *nodeid, size_t len);
+DEPRECATED_WITH(carrier_get_nodeid)
+char *ela_get_nodeid(ElaCarrier *carrier, char *nodeid, size_t len)
+ALIAS(ela_get_nodeid, carrier_get_nodeid);
 
 /**
  * \~English
@@ -1041,8 +1068,9 @@ char *ela_get_nodeid(ElaCarrier *carrier, char *nodeid, size_t len);
  * @return
  *      The userId string pointer, or NULL if buffer is too small.
  */
-CARRIER_API
-char *ela_get_userid(ElaCarrier *carrier, char *userid, size_t len);
+DEPRECATED_WITH(carrier_get_userid)
+char *ela_get_userid(ElaCarrier *carrier, char *userid, size_t len)
+ALIAS(ela_get_userid, carrier_get_userid);
 
 /******************************************************************************
  * Client information
@@ -1065,8 +1093,9 @@ char *ela_get_userid(ElaCarrier *carrier, char *userid, size_t len);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_set_self_nospam(ElaCarrier *carrier, uint32_t nospam);
+DEPRECATED_WITH(carrier_set_self_nospam)
+int ela_set_self_nospam(ElaCarrier *carrier, uint32_t nospam)
+ALIAS(ela_set_self_nospam, carrier_set_self_nospam);
 
 /**
  * \~Egnlish
@@ -1084,8 +1113,9 @@ int ela_set_self_nospam(ElaCarrier *carrier, uint32_t nospam);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_get_self_nospam(ElaCarrier *carrier, uint32_t *nospam);
+DEPRECATED_WITH(carrier_get_self_nospam)
+int ela_get_self_nospam(ElaCarrier *carrier, uint32_t *nospam)
+ALIAS(ela_get_self_nospam, carrier_get_self_nospam);
 
 /**
  * \~English
@@ -1104,8 +1134,9 @@ int ela_get_self_nospam(ElaCarrier *carrier, uint32_t *nospam);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_set_self_info(ElaCarrier *carrier, const ElaUserInfo *info);
+DEPRECATED_WITH(carrier_set_self_info)
+int ela_set_self_info(ElaCarrier *carrier, const ElaUserInfo *info)
+ALIAS(ela_set_self_info, carrier_set_self_info);
 
 /**
  * \~English
@@ -1120,8 +1151,9 @@ int ela_set_self_info(ElaCarrier *carrier, const ElaUserInfo *info);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_get_self_info(ElaCarrier *carrier, ElaUserInfo *info);
+DEPRECATED_WITH(carrier_get_self_info)
+int ela_get_self_info(ElaCarrier *carrier, ElaUserInfo *info)
+ALIAS(ela_get_self_info, carrier_get_self_info);
 
 /**
  * \~English
@@ -1136,8 +1168,9 @@ int ela_get_self_info(ElaCarrier *carrier, ElaUserInfo *info);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_set_self_presence(ElaCarrier *carrier, ElaPresenceStatus presence);
+DEPRECATED_WITH(carrier_set_self_presence)
+int ela_set_self_presence(ElaCarrier *carrier, ElaPresenceStatus presence)
+ALIAS(ela_set_self_presence, carrier_set_self_presence);
 
 /**
  * \~English
@@ -1152,8 +1185,9 @@ int ela_set_self_presence(ElaCarrier *carrier, ElaPresenceStatus presence);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_get_self_presence(ElaCarrier *carrier, ElaPresenceStatus *presence);
+DEPRECATED_WITH(carrier_get_self_presence)
+int ela_get_self_presence(ElaCarrier *carrier, ElaPresenceStatus *presence)
+ALIAS(ela_get_self_presence, carrier_get_self_presence);
 
 /**
  * \~English
@@ -1168,8 +1202,9 @@ int ela_get_self_presence(ElaCarrier *carrier, ElaPresenceStatus *presence);
  * @return
  *      true if the carrier node instance is ready, or false if not.
  */
-CARRIER_API
-bool ela_is_ready(ElaCarrier *carrier);
+DEPRECATED_WITH(carrier_is_ready)
+bool ela_is_ready(ElaCarrier *carrier)
+ALIAS(ela_is_ready, carrier_is_ready);
 
 /******************************************************************************
  * Friend information
@@ -1210,9 +1245,10 @@ typedef bool ElaFriendsIterateCallback(const ElaFriendInfo *info,
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_get_friends)
 int ela_get_friends(ElaCarrier *carrier,
-                    ElaFriendsIterateCallback *callback, void *context);
+                    ElaFriendsIterateCallback *callback, void *context)
+ALIAS(ela_get_friends, carrier_get_friends);
 
 /**
  * \~English
@@ -1230,9 +1266,10 @@ int ela_get_friends(ElaCarrier *carrier,
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_get_friend_info)
 int ela_get_friend_info(ElaCarrier *carrier, const char *friendid,
-                        ElaFriendInfo *info);
+                        ElaFriendInfo *info)
+ALIAS(ela_get_friend_info, carrier_get_friend_info);
 
 /**
  * \~English
@@ -1255,9 +1292,10 @@ int ela_get_friend_info(ElaCarrier *carrier, const char *friendid,
  *      The label of a friend is a private alias named by yourself. It can be
  *      seen by yourself only, and has no impact to the target friend.
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_set_friend_label)
 int ela_set_friend_label(ElaCarrier *carrier,
-                         const char *friendid, const char *label);
+                         const char *friendid, const char *label)
+ALIAS(ela_set_friend_label, carrier_set_friend_label);
 
 /**
  * \~English
@@ -1271,8 +1309,9 @@ int ela_set_friend_label(ElaCarrier *carrier,
  * @return
  *      true if the user id is friend, or false if not;
  */
-CARRIER_API
-bool ela_is_friend(ElaCarrier* carrier, const char* userid);
+DEPRECATED_WITH(carrier_is_friend)
+bool ela_is_friend(ElaCarrier* carrier, const char* userid)
+ALIAS(ela_is_friend, carrier_is_friend);
 
 /******************************************************************************
  * Friend add & remove
@@ -1297,8 +1336,9 @@ bool ela_is_friend(ElaCarrier* carrier, const char* userid);
  *      0 if adding friend is successful. Otherwise, return -1, and a specific
  *      error code can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_add_friend(ElaCarrier *carrier, const char *address, const char *hello);
+DEPRECATED_WITH(carrier_add_friend)
+int ela_add_friend(ElaCarrier *carrier, const char *address, const char *hello)
+ALIAS(ela_add_friend, carrier_add_friend);
 
 /**
  * \~English
@@ -1316,8 +1356,9 @@ int ela_add_friend(ElaCarrier *carrier, const char *address, const char *hello);
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_accept_friend(ElaCarrier *carrier, const char *userid);
+DEPRECATED_WITH(carrier_accept_friend)
+int ela_accept_friend(ElaCarrier *carrier, const char *userid)
+ALIAS(ela_accept_friend, carrier_accept_friend);
 
 /**
  * \~English
@@ -1338,8 +1379,9 @@ int ela_accept_friend(ElaCarrier *carrier, const char *userid);
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_remove_friend(ElaCarrier *carrier, const char *userid);
+DEPRECATED_WITH(carrier_remove_friend)
+int ela_remove_friend(ElaCarrier *carrier, const char *userid)
+ALIAS(ela_remove_friend, carrier_remove_friend);
 
 /******************************************************************************
  * Application transactions between friends
@@ -1420,11 +1462,12 @@ typedef void ElaFriendMessageReceiptCallback(uint32_t msgid,
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling ela_get_error().
  */
- CARRIER_API
+DEPRECATED_WITH(carrier_send_friend_message)
 int ela_send_friend_message(ElaCarrier *carrier, const char *to,
                             const void *message, size_t len,
                             uint32_t *msgid,
-                            ElaFriendMessageReceiptCallback *cb, void *context);
+                            ElaFriendMessageReceiptCallback *cb, void *context)
+ALIAS(ela_send_friend_message, carrier_send_friend_message);
 
 /**
  * \~English
@@ -1485,11 +1528,12 @@ typedef void ElaFriendInviteResponseCallback(ElaCarrier *carrier,
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_invite_friend)
 int ela_invite_friend(ElaCarrier *carrier, const char *to, const char *bundle,
                       const void *data, size_t len,
                       ElaFriendInviteResponseCallback *callback,
-                      void *context);
+                      void *context)
+ALIAS(ela_invite_friend, carrier_invite_friend);
 
 /**
  * \~English
@@ -1521,11 +1565,12 @@ int ela_invite_friend(ElaCarrier *carrier, const char *to, const char *bundle,
  *      Otherwise, return -1, and a specific error code can be
  *      retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_reply_friend_invite)
 int ela_reply_friend_invite(ElaCarrier *carrier, const char *to,
                             const char *bundle,
                             int status, const char *reason,
-                            const void *data, size_t len);
+                            const void *data, size_t len)
+ALIAS(ela_reply_friend_invite, carrier_reply_friend_invite);
 
 /******************************************************************************
  * Group lifecycle and messaging.
@@ -1545,8 +1590,9 @@ int ela_reply_friend_invite(ElaCarrier *carrier, const char *to,
  *      0 if creating group in success, Otherwise, return -1, and a specific
  *      error code can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_new_group(ElaCarrier *carrier, char *groupid, size_t length);
+DEPRECATED_WITH(carrier_new_group)
+int ela_new_group(ElaCarrier *carrier, char *groupid, size_t length)
+ALIAS(ela_new_group, carrier_new_group);
 
 /**
  * \~English
@@ -1561,8 +1607,9 @@ int ela_new_group(ElaCarrier *carrier, char *groupid, size_t length);
  *      0 if leaving from group in success, Otherwise, return -1, and a specific
  *      error code can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_leave_group(ElaCarrier *carrier, const char *groupid);
+DEPRECATED_WITH(carrier_leave_group)
+int ela_leave_group(ElaCarrier *carrier, const char *groupid)
+ALIAS(ela_leave_group, carrier_leave_group);
 
 /**
  * \~English
@@ -1579,8 +1626,9 @@ int ela_leave_group(ElaCarrier *carrier, const char *groupid);
  *      0 on success, or -1 if an error occurred, and a specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_group_invite(ElaCarrier *carrier, const char *groupid, const char *friendid);
+DEPRECATED_WITH(carrier_group_invite)
+int ela_group_invite(ElaCarrier *carrier, const char *groupid, const char *friendid)
+ALIAS(ela_group_invite, carrier_group_invite);
 
 /**
  * \~English
@@ -1606,9 +1654,10 @@ int ela_group_invite(ElaCarrier *carrier, const char *groupid, const char *frien
  *      0 on success, or -1 if an error occurred, and a specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_group_join)
 int ela_group_join(ElaCarrier *carrier, const char *friendid, const void *cookie,
-                   size_t cookie_len, char *groupId, size_t group_len);
+                   size_t cookie_len, char *groupId, size_t group_len)
+ALIAS(ela_group_join, carrier_group_join);
 
 /**
  * \~English
@@ -1632,9 +1681,10 @@ int ela_group_join(ElaCarrier *carrier, const char *friendid, const void *cookie
  *      0 on success, or -1 if an error occurred, and a specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_group_send_message)
 int ela_group_send_message(ElaCarrier *carrier, const char *groupid,
-                           const void *message, size_t length);
+                           const void *message, size_t length)
+ALIAS(ela_group_send_message, carrier_group_send_message);
 
 /**
  * \~English
@@ -1653,9 +1703,10 @@ int ela_group_send_message(ElaCarrier *carrier, const char *groupid,
  *      0 on success, or -1 if an error occurred, and a specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_group_get_title)
 int ela_group_get_title(ElaCarrier *carrier, const char *groupid, char *title,
-                        size_t length);
+                        size_t length)
+ALIAS(ela_group_get_title, carrier_group_get_title);
 
 /**
  * \~English
@@ -1673,8 +1724,9 @@ int ela_group_get_title(ElaCarrier *carrier, const char *groupid, char *title,
  *      0 on success, or -1 if an error occurred, and a specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
-int ela_group_set_title(ElaCarrier *carrier, const char *groupid, const char *title);
+DEPRECATED_WITH(carrier_group_set_title)
+int ela_group_set_title(ElaCarrier *carrier, const char *groupid, const char *title)
+ALIAS(ela_group_set_title, carrier_group_set_title);
 
 /**
  * \~English
@@ -1714,10 +1766,11 @@ typedef bool ElaGroupPeersIterateCallback(const ElaGroupPeer *peer,
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_group_get_peers)
 int ela_group_get_peers(ElaCarrier *carrier, const char *groupid,
                         ElaGroupPeersIterateCallback *callback,
-                        void *context);
+                        void *context)
+ALIAS(ela_group_get_peers, carrier_group_get_peers);
 
 /**
  * \~English
@@ -1737,9 +1790,10 @@ int ela_group_get_peers(ElaCarrier *carrier, const char *groupid,
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_group_get_peer)
 int ela_group_get_peer(ElaCarrier *carrier, const char *groupid,
-                       const char *peerId, ElaGroupPeer *peer);
+                       const char *peerId, ElaGroupPeer *peer)
+ALIAS(ela_group_get_peer, carrier_group_get_peer);
 
 /**
  * \~English
@@ -1775,10 +1829,10 @@ typedef bool ElaIterateGroupCallback(const char *groupid, void *context);
  *      0 on success, or -1 if an error occurred. The specific error code
  *      can be retrieved by calling ela_get_error().
  */
-CARRIER_API
+DEPRECATED_WITH(carrier_get_groups)
 int ela_get_groups(ElaCarrier *carrier, ElaIterateGroupCallback *callback,
-                   void *context);
-
+                   void *context)
+ALIAS(ela_get_groups, carrier_get_groups);
 /******************************************************************************
  * Error handling
  *****************************************************************************/
@@ -1786,229 +1840,229 @@ int ela_get_groups(ElaCarrier *carrier, ElaIterateGroupCallback *callback,
 #define ELASUCCESS                                  0
 
 // Facility code
-#define ELAF_GENERAL                                0x01
-#define ELAF_SYS                                    0x02
-#define ELAF_RESERVED1                              0x03
-#define ELAF_RESERVED2                              0x04
-#define ELAF_ICE                                    0x05
-#define ELAF_DHT                                    0x06
-#define ELAF_EXPRESS                                0x07
+#define ELAF_GENERAL                                FACILITY_GENERAL
+#define ELAF_SYS                                    FACILITY_SYS
+#define ELAF_RESERVED1                              FACILITY_RESERVED1
+#define ELAF_RESERVED2                              FACILITY_RESERVED2
+#define ELAF_ICE                                    FACILITY_ICE
+#define ELAF_DHT                                    FACILITY_DHT
+#define ELAF_EXPRESS                                FACILITY_EXPRESS
 
 /**
  * \~English
  * Argument(s) is(are) invalid.
  */
-#define ELAERR_INVALID_ARGS                         0x01
+#define ELAERR_INVALID_ARGS                         ERROER_INVALID_ARGS
 
 /**
  * \~English
  * Runs out of memory.
  */
-#define ELAERR_OUT_OF_MEMORY                        0x02
+#define ELAERR_OUT_OF_MEMORY                        ERROR_OUT_OF_MEMORY
 
 /**
  * \~English
  * Buffer size is too small.
  */
-#define ELAERR_BUFFER_TOO_SMALL                     0x03
+#define ELAERR_BUFFER_TOO_SMALL                     ERROR_BUFFER_TOO_SMALL
 
 /**
  * \~English
  * Persistent data is corrupted.
  */
-#define ELAERR_BAD_PERSISTENT_DATA                  0x04
+#define ELAERR_BAD_PERSISTENT_DATA                  ERROR_BAD_PERSISTENT_DATA
 
 /**
  * \~English
  * Persistent file is invalid.
  */
-#define ELAERR_INVALID_PERSISTENCE_FILE             0x05
+#define ELAERR_INVALID_PERSISTENCE_FILE             ERROR_INVALID_PERSISTENCE_FILE
 
 /**
  * \~English
  * Control packet is invalid.
  */
-#define ELAERR_INVALID_CONTROL_PACKET               0x06
+#define ELAERR_INVALID_CONTROL_PACKET               ERROR_INVALID_CONTROL_PACKET
 
 /**
  * \~English
  * Credential is invalid.
  */
-#define ELAERR_INVALID_CREDENTIAL                   0x07
+#define ELAERR_INVALID_CREDENTIAL                   ERROR_INVALID_CREDENTIAL
 
 /**
  * \~English
  * Carrier ran already.
  */
-#define ELAERR_ALREADY_RUN                          0x08
+#define ELAERR_ALREADY_RUN                          ERROR_ALREADY_RUN
 
 /**
  * \~English
  * Carrier not ready.
  */
-#define ELAERR_NOT_READY                            0x09
+#define ELAERR_NOT_READY                            ERROR_NOT_BEING_READY
 
 /**
  * \~English
  * The requested entity does not exist.
  */
-#define ELAERR_NOT_EXIST                            0x0A
+#define ELAERR_NOT_EXIST                            ERROR_NOT_EXIST
 
 /**
  * \~English
  * The entity exists already.
  */
-#define ELAERR_ALREADY_EXIST                        0x0B
+#define ELAERR_ALREADY_EXIST                        ERROR_ALREADY_EXIST
 
 /**
  * \~English
  * There are no matched requests.
  */
-#define ELAERR_NO_MATCHED_REQUEST                   0x0C
+#define ELAERR_NO_MATCHED_REQUEST                   ERROR_NO_MATCHED_REQUEST
 
 /**
  * \~English
  * User ID is invalid.
  */
-#define ELAERR_INVALID_USERID                       0x0D
+#define ELAERR_INVALID_USERID                       ERROR_INVALID_USERID
 
 /**
  * \~English
  * Node ID is invalid.
  */
-#define ELAERR_INVALID_NODEID                       0x0E
+#define ELAERR_INVALID_NODEID                       ERROR_INVALID_NODEID
 
 /**
  * \~English
  * Failed because wrong state.
  */
-#define ELAERR_WRONG_STATE                          0x0F
+#define ELAERR_WRONG_STATE                          ERROR_WRONG_STATE
 
 /**
  * \~English
  * Stream busy.
  */
-#define ELAERR_BUSY                                 0x10
+#define ELAERR_BUSY                                 ERROR_BEING_BUSY
 
 /**
  * \~English
  * Language binding error.
  */
-#define ELAERR_LANGUAGE_BINDING                     0x11
+#define ELAERR_LANGUAGE_BINDING                     ERROR_LANGUAGE_BINDING
 
 /**
  * \~English
  * Encryption failed.
  */
-#define ELAERR_ENCRYPT                              0x12
+#define ELAERR_ENCRYPT                              ERROR_ENCRYPT
 
 /**
  * \~English
  * The content size of SDP is too long.
  */
-#define ELAERR_SDP_TOO_LONG                         0x13
+#define ELAERR_SDP_TOO_LONG                         ERROR_SDP_TOO_LONG
 
 /**
  * \~English
  * Bad SDP information format.
  */
-#define ELAERR_INVALID_SDP                          0x14
+#define ELAERR_INVALID_SDP                          ERROR_INVALID_SDP
 
 /**
  * \~English
  * Not implemented yet.
  */
-#define ELAERR_NOT_IMPLEMENTED                      0x15
+#define ELAERR_NOT_IMPLEMENTED                      ERROR_NOT_IMPLEMENTED
 
 /**
  * \~English
  * Limits are exceeded.
  */
-#define ELAERR_LIMIT_EXCEEDED                       0x16
+#define ELAERR_LIMIT_EXCEEDED                       ERROR_LIMIT_EXCEEDED
 
 /**
  * \~English
  * Allocate port unsuccessfully.
  */
-#define ELAERR_PORT_ALLOC                           0x17
+#define ELAERR_PORT_ALLOC                           ERROR_PORT_ALLOC
 
 /**
  * \~English
  * Invalid proxy type.
  */
-#define ELAERR_BAD_PROXY_TYPE                       0x18
+#define ELAERR_BAD_PROXY_TYPE                       ERROR_BAD_PROXY_TYPE
 
 /**
  * \~English
  * Invalid proxy host.
  */
-#define ELAERR_BAD_PROXY_HOST                       0x19
+#define ELAERR_BAD_PROXY_HOST                       ERROR_BAD_PROXY_HOST
 
 /**
  * \~English
  * Invalid proxy port.
  */
-#define ELAERR_BAD_PROXY_PORT                       0x1A
+#define ELAERR_BAD_PROXY_PORT                       ERROR_BAD_PROXY_PORT
 
 /**
  * \~English
  * Proxy is not available.
  */
-#define ELAERR_PROXY_NOT_AVAILABLE                  0x1B
+#define ELAERR_PROXY_NOT_AVAILABLE                  ERROR_PROXY_NOT_AVAILABLE
 
 /**
  * \~English
  * Persistent data is encrypted, load failed.
  */
-#define ELAERR_ENCRYPTED_PERSISTENT_DATA            0x1C
+#define ELAERR_ENCRYPTED_PERSISTENT_DATA            ERROR_ENCRYPTED_PERSISTENT_DATA
 
 /**
  * \~English
  * Invalid bootstrap host.
  */
-#define ELAERR_BAD_BOOTSTRAP_HOST                   0x1D
+#define ELAERR_BAD_BOOTSTRAP_HOST                   ERROR_BAD_BOOTSTRAP_HOST
 
 /**
  * \~English
  * Invalid bootstrap port.
  */
-#define ELAERR_BAD_BOOTSTRAP_PORT                   0x1E
+#define ELAERR_BAD_BOOTSTRAP_PORT                   ERROR_BAD_BOOTSTRAP_PORT
 
 /**
  * \~English
  * Data is too long.
  */
-#define ELAERR_TOO_LONG                             0x1F
+#define ELAERR_TOO_LONG                             ERROR_TOO_LONG
 
 /**
  * \~English
  * Could not friend yourself.
  */
-#define ELAERR_ADD_SELF                             0x20
+#define ELAERR_ADD_SELF                             ERROR_ADD_SELF
 
 /**
  * \~English
  * Invalid address.
  */
-#define ELAERR_BAD_ADDRESS                          0x21
+#define ELAERR_BAD_ADDRESS                          ERROR_BAD_ADDRESS
 
 /**
  * \~English
  * Friend is offline.
  */
-#define ELAERR_FRIEND_OFFLINE                       0x22
+#define ELAERR_FRIEND_OFFLINE                       ERROR_FRIEND_OFFLINE
 
 /**
  * \~English
  * Bad flat buffer.
  */
-#define ELAERR_BAD_FLATBUFFER                       0x23
+#define ELAERR_BAD_FLATBUFFER                       ERROR_BAD_FLATBUFFER
 
 /**
  * \~English
  * Unknown error.
  */
-#define ELAERR_UNKNOWN                              0xFF
+#define ELAERR_UNKNOWN                              ERROR_UNKNOWN
 
 #define ELA_MK_ERROR(facility, code)  (0x80000000 | ((facility) << 24) | \
                     ((((code) & 0x80000000) >> 8) | ((code) & 0x7FFFFFFF)))
@@ -2028,22 +2082,25 @@ int ela_get_groups(ElaCarrier *carrier, ElaIterateGroupCallback *callback,
  * @return
  *      The return value is the last-error code.
  */
-CARRIER_API
-int ela_get_error(void);
+DEPRECATED_WITH(carrier_get_error)
+int ela_get_error(void)
+ALIAS(ela_get_error, carrier_get_error);
 
 /**
  * \~English
  * Clear the last-error code of a Carrier instance.
  */
-CARRIER_API
-void ela_clear_error(void);
+DEPRECATED_WITH(carrier_clear_error)
+void ela_clear_error(void)
+ALIAS(ela_clear_error, carrier_clear_error);
 
 /**
  * \~English
  * Get string description to error code.
  */
-CARRIER_API
-char *ela_get_strerror(int errnum, char *buf, size_t len);
+DEPRECATED_WITH(carrier_get_strerror)
+char *ela_get_strerror(int errnum, char *buf, size_t len)
+ALIAS(ela_get_strerror, carrier_get_strerror);
 
 #ifdef __cplusplus
 }
@@ -2053,4 +2110,4 @@ char *ela_get_strerror(int errnum, char *buf, size_t len);
 #pragma GCC diagnostic pop
 #endif
 
-#endif /* __ELA_CARRIER_H_ */
+#endif /* __ELASTOS_CARRIER_DECRECATED_H__ */

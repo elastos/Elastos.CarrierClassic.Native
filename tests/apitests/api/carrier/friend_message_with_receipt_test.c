@@ -32,7 +32,7 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include <carrier.h>
 
 #include "cond.h"
 #include "test_helper.h"
@@ -58,23 +58,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -83,7 +83,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void friend_message_cb(ElaCarrier *w, const char *from, const void *msg, size_t len,
+static void friend_message_cb(Carrier *w, const char *from, const void *msg, size_t len,
                               int64_t timestamp, bool is_receipt, void *context)
 {
     CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
@@ -110,7 +110,7 @@ static void kill_node()
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -155,7 +155,7 @@ static TestContext test_context = {
     .context_reset = test_context_reset
 };
 
-static void message_receipt_cb(uint32_t msgid,  ElaReceiptState state,
+static void message_receipt_cb(uint32_t msgid,  CarrierReceiptState state,
                                void *context)
 {
     CarrierContextExtra *extra = ((CarrierContext *)context)->extra;
@@ -180,10 +180,10 @@ static void test_send_message_with_receipt(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     memset(msg, 'm', sizeof(msg) -1);
-    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg),
+    rc = carrier_send_friend_message(wctxt->carrier, robotid, msg, sizeof(msg),
                                  &msgid, message_receipt_cb, wctxt);
     CU_ASSERT_TRUE_FATAL(!rc);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
@@ -191,7 +191,7 @@ static void test_send_message_with_receipt(void)
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
     CU_ASSERT_EQUAL(extra->msgid, msgid);
-    CU_ASSERT_EQUAL(extra->state, ElaReceipt_ByFriend);
+    CU_ASSERT_EQUAL(extra->state, CarrierReceipt_ByFriend);
 
     rc = read_ack("%1023s", in);
     CU_ASSERT_EQUAL_FATAL(rc, 1);
@@ -214,7 +214,7 @@ static void test_send_bulkmsg_with_receipt(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     bulkmsg = (char *)calloc(1, bulksz);
     if (!bulkmsg) {
@@ -223,7 +223,7 @@ static void test_send_bulkmsg_with_receipt(void)
     }
     memset(bulkmsg, 'b', bulksz - 1);
 
-    rc = ela_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz,
+    rc = carrier_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz,
                                  &msgid, message_receipt_cb, wctxt);
     CU_ASSERT_TRUE_FATAL(!rc);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
@@ -231,7 +231,7 @@ static void test_send_bulkmsg_with_receipt(void)
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
     CU_ASSERT_EQUAL(extra->msgid, msgid);
-    CU_ASSERT_EQUAL(extra->state, ElaReceipt_ByFriend);
+    CU_ASSERT_EQUAL(extra->state, CarrierReceipt_ByFriend);
 
     rc = read_ack("%31s %d", buf, &size);
     CU_ASSERT_EQUAL_FATAL(rc, 2);
@@ -257,7 +257,7 @@ static void test_send_offmsg_with_receipt(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     rc = write_cmd("killnode\n");
     CU_ASSERT_FATAL(rc > 0);
@@ -268,7 +268,7 @@ static void test_send_offmsg_with_receipt(void)
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                     robotid, ElaConnectionStatus_Disconnected);
+                     robotid, CarrierConnectionStatus_Disconnected);
 
     sprintf(prefix, "%ld:", time(NULL));
     rc = write_cmd("offmsgprefix %s\n", prefix);
@@ -281,7 +281,7 @@ static void test_send_offmsg_with_receipt(void)
 
 
     sprintf(msg, "%s%s", prefix, "receipt");
-    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, strlen(msg),
+    rc = carrier_send_friend_message(wctxt->carrier, robotid, msg, strlen(msg),
                                  &msgid, message_receipt_cb, wctxt);
     CU_ASSERT_TRUE_FATAL(!rc);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
@@ -289,7 +289,7 @@ static void test_send_offmsg_with_receipt(void)
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
     CU_ASSERT_EQUAL(extra->msgid, msgid);
-    CU_ASSERT_EQUAL(extra->state, ElaReceipt_Offline);
+    CU_ASSERT_EQUAL(extra->state, CarrierReceipt_Offline);
     usleep(5000000);
 
     rc = write_cmd("restartnode %d\n", 900);
@@ -297,7 +297,7 @@ static void test_send_offmsg_with_receipt(void)
 
     // in offmsg case, robot would not ack with "ready" to testcase.
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                     robotid, ElaConnectionStatus_Connected);
+                     robotid, CarrierConnectionStatus_Connected);
 
     rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);
@@ -322,7 +322,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     rc = write_cmd("killnode\n");
     CU_ASSERT_FATAL(rc > 0);
@@ -333,7 +333,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     CU_ASSERT_STRING_EQUAL(buf[1], "success");
 
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                     robotid, ElaConnectionStatus_Disconnected);
+                     robotid, CarrierConnectionStatus_Disconnected);
 
     sprintf(prefix, "%ld:", time(NULL));
     rc = write_cmd("offmsgprefix %s\n", prefix);
@@ -353,7 +353,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     sprintf(bulkmsg, "%s", prefix);
     memset(bulkmsg + strlen(prefix), 'b', bulksz - strlen(prefix) -1);
 
-    rc = ela_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz,
+    rc = carrier_send_friend_message(wctxt->carrier, robotid, bulkmsg, bulksz,
                                  &msgid, message_receipt_cb, wctxt);
     CU_ASSERT_TRUE_FATAL(!rc);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
@@ -362,7 +362,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
     CU_ASSERT_EQUAL(extra->msgid, msgid);
-    CU_ASSERT_EQUAL(extra->state, ElaReceipt_Offline);
+    CU_ASSERT_EQUAL(extra->state, CarrierReceipt_Offline);
     usleep(5000000);
 
     rc = write_cmd("restartnode %d\n", 900);
@@ -370,7 +370,7 @@ static void test_send_offline_bulkmsg_with_receipt(void)
 
     // in offmsg case, robot would not ack with "ready" to testcase.
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                     robotid, ElaConnectionStatus_Connected);
+                     robotid, CarrierConnectionStatus_Connected);
 
     rc = read_ack("%31s %d", buf[0], &size);
     CU_ASSERT_EQUAL_FATAL(rc, 2);
@@ -394,7 +394,7 @@ static void test_send_msg_with_receipt_in_edge_case(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
     rc = write_cmd("killnode\n");
     CU_ASSERT_FATAL(rc > 0);
@@ -415,18 +415,18 @@ static void test_send_msg_with_receipt_in_edge_case(void)
 
 
     sprintf(msg, "%s%s", prefix, "receipt");
-    rc = ela_send_friend_message(wctxt->carrier, robotid, msg, strlen(msg),
+    rc = carrier_send_friend_message(wctxt->carrier, robotid, msg, strlen(msg),
                                  &msgid, message_receipt_cb, wctxt);
     CU_ASSERT_TRUE_FATAL(!rc);
     CU_ASSERT_TRUE_FATAL(msgid >= 0);
 
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                     robotid, ElaConnectionStatus_Disconnected);
+                     robotid, CarrierConnectionStatus_Disconnected);
 
     wakeup = cond_trywait(wctxt->receipts_cond, 60000);
     CU_ASSERT_TRUE_FATAL(wakeup);
     CU_ASSERT_EQUAL(extra->msgid, msgid);
-    CU_ASSERT_EQUAL(extra->state, ElaReceipt_Offline);
+    CU_ASSERT_EQUAL(extra->state, CarrierReceipt_Offline);
     usleep(5000000);
 
     rc = write_cmd("restartnode %d\n", 900);
@@ -434,7 +434,7 @@ static void test_send_msg_with_receipt_in_edge_case(void)
 
     // in offmsg case, robot would not ack with "ready" to testcase.
     status_cond_wait(wctxt->friend_status_cond, wctxt->carrier,
-                     robotid, ElaConnectionStatus_Connected);
+                     robotid, CarrierConnectionStatus_Connected);
 
     rc = read_ack("%31s %31s", buf[0], buf[1]);
     CU_ASSERT_EQUAL(rc, 2);

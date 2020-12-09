@@ -20,12 +20,12 @@
  * SOFTWARE.
  */
 
-#ifndef __EASYFILE_H__
-#define __EASYFILE_H__
+#ifndef __ELASTOS_CARRIER_EASYFILE_H__
+#define __ELASTOS_CARRIER_EASYFILE_H__
 
 #include <stdint.h>
 
-#include "ela_filetransfer.h"
+#include "carrier_filetransfer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,7 +35,7 @@ extern "C" {
  * \~English
  * Carrier file progress callbacks.
  */
-typedef struct ElaFileProgressCallbacks {
+typedef struct CarrierFileProgressCallbacks {
     /**
      * \~English
      * An application-defined function that handles file transfer connection
@@ -73,16 +73,16 @@ typedef struct ElaFileProgressCallbacks {
      *      context         [in] The application defined context data.
      */
     void (*received)(size_t length, uint64_t totalsz, void *context);
-} ElaFileProgressCallbacks;
+} CarrierFileProgressCallbacks;
 
 typedef struct EasyFile {
-    ElaFileTransfer         *ft;
+    CarrierFileTransfer         *ft;
 
-    ElaFileProgressCallbacks callbacks;
+    CarrierFileProgressCallbacks callbacks;
     void                    *callbacks_context;
 
     FILE                    *fp;
-    char                    fileid[ELA_MAX_FILE_ID_LEN + 1];
+    char                    fileid[CARRIER_MAX_FILE_ID_LEN + 1];
     char                    filename[PATH_MAX];
     uint64_t                filesz;
     uint64_t                offset;
@@ -91,16 +91,16 @@ typedef struct EasyFile {
     int                     carrier_errno;
 } EasyFile;
 
-int ela_file_send(ElaCarrier *w, const char *address, const char *filename,
-                  ElaFileProgressCallbacks *callbacks, void *context);
+int carrier_file_send(Carrier *w, const char *address, const char *filename,
+                      CarrierFileProgressCallbacks *callbacks, void *context);
 
-int ela_file_recv(ElaCarrier *w, const char *address, const char *filename,
-                  ElaFileProgressCallbacks *callbacks, void *context);
+int carrier_file_recv(Carrier *w, const char *address, const char *filename,
+                      CarrierFileProgressCallbacks *callbacks, void *context);
 
-void ela_set_error(int error);
+void carrier_set_error(int error);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __EASYFILE_H__ */
+#endif /* __ELASTOS_CARRIER_EASYFILE_H__ */

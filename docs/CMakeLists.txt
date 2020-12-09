@@ -28,8 +28,8 @@ set(CARRIERAPI_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../src")
 set(CARRIERAPI_DOC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/source")
 
 set(CARRIERAPI_SRC_HEADERS
-    "${CARRIERAPI_SRC_DIR}/carrier/ela_carrier.h"
-    "${CARRIERAPI_SRC_DIR}/session/ela_session.h")
+    "${CARRIERAPI_SRC_DIR}/carrier/carrier.h"
+    "${CARRIERAPI_SRC_DIR}/session/carrier_session.h")
 
 file(GLOB_RECURSE CARRIERAPI_DOC_SOURCES *)
 

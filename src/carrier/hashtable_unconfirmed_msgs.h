@@ -20,83 +20,64 @@
  * SOFTWARE.
  */
 
-#ifndef __CARRIER_BULKMSGS_H__
-#define __CARRIER_BULKMSGS_H__
+#ifndef __CARRIER_UNCONFIRMED_MSGS_H__
+#define __CARRIER_UNCONFIRMED_MSGS_H__
 
-#include <assert.h>
 #include <crystal.h>
+#include "carrier.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct BulkMsg {
-    char ext[ELA_MAX_EXTENSION_NAME_LEN + 1];
-    char friendid[ELA_MAX_ID_LEN + 1];
-    int64_t tid;
-    uint8_t *data;
-    size_t  data_cap;
-    size_t  data_offset;
-    struct timeval expire_time;
+typedef struct UnconfirmedMsg {
     hash_entry_t he;
-} BulkMsg;
+
+    char to[CARRIER_MAX_ID_LEN + 1];
+    uint32_t msgid;
+    int offline_sending;
+
+    CarrierFriendMessageReceiptCallback *callback;
+    void *context;
+
+    size_t size;
+    uint8_t data[0];
+} UnconfirmedMsg;
 
 static inline
-int bulkmsgs_key_compare(const void *key1, size_t len1,
-                         const void *key2, size_t len2)
+hashtable_t *unconfirmed_create()
 {
-    return memcmp(key1, key2, sizeof(int64_t));
+    return hashtable_create(0, 0, NULL, NULL);
 }
 
 static inline
-hashtable_t *bulkmsgs_create(int capacity)
-{
-    return hashtable_create(capacity, 1, NULL, bulkmsgs_key_compare);
-}
-
-static inline
-BulkMsg *bulkmsgs_get(hashtable_t *msgs, int64_t *tid)
-{
-    assert(msgs);
-    assert(tid);
-
-    return (BulkMsg *)hashtable_get(msgs, tid, sizeof(int64_t));
-}
-
-static inline
-int bulkmsgs_exist(hashtable_t *msgs, int64_t *tid)
+UnconfirmedMsg *unconfirmed_get(hashtable_t *msgs, uint32_t msgid)
 {
     assert(msgs);
-    assert(tid);
+    assert(msgid);
 
-    return hashtable_exist(msgs, tid, sizeof(int64_t));
+    return hashtable_get(msgs, &msgid, sizeof(msgid));
 }
 
 static inline
-void bulkmsgs_put(hashtable_t *msgs, BulkMsg *msg)
+void unconfirmed_put(hashtable_t *msgs, UnconfirmedMsg *item)
 {
     assert(msgs);
-    assert(msg);
+    assert(item);
 
-    msg->he.data = msg;
-    msg->he.key = &msg->tid;
-    msg->he.keylen = sizeof(msg->tid);
+    item->he.data = item;
+    item->he.key = &item->msgid;
+    item->he.keylen = sizeof(item->msgid);
 
-    hashtable_put(msgs, &msg->he);
+    hashtable_put(msgs, &item->he);
 }
 
 static inline
-void bulkmsgs_remove(hashtable_t *msgs, int64_t *tid)
+UnconfirmedMsg *unconfirmed_remove(hashtable_t *msgs, int32_t msgid)
 {
     assert(msgs);
-    assert(tid);
-
-    deref(hashtable_remove(msgs, tid, sizeof(int64_t)));
+    return hashtable_remove(msgs, &msgid, sizeof(msgid));
 }
 
 static inline
-hashtable_iterator_t *bulkmsgs_iterate(hashtable_t *msgs,
-                                       hashtable_iterator_t *iterator)
+hashtable_iterator_t *unconfirmed_iterate(hashtable_t *msgs,
+                                          hashtable_iterator_t *iterator)
 {
     assert(msgs);
     assert(iterator);
@@ -105,7 +86,7 @@ hashtable_iterator_t *bulkmsgs_iterate(hashtable_t *msgs,
 }
 
 static inline
-int bulkmsgs_iterator_next(hashtable_iterator_t *iterator, BulkMsg **item)
+int unconfirmed_iterator_next(hashtable_iterator_t *iterator, UnconfirmedMsg **item)
 {
     assert(item);
     assert(iterator);
@@ -114,21 +95,17 @@ int bulkmsgs_iterator_next(hashtable_iterator_t *iterator, BulkMsg **item)
 }
 
 static inline
-int bulkmsgs_iterator_has_next(hashtable_iterator_t *iterator)
+int unconfirmed_iterator_has_next(hashtable_iterator_t *iterator)
 {
     assert(iterator);
     return hashtable_iterator_has_next(iterator);
 }
 
 static inline
-int bulkmsgs_iterator_remove(hashtable_iterator_t *iterator)
+int unconfirmed_iterator_remove(hashtable_iterator_t *iterator)
 {
     assert(iterator);
     return hashtable_iterator_remove(iterator);
 }
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif // __CARRIER_BULKMSGS_H__
+#endif // __CARRIER_UNCONFIRMED_MSGS_H__

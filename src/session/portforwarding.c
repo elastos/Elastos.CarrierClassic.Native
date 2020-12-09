@@ -37,7 +37,7 @@
 
 #include <crystal.h>
 
-#include "ela_session.h"
+#include "carrier_session.h"
 #include "session.h"
 #include "fdset.h"
 #include "services.h"
@@ -51,7 +51,7 @@ bool tcp_portforwarding_channel_open(Channel *ch, const char *cookie,
                                      void *context)
 {
     MultiplexHandler *handler = (MultiplexHandler *)context;
-    ElaStream *s = handler->base.stream;
+    CarrierStream *s = handler->base.stream;
     hashtable_t *services;
     Service *svc;
     SOCKET sock;
@@ -239,7 +239,7 @@ void handle_tcp_portforwarding_channel(TcpChannel *ch, void *context)
 
     flex_buffer_alloca(buf, FLEX_BUFFER_MAX_LEN, FLEX_PADDING_LEN);
     bytes = recv(ch->sock, flex_buffer_mutable_ptr(buf),
-                 ELA_MAX_USER_DATA_LEN, 0);
+                 CARRIER_MAX_USER_DATA_LEN, 0);
     if (bytes <= 0) {
         // Channel socket closed.
         // TODO: Error close
@@ -394,7 +394,7 @@ int portforwarding_worker_start(PortForwardingWorker *worker)
     vlogD("Stream: %d portforwarding worker started %s.",
           worker->mux->base.stream->id, (rc == 0 ? "success" : "failed"));
 
-    return (rc != 0) ? ELA_SYS_ERROR(rc) : 0;
+    return (rc != 0) ? CARRIER_SYS_ERROR(rc) : 0;
 }
 
 static
@@ -438,21 +438,21 @@ int portforwarding_open(PortForwardingWorker *worker, const char *service,
     pf = (PortForwarding *)rc_zalloc(sizeof(PortForwarding) + strlen(service) + 1,
                                      portforwarding_destroy);
     if (!pf)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
     type = protocol == PortForwardingProtocol_TCP ? SOCK_STREAM : SOCK_DGRAM;
     pf->sock = socket_create(type, host, port);
 
     if (pf->sock == INVALID_SOCKET) {
         deref(pf);
-        return ELA_SYS_ERROR(socket_errno());
+        return CARRIER_SYS_ERROR(socket_errno());
     }
 
     if (protocol == PortForwardingProtocol_TCP) {
         int rc = listen(pf->sock, 16);
         if (rc < 0) {
             deref(pf);
-            return ELA_SYS_ERROR(socket_errno());
+            return CARRIER_SYS_ERROR(socket_errno());
         }
     }
 
@@ -461,7 +461,7 @@ int portforwarding_open(PortForwardingWorker *worker, const char *service,
         deref(pf);
         vlogE("Stream: %d multiplexer handler has too many portforwardings!",
               worker->mux->base.stream->id);
-        return ELA_GENERAL_ERROR(ELAERR_LIMIT_EXCEEDED);
+        return CARRIER_GENERAL_ERROR(ERROR_LIMIT_EXCEEDED);
     }
 
     pf->id = id;
@@ -522,7 +522,7 @@ int portforwarding_worker_create(MultiplexHandler *handler,
     wk = (PortForwardingWorker *)rc_zalloc(sizeof(PortForwardingWorker),
                                            portforwarding_worker_destroy);
     if (!wk)
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
 
     wk->mux = handler;
     wk->start = portforwarding_worker_start;
@@ -533,19 +533,19 @@ int portforwarding_worker_create(MultiplexHandler *handler,
     rc = fdset_init(&wk->fdset);
     if (rc != 0) {
         deref(wk);
-        return ELA_SYS_ERROR(rc);
+        return CARRIER_SYS_ERROR(rc);
     }
 
     wk->portforwardings = portforwardings_create(7);
     if (!wk->portforwardings) {
         deref(wk);
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
     }
 
     rc = ids_heap_init((ids_heap_t *)&wk->pf_ids, MAX_PORTFORWARDING_ID);
     if (rc < 0) {
         deref(wk);
-        return ELA_GENERAL_ERROR(ELAERR_OUT_OF_MEMORY);
+        return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
     }
 
     multiplex_handler_set_channel_callbacks(handler,

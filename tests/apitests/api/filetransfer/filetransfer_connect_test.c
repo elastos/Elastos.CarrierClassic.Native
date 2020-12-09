@@ -25,15 +25,15 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
-#include "ela_filetransfer.h"
+#include <carrier.h>
+#include "carrier_filetransfer.h"
 
 #include "config.h"
 #include "cond.h"
 #include "test_helper.h"
 
 struct CarrierContextExtra {
-    ElaFileTransferInfo ft_info;
+    CarrierFileTransferInfo ft_info;
     bool has_ft_info;
 };
 
@@ -47,23 +47,23 @@ static inline void wakeup(void* context)
     cond_signal(((CarrierContext *)context)->cond);
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info, void *context)
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info, void *context)
 {
     wakeup(context);
 }
 
-static void friend_removed_cb(ElaCarrier *w, const char *friendid, void *context)
+static void friend_removed_cb(Carrier *w, const char *friendid, void *context)
 {
     wakeup(context);
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctxt = (CarrierContext *)context;
 
@@ -72,7 +72,7 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void ft_state_changed_cb(ElaFileTransfer *filetransfer,
+static void ft_state_changed_cb(CarrierFileTransfer *filetransfer,
                                 FileTransferConnection state, void *context)
 {
     TestContext *wctx = (TestContext *)context;
@@ -83,9 +83,9 @@ static void ft_state_changed_cb(ElaFileTransfer *filetransfer,
     cond_signal(ctx->ft_cond);
 }
 
-static void ft_connect_cb(ElaCarrier *carrier,
+static void ft_connect_cb(Carrier *carrier,
                           const char *address,
-                          const ElaFileTransferInfo *fileinfo,
+                          const CarrierFileTransferInfo *fileinfo,
                           void *context)
 {
     TestContext *wctx = (TestContext *)context;
@@ -94,13 +94,13 @@ static void ft_connect_cb(ElaCarrier *carrier,
 
     if (fileinfo) {
         extra->has_ft_info = true;
-        memcpy(&extra->ft_info, fileinfo, sizeof(ElaFileTransferInfo));
+        memcpy(&extra->ft_info, fileinfo, sizeof(CarrierFileTransferInfo));
     }
 
     cond_signal(ctx->ft_cond);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -116,7 +116,7 @@ static ElaCallbacks callbacks = {
     .friend_invite   = NULL
 };
 
-static ElaFileTransferCallbacks ft_cbs = {
+static CarrierFileTransferCallbacks ft_cbs = {
     .state_changed = ft_state_changed_cb,
     .file = NULL,
     .pull = NULL,
@@ -166,7 +166,7 @@ static void test_filetransfer_connect(void)
 
 static void test_filetransfer_connect_with_file_info(void)
 {
-    ElaFileTransferInfo ft_info = {0};
+    CarrierFileTransferInfo ft_info = {0};
 
     strcpy(ft_info.filename, "test-file-name");
     ft_info.size = 1;
@@ -179,8 +179,8 @@ static void test_filetransfer_accept_connect(void)
 {
     CarrierContext *wctxt = test_context.carrier;
     CarrierContextExtra *wextra = wctxt->extra;
-    ElaFileTransferInfo *ft_info;
-    char userid[ELA_MAX_ID_LEN + 1] = {0};
+    CarrierFileTransferInfo *ft_info;
+    char userid[CARRIER_MAX_ID_LEN + 1] = {0};
     char cmd[32] = {0};
     char result[32] = {0};
     uint8_t ft_con_state_bits = 0;
@@ -190,9 +190,9 @@ static void test_filetransfer_accept_connect(void)
 
     rc = add_friend_anyway(&test_context, robotid, robotaddr);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
-    CU_ASSERT_TRUE_FATAL(ela_is_friend(wctxt->carrier, robotid));
+    CU_ASSERT_TRUE_FATAL(carrier_is_friend(wctxt->carrier, robotid));
 
-    rc = ela_filetransfer_init(wctxt->carrier, ft_connect_cb, &test_context);
+    rc = carrier_filetransfer_init(wctxt->carrier, ft_connect_cb, &test_context);
     CU_ASSERT_EQUAL(rc, 0);
 
     rc = write_cmd("ft_init\n");
@@ -203,7 +203,7 @@ static void test_filetransfer_accept_connect(void)
     CU_ASSERT_TRUE_FATAL(strcmp(cmd, "ft_init") == 0);
     CU_ASSERT_TRUE_FATAL(strcmp(result, "succeeded") == 0);
 
-    ela_get_userid(wctxt->carrier, userid, sizeof(userid));
+    carrier_get_userid(wctxt->carrier, userid, sizeof(userid));
     rc = write_cmd("ft_new %s\n", userid);
     CU_ASSERT_FATAL(rc > 0);
 
@@ -224,11 +224,11 @@ static void test_filetransfer_accept_connect(void)
     cond_wait(wctxt->ft_cond);
 
     ft_info = wextra->has_ft_info ? &wextra->ft_info : NULL;
-    wctxt->ft = ela_filetransfer_new(wctxt->carrier, robotid, ft_info,
+    wctxt->ft = carrier_filetransfer_new(wctxt->carrier, robotid, ft_info,
                                      wctxt->ft_cbs, &test_context);
     CU_ASSERT_PTR_NOT_NULL_FATAL(wctxt->ft);
 
-    rc = ela_filetransfer_accept_connect(wctxt->ft);
+    rc = carrier_filetransfer_accept_connect(wctxt->ft);
     CU_ASSERT_EQUAL(rc, 0);
 
     /* Wait for the ft_state_changed_cb to be invoked. After its invocation,
@@ -261,8 +261,8 @@ static void test_filetransfer_accept_connect(void)
     ft_con_state_bits |= (1 << FileTransferConnection_closed);
     CU_ASSERT_EQUAL(wctxt->ft_con_state_bits, ft_con_state_bits);
 
-    ela_filetransfer_close(wctxt->ft);
-    ela_filetransfer_cleanup(wctxt->carrier);
+    carrier_filetransfer_close(wctxt->ft);
+    carrier_filetransfer_cleanup(wctxt->carrier);
 }
 
 static CU_TestInfo cases[] = {

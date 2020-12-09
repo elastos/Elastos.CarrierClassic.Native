@@ -1,4 +1,4 @@
-project(elastos-filetransfer C)
+project(carrier-filetransfer C)
 cmake_policy(SET CMP0054 NEW)
 
 include(CarrierDefaults)
@@ -49,7 +49,7 @@ set(SRC
     easyfile.c)
 
 set(HEADERS
-    ela_filetransfer.h)
+    carrier_filetransfer.h)
 
 if(WIN32)
     set(SYSTEM_LIBS Ws2_32 )
@@ -81,8 +81,8 @@ endif()
 
 set(LIBS
     crystal
-    elacarrier
-    elasession)
+    carrier
+    carriersession)
 
 if(WIN32)
     set(LIBS
@@ -92,30 +92,30 @@ endif()
 
 add_definitions(-DCARRIER_BUILD)
 
-add_custom_target(ela-filetransfer)
+add_custom_target(carrier-filetransfer)
 
 if(ENABLE_STATIC)
-    add_library(elafiletrans-static STATIC ${SRC})
+    add_library(carrierfiletrans-static STATIC ${SRC})
 
-    target_compile_definitions(elafiletrans-static PRIVATE CARRIER_STATIC CRYSTAL_STATIC)
-    set_target_properties(elafiletrans-static PROPERTIES OUTPUT_NAME elafiletrans)
-    add_dependencies(ela-filetransfer elafiletrans-static)
+    target_compile_definitions(carrierfiletrans-static PRIVATE CARRIER_STATIC CRYSTAL_STATIC)
+    set_target_properties(carrierfiletrans-static PROPERTIES OUTPUT_NAME carrierfiletrans)
+    add_dependencies(carrier-filetransfer carrierfiletrans-static)
 
-    install(TARGETS elafiletrans-static
+    install(TARGETS carrierfiletrans-static
         RUNTIME DESTINATION "bin"
         ARCHIVE DESTINATION "lib"
         LIBRARY DESTINATION "lib")
 endif()
 
 if(ENABLE_SHARED)
-    add_library(elafiletrans-shared SHARED ${SRC})
+    add_library(carrierfiletrans-shared SHARED ${SRC})
 
-    target_compile_definitions(elafiletrans-shared PRIVATE CARRIER_DYNAMIC CRYSTAL_DYNAMIC)
-    set_target_properties(elafiletrans-shared PROPERTIES OUTPUT_NAME elafiletrans)
-    target_link_libraries(elafiletrans-shared ${LIBS} ${SYSTEM_LIBS} )
-    add_dependencies(ela-filetransfer elafiletrans-shared)
+    target_compile_definitions(carrierfiletrans-shared PRIVATE CARRIER_DYNAMIC CRYSTAL_DYNAMIC)
+    set_target_properties(carrierfiletrans-shared PROPERTIES OUTPUT_NAME carrierfiletrans)
+    target_link_libraries(carrierfiletrans-shared ${LIBS} ${SYSTEM_LIBS})
+    add_dependencies(carrier-filetransfer carrierfiletrans-shared)
 
-    install(TARGETS elafiletrans-shared
+    install(TARGETS carrierfiletrans-shared
         RUNTIME DESTINATION "bin"
         ARCHIVE DESTINATION "lib"
         LIBRARY DESTINATION "lib")

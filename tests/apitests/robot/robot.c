@@ -37,9 +37,9 @@
 
 #include <crystal.h>
 
-#include "ela_carrier.h"
-#include "ela_session.h"
-#include "ela_filetransfer.h"
+#include <carrier.h>
+#include <carrier_session.h>
+#include "carrier_filetransfer.h"
 
 #include "test_context.h"
 #include "test_helper.h"
@@ -47,8 +47,8 @@
 #include "cmd.h"
 #include "robot.h"
 
-static ElaFileTransferInfo file_transfer_info;
-static ElaFileTransferCallbacks file_transfer_cbs;
+static CarrierFileTransferInfo file_transfer_info;
+static CarrierFileTransferCallbacks file_transfer_cbs;
 
 static CarrierContextExtra extra = {
     .tid = 0,
@@ -70,7 +70,7 @@ static CarrierContextExtra extra = {
     .recv_file = {"ReceivedFile"}
 };
 
-static void print_user_info(const ElaUserInfo* info)
+static void print_user_info(const CarrierUserInfo* info)
 {
     vlogD("       userid: %s", info->userid);
     vlogD("         name: %s", info->name);
@@ -82,7 +82,7 @@ static void print_user_info(const ElaUserInfo* info)
     vlogD("       region: %s", info->region);
 }
 
-void print_friend_info(const ElaFriendInfo* info, int order)
+void print_friend_info(const CarrierFriendInfo* info, int order)
 {
     if (order > 0)
         vlogD(" friend %d:", order);
@@ -92,7 +92,7 @@ void print_friend_info(const ElaFriendInfo* info, int order)
     vlogD("     presence: %d", info->presence);
 }
 
-static void idle_cb(ElaCarrier *w, void *context)
+static void idle_cb(Carrier *w, void *context)
 {
     CarrierContextExtra *extra = ((TestContext*)context)->carrier->extra;
     struct timeval now;
@@ -124,18 +124,18 @@ static void idle_cb(ElaCarrier *w, void *context)
     pthread_mutex_unlock(&extra->mutex);
 }
 
-static void connection_status_cb(ElaCarrier *w, ElaConnectionStatus status,
+static void connection_status_cb(Carrier *w, CarrierConnectionStatus status,
                                  void *context)
 {
     vlogD("Robot connection status changed -> %s", connection_str(status));
 }
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     CarrierContextExtra *extra = ((TestContext*)context)->carrier->extra;
 
-    char address[ELA_MAX_ADDRESS_LEN + 1];
-    char robotid[ELA_MAX_ID_LEN + 1];
+    char address[CARRIER_MAX_ADDRESS_LEN + 1];
+    char robotid[CARRIER_MAX_ID_LEN + 1];
     static bool notified = false;
 
     vlogI("Robot is ready");
@@ -143,21 +143,21 @@ static void ready_cb(ElaCarrier *w, void *context)
     if (notified)
         return;
 
-    ela_get_userid(w, robotid, sizeof(robotid));
-    ela_get_address(w, address, sizeof(address));
+    carrier_get_userid(w, robotid, sizeof(robotid));
+    carrier_get_address(w, address, sizeof(address));
     write_ack("ready %s %s\n", robotid, address);
     notified = true;
 }
 
 static
-void self_info_cb(ElaCarrier *w, const ElaUserInfo *info, void *context)
+void self_info_cb(Carrier *w, const CarrierUserInfo *info, void *context)
 {
     vlogD("Received current user information:");
     print_user_info(info);
 }
 
 static
-bool friend_list_cb(ElaCarrier* w, const ElaFriendInfo *info, void *context)
+bool friend_list_cb(Carrier* w, const CarrierFriendInfo *info, void *context)
 {
     static bool grouped = false;
     static int idx = 1;
@@ -180,8 +180,8 @@ bool friend_list_cb(ElaCarrier* w, const ElaFriendInfo *info, void *context)
     return true;
 }
 
-static void friend_connection_cb(ElaCarrier *w, const char *friendid,
-                                 ElaConnectionStatus status, void *context)
+static void friend_connection_cb(Carrier *w, const char *friendid,
+                                 CarrierConnectionStatus status, void *context)
 {
     CarrierContext *wctx = ((TestContext *)context)->carrier;
 
@@ -191,8 +191,8 @@ static void friend_connection_cb(ElaCarrier *w, const char *friendid,
     status_cond_signal(wctx->friend_status_cond);
 }
 
-static void friend_info_cb(ElaCarrier *w, const char *friendid,
-                          const ElaFriendInfo *info, void *context)
+static void friend_info_cb(Carrier *w, const char *friendid,
+                          const CarrierFriendInfo *info, void *context)
 {
     vlogD("Friend %s's information changed ->", friendid);
     print_friend_info(info, 0);
@@ -204,14 +204,14 @@ static const char *presence_name[] = {
     "Busy"
 };
 
-static void friend_presence_cb(ElaCarrier *w, const char *friendid,
-                               ElaPresenceStatus status, void *context)
+static void friend_presence_cb(Carrier *w, const char *friendid,
+                               CarrierPresenceStatus status, void *context)
 {
     vlogI("Friend %s's presence changed -> %s", friendid,
           presence_name[status]);
 }
 
-static void* ela_accept_friend_entry(void *arg)
+static void* carrier_accept_friend_entry(void *arg)
 {
     TestContext *ctx = (TestContext *)arg;
     CarrierContext *wctx = ctx->carrier;
@@ -224,8 +224,8 @@ static void* ela_accept_friend_entry(void *arg)
     return NULL;
 }
 
-static void friend_request_cb(ElaCarrier *w, const char *userid,
-                const ElaUserInfo *info, const char *hello, void *context)
+static void friend_request_cb(Carrier *w, const char *userid,
+                const CarrierUserInfo *info, const char *hello, void *context)
 {
     TestContext *ctx = (TestContext *)context;
     CarrierContext *wctx = ctx->carrier;
@@ -260,7 +260,7 @@ static void friend_request_cb(ElaCarrier *w, const char *userid,
             pthread_t tid;
 
             strcpy(wctx->extra->userid, userid);
-            pthread_create(&tid, 0, &ela_accept_friend_entry, ctx);
+            pthread_create(&tid, 0, &carrier_accept_friend_entry, ctx);
             pthread_detach(tid);
         } else {
             write_ack("hello %s\n", hello);
@@ -273,7 +273,7 @@ static void friend_request_cb(ElaCarrier *w, const char *userid,
     }
 }
 
-static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info,
+static void friend_added_cb(Carrier *w, const CarrierFriendInfo *info,
                             void *context)
 {
     CarrierContext *wctx = ((TestContext *)context)->carrier;
@@ -283,7 +283,7 @@ static void friend_added_cb(ElaCarrier *w, const ElaFriendInfo *info,
     cond_signal(wctx->cond);
 }
 
-static void friend_removed_cb(ElaCarrier* w, const char* friendid, void *context)
+static void friend_removed_cb(Carrier* w, const char* friendid, void *context)
 {
     CarrierContext *wctx = ((TestContext *)context)->carrier;
 
@@ -291,7 +291,7 @@ static void friend_removed_cb(ElaCarrier* w, const char* friendid, void *context
     cond_signal(wctx->cond);
 }
 
-static void friend_message_cb(ElaCarrier *w, const char *from,
+static void friend_message_cb(Carrier *w, const char *from,
                               const void *msg, size_t len,
                               int64_t timestamp, bool is_offline,
                               void *context)
@@ -340,7 +340,7 @@ static void friend_message_cb(ElaCarrier *w, const char *from,
     pthread_mutex_unlock(&extra->mutex);
 }
 
-static void friend_invite_cb(ElaCarrier *w, const char *from, const char *bundle,
+static void friend_invite_cb(Carrier *w, const char *from, const char *bundle,
                              const void *data, size_t len, void *context)
 {
     CarrierContextExtra *extra = ((TestContext*)context)->carrier->extra;
@@ -351,7 +351,7 @@ static void friend_invite_cb(ElaCarrier *w, const char *from, const char *bundle
     if (bundle)
         extra->bundle = strdup(bundle);
 
-    if (len <= ELA_MAX_APP_MESSAGE_LEN)
+    if (len <= CARRIER_MAX_APP_MESSAGE_LEN)
         write_ack("data %.*s\n", len, data);
     else {
         extra->data = (char*)malloc(len);
@@ -361,7 +361,7 @@ static void friend_invite_cb(ElaCarrier *w, const char *from, const char *bundle
     }
 }
 
-static void group_invite_cb(ElaCarrier *w, const char *from,
+static void group_invite_cb(Carrier *w, const char *from,
                             const void *cookie, size_t len, void *context)
 {
     TestContext *ctx = (TestContext *)context;
@@ -374,7 +374,7 @@ static void group_invite_cb(ElaCarrier *w, const char *from,
     write_ack("ginvite received\n");
 }
 
-static void group_connected_cb(ElaCarrier *carrier, const char *groupid,
+static void group_connected_cb(Carrier *carrier, const char *groupid,
                                void *context)
 {
     TestContext *ctx = (TestContext *)context;
@@ -385,7 +385,7 @@ static void group_connected_cb(ElaCarrier *carrier, const char *groupid,
     cond_signal(wctx->group_cond);
 }
 
-static void group_message_cb(ElaCarrier *carrier, const char *groupid,
+static void group_message_cb(Carrier *carrier, const char *groupid,
                       const char *from, const void *message, size_t length,
                       void *context)
 {
@@ -397,13 +397,13 @@ static void group_message_cb(ElaCarrier *carrier, const char *groupid,
     write_ack("gmsg %.*s\n", length, message);
 }
 
-static void group_title_cb(ElaCarrier *carrier, const char *groupid,
+static void group_title_cb(Carrier *carrier, const char *groupid,
                         const char *from, const char *title, void *context)
 {
     write_ack("gtitle %s\n", title);
 }
 
-static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
+static void peer_list_changed_cb(Carrier *carrier, const char *groupid,
                                  void *context)
 {
     TestContext *ctx = (TestContext *)context;
@@ -412,7 +412,7 @@ static void peer_list_changed_cb(ElaCarrier *carrier, const char *groupid,
     cond_signal(wctx->group_cond);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = idle_cb,
     .connection_status = connection_status_cb,
     .ready           = ready_cb,
@@ -435,13 +435,13 @@ static ElaCallbacks callbacks = {
     }
 };
 
-static void ft_state_changed_cb(ElaFileTransfer *filetransfer,
+static void ft_state_changed_cb(CarrierFileTransfer *filetransfer,
                                 FileTransferConnection state, void *context)
 {
 
 }
 
-static void ft_file_cb(ElaFileTransfer *filetransfer, const char *fileid,
+static void ft_file_cb(CarrierFileTransfer *filetransfer, const char *fileid,
                       const char *filename, uint64_t size, void *context)
 {
     TestContext *ctx = (TestContext *)context;
@@ -452,18 +452,18 @@ static void ft_file_cb(ElaFileTransfer *filetransfer, const char *fileid,
     write_ack("%s %s %d\n", filename, fileid, size);
 }
 
-static void ft_pull_cb(ElaFileTransfer *filetransfer, const char *fileid,
+static void ft_pull_cb(CarrierFileTransfer *filetransfer, const char *fileid,
                        uint64_t offset, void *context)
 {
 
 }
 
-static bool ft_data_cb(ElaFileTransfer *filetransfer, const char *fileid,
+static bool ft_data_cb(CarrierFileTransfer *filetransfer, const char *fileid,
                        const uint8_t *data, size_t length, void *context)
 {
     const uint8_t *ack_data = data;
 
-    if (length == ELA_MAX_USER_DATA_LEN - 1)
+    if (length == CARRIER_MAX_USER_DATA_LEN - 1)
         ack_data = (const uint8_t*)"bigdata";
 
     if (data == NULL)
@@ -473,25 +473,25 @@ static bool ft_data_cb(ElaFileTransfer *filetransfer, const char *fileid,
     return true;
 }
 
-static void ft_pending_cb(ElaFileTransfer *filetransfer, const char *fileid,
+static void ft_pending_cb(CarrierFileTransfer *filetransfer, const char *fileid,
                           void *context)
 {
 
 }
 
-static void ft_resume_cb(ElaFileTransfer *filetransfer, const char *fileid,
+static void ft_resume_cb(CarrierFileTransfer *filetransfer, const char *fileid,
                          void *context)
 {
 
 }
 
-static void ft_cancel_cb(ElaFileTransfer *filetransfer, const char *fileid,
+static void ft_cancel_cb(CarrierFileTransfer *filetransfer, const char *fileid,
                          int status, const char *reason, void *context)
 {
 
 }
 
-static ElaFileTransferCallbacks ft_cbs = {
+static CarrierFileTransferCallbacks ft_cbs = {
     .state_changed = ft_state_changed_cb,
     .file = ft_file_cb,
     .pull = ft_pull_cb,
@@ -501,7 +501,7 @@ static ElaFileTransferCallbacks ft_cbs = {
     .cancel = ft_cancel_cb
 };
 
-static ElaFileTransferInfo ft_info = {
+static CarrierFileTransferInfo ft_info = {
     .filename = "robotfile",
     .fileid = {0},
     .size = 1
@@ -526,12 +526,12 @@ CarrierContext carrier_context = {
 
 void *carrier_run_entry(void *arg)
 {
-    ElaCarrier *w;
+    Carrier *w;
     int rc;
     char datadir[PATH_MAX];
     char logfile[PATH_MAX];
 
-    ElaOptions opts = global_config.shared_options;
+    CarrierOptions opts = global_config.shared_options;
     opts.log_level = global_config.robot.loglevel;
 
     opts.persistent_location = datadir;
@@ -544,18 +544,18 @@ void *carrier_run_entry(void *arg)
         opts.log_file = NULL;
     }
 
-    w = ela_new(&opts, &callbacks, &test_context);
+    w = carrier_new(&opts, &callbacks, &test_context);
     if (!w) {
         write_ack("failed\n");
-        vlogE("Carrier new error (0x%x)", ela_get_error());
+        vlogE("Carrier new error (0x%x)", carrier_get_error());
         return NULL;
     }
 
     carrier_context.carrier = w;
-    rc = ela_run(w, 10);
+    rc = carrier_run(w, 10);
     if (rc != 0) {
-        printf("Error: start carrier loop error %d.\n", ela_get_error());
-        ela_kill(w);
+        printf("Error: start carrier loop error %d.\n", carrier_get_error());
+        carrier_kill(w);
     }
     carrier_context.carrier = NULL;
 

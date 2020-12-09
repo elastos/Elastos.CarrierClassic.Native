@@ -20,20 +20,20 @@
  * SOFTWARE.
  */
 
-#ifndef __FRIENDINFOS_H__
-#define __FRIENDINFOS_H__
+#ifndef __CARRIER_FRIENDINFOS_H__
+#define __CARRIER_FRIENDINFOS_H__
 
 #include <assert.h>
 #include <stddef.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include "carrier.h"
 
 typedef struct FriendInfo {
     hash_entry_t he;
 
     uint32_t friend_number;
-    ElaFriendInfo info;
+    CarrierFriendInfo info;
 } FriendInfo;
 
 static
@@ -121,4 +121,4 @@ int friends_iterator_has_next(hashtable_iterator_t *iterator)
     return hashtable_iterator_has_next(iterator);
 }
 
-#endif /* __FRIENDINFOS_H__ */
+#endif /* __CARRIER_FRIENDINFOS_H__ */

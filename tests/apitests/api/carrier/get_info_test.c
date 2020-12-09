@@ -25,16 +25,16 @@
 #include <CUnit/Basic.h>
 #include <crystal.h>
 
-#include "ela_carrier.h"
+#include <carrier.h>
 
 #include "test_helper.h"
 
-static void ready_cb(ElaCarrier *w, void *context)
+static void ready_cb(Carrier *w, void *context)
 {
     cond_signal(((CarrierContext *)context)->ready_cond);
 }
 
-static ElaCallbacks callbacks = {
+static CarrierCallbacks callbacks = {
     .idle            = NULL,
     .connection_status = NULL,
     .ready           = ready_cb,
@@ -70,11 +70,11 @@ static TestContext test_context = {
 
 static void test_get_self_info(void)
 {
-    ElaCarrier *w = test_context.carrier->carrier;
+    Carrier *w = test_context.carrier->carrier;
     int rc;
     char *p;
-    ElaUserInfo me;
-    ElaUserInfo info = {
+    CarrierUserInfo me;
+    CarrierUserInfo info = {
         .name   = {"zhangsan"},
         .description = { "We all want a code to live by." },
         .gender = { "male" },
@@ -86,13 +86,13 @@ static void test_get_self_info(void)
 
     memset(&me, 0, sizeof(me));
 
-    p = ela_get_userid(w, info.userid, sizeof(info.userid));
+    p = carrier_get_userid(w, info.userid, sizeof(info.userid));
     CU_ASSERT_PTR_NOT_NULL_FATAL(p);
 
-    rc = ela_set_self_info(w, &info);
+    rc = carrier_set_self_info(w, &info);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
-    rc = ela_get_self_info(w, &me);
+    rc = carrier_get_self_info(w, &me);
     CU_ASSERT_EQUAL_FATAL(rc, 0);
 
     CU_ASSERT_STRING_EQUAL(me.userid, info.userid);

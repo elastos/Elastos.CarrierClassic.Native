@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-namespace elacp;
+namespace carrier;
 
 table userinfo {
     avatar : bool = false;

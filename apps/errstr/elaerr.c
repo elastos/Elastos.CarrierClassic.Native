@@ -33,10 +33,9 @@
 #endif
 
 #include <crystal.h>
+#include <carrier.h>
 
-#include <ela_carrier.h>
-
-extern void ela_session_register_strerror();
+extern void carrier_session_register_strerror();
 
 static void show_error(void)
 {
@@ -129,7 +128,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    ela_session_register_strerror();
+    carrier_session_register_strerror();
 
     errstr = ela_get_strerror(errnum, strerr_buf, sizeof(strerr_buf));
 
