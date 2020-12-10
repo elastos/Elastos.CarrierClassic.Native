@@ -1092,7 +1092,7 @@ ssize_t carrier_stream_write(CarrierSession *ws, int stream,
     if (sent < 0)
         carrier_set_error((int)sent);
     else
-        vlogD("Session: Stream %d sent %d bytes data.", s->id, (int)len);
+        vlogV("Session: Stream %d sent %d bytes data.", s->id, (int)len);
 
     deref(s);
     return sent < 0 ? -1: sent;
