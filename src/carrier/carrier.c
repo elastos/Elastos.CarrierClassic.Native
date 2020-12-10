@@ -1867,7 +1867,7 @@ void transacted_callback_expire(Carrier *w, TransactedCallback *callback)
     callback_func = (CarrierFriendInviteResponseCallback *)callback->callback_func;
     assert(callback_func);
 
-    callback_func(w, friendid, callback->bundle, ELA_STATUS_TIMEOUT, "timeout",
+    callback_func(w, friendid, callback->bundle, CARRIER_STATUS_TIMEOUT, "timeout",
                   NULL, 0, callback->callback_context);
 }
 

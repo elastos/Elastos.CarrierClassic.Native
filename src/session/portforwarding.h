@@ -35,7 +35,7 @@
 
 #define MAX_PORTFORWARDING_ID           64
 
-typedef struct ElaSession ElaSession;
+typedef struct CarrierSession CarrierSession;
 
 typedef struct Service {
     const char *name;

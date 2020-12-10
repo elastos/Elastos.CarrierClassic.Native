@@ -80,10 +80,10 @@ typedef enum RUNNING_MODE {
 } RUNNING_MODE;
 
 static bool g_connected = false;
-static char g_peer_id[ELA_MAX_ID_LEN+1] = {0};
+static char g_peer_id[CARRIER_MAX_ID_LEN+1] = {0};
 static RUNNING_MODE g_mode = PASSIVE_MODE;
 static char g_transferred_file[1024] = {0};
-static char g_friend_address[ELA_MAX_ADDRESS_LEN + 1] = {0};
+static char g_friend_address[CARRIER_MAX_ADDRESS_LEN + 1] = {0};
 static int g_fd[2] = {-1, -1};
 static int g_stream_id = 0;
 static size_t g_data_len = 0;
@@ -91,7 +91,7 @@ static size_t g_data_len = 0;
 pthread_mutex_t g_screen_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
 
 static struct {
-    ElaSession *ws;
+    CarrierSession *ws;
     int unchanged_streams;
     char remote_sdp[2048];
     size_t sdp_len;
@@ -102,16 +102,16 @@ static struct {
     struct timeval last_stamp;
 } session_ctx;
 
-static void friend_accept(ElaCarrier *, int, char **);
-static void invite(ElaCarrier *, int, char **);
-static void session_init(ElaCarrier *);
-static void session_new(ElaCarrier *, int, char **);
-static void session_request(ElaCarrier *);
-static void session_reply_request(ElaCarrier *, int, char **);
-static void stream_add(ElaCarrier *, int, char **);
-static void stream_bulk_write(ElaCarrier *, int, char **);
-static void stream_bulk_receive(ElaCarrier *, int, char **);
-static void stream_get_info(ElaCarrier *, int, char **);
+static void friend_accept(Carrier *, int, char **);
+static void invite(Carrier *, int, char **);
+static void session_init(Carrier *);
+static void session_new(Carrier *, int, char **);
+static void session_request(Carrier *);
+static void session_reply_request(Carrier *, int, char **);
+static void stream_add(Carrier *, int, char **);
+static void stream_bulk_write(Carrier *, int, char **);
+static void stream_bulk_receive(Carrier *, int, char **);
+static void stream_get_info(Carrier *, int, char **);
 
 static void log_print(const char *format, va_list args)
 {
@@ -148,7 +148,7 @@ void friend(const char *addr)
     if (addr == NULL)
         return;
 
-    p = ela_get_id_by_address(addr, g_peer_id, ELA_MAX_ID_LEN + 1);
+    p = carrier_get_id_by_address(addr, g_peer_id, CARRIER_MAX_ID_LEN + 1);
     if (p != NULL) {
         char *arg[1] = {g_peer_id};
         friend_add(w, 1, addr_arg);
@@ -158,7 +158,7 @@ void friend(const char *addr)
 }
 */
 
-static void friend_add(ElaCarrier *w, int argc, char *argv[])
+static void friend_add(Carrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -167,17 +167,17 @@ static void friend_add(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_add_friend(w, argv[0], "Hello");
+    rc = carrier_add_friend(w, argv[0], "Hello");
     if (rc == 0) {
         g_mode = ACTIVE_MODE;
         output("Request to add a new friend successfully.\n");
     }
     else
         output("Request to add a new friend unsuccessfully(0x%x).\n",
-                ela_get_error());
+                carrier_get_error());
 }
 
-static void friend_accept(ElaCarrier *w, int argc, char *argv[])
+static void friend_accept(Carrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -186,14 +186,14 @@ static void friend_accept(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_accept_friend(w, argv[0]);
+    rc = carrier_accept_friend(w, argv[0]);
     if (rc == 0)
         output("Accept friend request successfully.\n");
     else
-        output("Accept friend request unsuccessfully(0x%x).\n", ela_get_error());
+        output("Accept friend request unsuccessfully(0x%x).\n", carrier_get_error());
 }
 
-static void friend_remove(ElaCarrier *w, int argc, char *argv[])
+static void friend_remove(Carrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -202,11 +202,11 @@ static void friend_remove(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_remove_friend(w, argv[0]);
+    rc = carrier_remove_friend(w, argv[0]);
     if (rc == 0)
         output("Remove friend %s successfully.\n", argv[0]);
     else
-        output("Remove friend %s unsuccessfully(0x%x).\n", argv[0], ela_get_error());
+        output("Remove friend %s unsuccessfully(0x%x).\n", argv[0], carrier_get_error());
 }
 
 static int first_friends_item = 1;
@@ -218,7 +218,7 @@ static const char *connection_name[] = {
 
 /* This callback share by list_friends and global
  * friend list callback */
-static bool friends_list_callback(ElaCarrier *w, const ElaFriendInfo *friend_info,
+static bool friends_list_callback(Carrier *w, const CarrierFriendInfo *friend_info,
                                  void *context)
 {
     static int count;
@@ -248,7 +248,7 @@ static bool friends_list_callback(ElaCarrier *w, const ElaFriendInfo *friend_inf
 
 /* This callback share by list_friends and global
  * friend list callback */
-static void display_friend_info(const ElaFriendInfo *fi)
+static void display_friend_info(const CarrierFriendInfo *fi)
 {
     output("           ID: %s\n", fi->user_info.userid);
     output("         Name: %s\n", fi->user_info.name);
@@ -262,7 +262,7 @@ static void display_friend_info(const ElaFriendInfo *fi)
     output("   Connection: %s\n", connection_name[fi->status]);
 }
 
-static void friend_added_callback(ElaCarrier *w, const ElaFriendInfo *info,
+static void friend_added_callback(Carrier *w, const CarrierFriendInfo *info,
                                   void *context)
 {
     strcpy(g_peer_id, info->user_info.userid);
@@ -270,13 +270,13 @@ static void friend_added_callback(ElaCarrier *w, const ElaFriendInfo *info,
     display_friend_info(info);
 }
 
-static void friend_removed_callback(ElaCarrier *w, const char *friendid,
+static void friend_removed_callback(Carrier *w, const char *friendid,
                                     void *context)
 {
     output("Friend %s removed!\n", friendid);
 }
 
-static void send_message(ElaCarrier *w, int argc, char *argv[])
+static void send_message(Carrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -285,14 +285,14 @@ static void send_message(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_send_friend_message(w, argv[0], argv[1], strlen(argv[1]) + 1, NULL, NULL, NULL);
+    rc = carrier_send_friend_message(w, argv[0], argv[1], strlen(argv[1]) + 1, NULL, NULL, NULL);
     if (rc == 0)
         output("Send message successfully.\n");
     else
-        output("Send message unsuccessfully(0x%x).\n", ela_get_error());
+        output("Send message unsuccessfully(0x%x).\n", carrier_get_error());
 }
 
-static void invite_response_callback(ElaCarrier *w, const char *friendid, const char *bundle,
+static void invite_response_callback(Carrier *w, const char *friendid, const char *bundle,
                                      int status, const char *reason,
                                      const void *data, size_t len, void *context)
 {
@@ -320,7 +320,7 @@ static void invite_response_callback(ElaCarrier *w, const char *friendid, const 
     }
 }
 
-static void invite(ElaCarrier *w, int argc, char *argv[])
+static void invite(Carrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -329,15 +329,15 @@ static void invite(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_invite_friend(w, argv[0], NULL, argv[1], strlen(argv[1]),
+    rc = carrier_invite_friend(w, argv[0], NULL, argv[1], strlen(argv[1]),
                                invite_response_callback, NULL);
     if (rc == 0)
         output("Send invite request successfully.\n");
     else
-        output("Send invite request unsuccessfully(0x%x).\n", ela_get_error());
+        output("Send invite request unsuccessfully(0x%x).\n", carrier_get_error());
 }
 
-static void reply_invite(ElaCarrier *w, int argc, char *argv[])
+static void reply_invite(Carrier *w, int argc, char *argv[])
 {
     int rc;
     int status = 0;
@@ -361,14 +361,14 @@ static void reply_invite(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_reply_friend_invite(w, argv[0], NULL, status, reason, msg, msg_len);
+    rc = carrier_reply_friend_invite(w, argv[0], NULL, status, reason, msg, msg_len);
     if (rc == 0)
         output("Send invite reply to inviter successfully.\n");
     else
-        output("Send invite reply to inviter unsuccessfully(0x%x).\n", ela_get_error());
+        output("Send invite reply to inviter unsuccessfully(0x%x).\n", carrier_get_error());
 }
 
-static void session_request_callback(ElaCarrier *w, const char *from,
+static void session_request_callback(Carrier *w, const char *from,
             const char *bundle, const char *sdp, size_t len, void *context)
 {
     strncpy(session_ctx.remote_sdp, sdp, len);
@@ -386,7 +386,7 @@ static void session_request_callback(ElaCarrier *w, const char *from,
     session_reply_request(w, 1, reply_arg);
 }
 
-static void session_request_complete_callback(ElaSession *ws, const char *bundle, int status,
+static void session_request_complete_callback(CarrierSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     int rc;
@@ -401,13 +401,13 @@ static void session_request_complete_callback(ElaSession *ws, const char *bundle
     session_ctx.remote_sdp[len] = 0;
     session_ctx.sdp_len = len;
 
-    rc = ela_session_start(session_ctx.ws, session_ctx.remote_sdp,
+    rc = carrier_session_start(session_ctx.ws, session_ctx.remote_sdp,
                                session_ctx.sdp_len);
 
     output("Session start %s.\n", rc == 0 ? "successfully" : "unsuccessfully");
 }
 
-static void stream_bulk_receive(ElaCarrier *w, int argc, char *argv[])
+static void stream_bulk_receive(Carrier *w, int argc, char *argv[])
 {
     if (argc != 1) {
         output("Invalid invocation.\n");
@@ -442,7 +442,7 @@ static void stream_bulk_receive(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void stream_on_data(ElaSession *ws, int stream, const void *data,
+static void stream_on_data(CarrierSession *ws, int stream, const void *data,
                            size_t len, void *context)
 {
     if (session_ctx.bulk_mode) {
@@ -485,7 +485,7 @@ static void stream_on_data(ElaSession *ws, int stream, const void *data,
 
             arg[0] = g_peer_id;
             arg[1] = buf;
-            send_message((ElaCarrier*)context, 2, arg);
+            send_message((Carrier*)context, 2, arg);
             exit(0);
         }
     } else {
@@ -493,8 +493,8 @@ static void stream_on_data(ElaSession *ws, int stream, const void *data,
     }
 }
 
-static void stream_on_state_changed(ElaSession *ws, int stream,
-        ElaStreamState state, void *context)
+static void stream_on_state_changed(CarrierSession *ws, int stream,
+        CarrierStreamState state, void *context)
 {
     const char *state_name[] = {
         "raw",
@@ -509,23 +509,23 @@ static void stream_on_state_changed(ElaSession *ws, int stream,
 
     output("Stream [%d] state changed to: %s\n", stream, state_name[state]);
 
-    if (state == ElaStreamState_transport_ready)
+    if (state == CarrierStreamState_transport_ready)
         --session_ctx.unchanged_streams;
 
-    if (state == ElaStreamState_initialized) {
+    if (state == CarrierStreamState_initialized) {
         if (g_mode == ACTIVE_MODE) {
-        session_request((ElaCarrier*)context);
+        session_request((Carrier*)context);
     } else if (g_mode == PASSIVE_MODE) {
         char *reply_arg[3] = {NULL, NULL, NULL};
 
         reply_arg[0] = g_peer_id;
         reply_arg[1] = (char*)"confirm";
         reply_arg[2] = (char*)"ok";
-        reply_invite((ElaCarrier*)context, 3, reply_arg);
+        reply_invite((Carrier*)context, 3, reply_arg);
     } else {
         output("Exception occurred");
     }
-    } else if (state == ElaStreamState_connected) {
+    } else if (state == CarrierStreamState_connected) {
         if (g_mode == ACTIVE_MODE) {
             char *info_arg[1] = {NULL};
             char stream_id[32] = {0};
@@ -548,12 +548,12 @@ static void stream_on_state_changed(ElaSession *ws, int stream,
 
             sprintf(stream_id, "%d", g_stream_id);
             info_arg[0] = stream_id;
-            stream_get_info((ElaCarrier*)context, 1, info_arg);
+            stream_get_info((Carrier*)context, 1, info_arg);
 
             msg_arg[0] = g_peer_id;
             sprintf(msg_len, "%zu", g_data_len);
             msg_arg[1] = msg_len;
-            send_message((ElaCarrier*)context, 2, msg_arg);
+            send_message((Carrier*)context, 2, msg_arg);
 
             sprintf(buf[0], "%d", g_stream_id);
             sprintf(buf[1], "%d", pkt_size);
@@ -561,7 +561,7 @@ static void stream_on_state_changed(ElaSession *ws, int stream,
             write_arg[0] = buf[0];
             write_arg[1] = buf[1];
             write_arg[2] = buf[2];
-            stream_bulk_write((ElaCarrier*)context, 3, write_arg);
+            stream_bulk_write((Carrier*)context, 3, write_arg);
         } else {
 
         }
@@ -570,28 +570,28 @@ static void stream_on_state_changed(ElaSession *ws, int stream,
     }
 }
 
-static void session_init(ElaCarrier *w)
+static void session_init(Carrier *w)
 {
     int rc;
 
-    rc = ela_session_init(w);
+    rc = carrier_session_init(w);
     if (rc < 0) {
         output("Session initialized unsuccessfully.\n");
     }
     else {
-        ela_session_set_callback(w, NULL, session_request_callback, w);
+        carrier_session_set_callback(w, NULL, session_request_callback, w);
         output("Session initialized successfully.\n");
     }
 }
 
-static void session_new(ElaCarrier *w, int argc, char *argv[])
+static void session_new(Carrier *w, int argc, char *argv[])
 {
     if (argc != 1) {
         output("Invalid invocation.\n");
         return;
     }
 
-    session_ctx.ws = ela_session_new(w, argv[0]);
+    session_ctx.ws = carrier_session_new(w, argv[0]);
     if (!session_ctx.ws) {
         output("Create session unsuccessfully.\n");
     } else {
@@ -600,12 +600,12 @@ static void session_new(ElaCarrier *w, int argc, char *argv[])
     session_ctx.unchanged_streams = 0;
 }
 
-static void stream_add(ElaCarrier *w, int argc, char *argv[])
+static void stream_add(Carrier *w, int argc, char *argv[])
 {
     int rc;
     int options = 0;
 
-    ElaStreamCallbacks callbacks;
+    CarrierStreamCallbacks callbacks;
 
     memset(&callbacks, 0, sizeof(callbacks));
     callbacks.state_changed = stream_on_state_changed;
@@ -619,9 +619,9 @@ static void stream_add(ElaCarrier *w, int argc, char *argv[])
 
         for (i = 0; i < argc; i++) {
             if (strcmp(argv[i], "reliable") == 0) {
-                options |= ELA_STREAM_RELIABLE;
+                options |= CARRIER_STREAM_RELIABLE;
             } else if (strcmp(argv[i], "plain") == 0) {
-                options |= ELA_STREAM_PLAIN;
+                options |= CARRIER_STREAM_PLAIN;
             } else {
                 output("Invalid invocation.\n");
                 return;
@@ -629,7 +629,7 @@ static void stream_add(ElaCarrier *w, int argc, char *argv[])
         }
     }
 
-    rc = ela_session_add_stream(session_ctx.ws, ElaStreamType_text,
+    rc = carrier_session_add_stream(session_ctx.ws, CarrierStreamType_text,
                                 options, &callbacks, w);
     if (rc < 0) {
         output("Add stream unsuccessfully.\n");
@@ -641,11 +641,11 @@ static void stream_add(ElaCarrier *w, int argc, char *argv[])
     }
 }
 
-static void session_request(ElaCarrier *w)
+static void session_request(Carrier *w)
 {
     int rc;
 
-    rc = ela_session_request(session_ctx.ws, NULL,
+    rc = carrier_session_request(session_ctx.ws, NULL,
                              session_request_complete_callback, w);
     if (rc < 0) {
         output("session request unsuccessfully.\n");
@@ -655,7 +655,7 @@ static void session_request(ElaCarrier *w)
     }
 }
 
-static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
+static void session_reply_request(Carrier *w, int argc, char *argv[])
 {
     int rc;
 
@@ -665,7 +665,7 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
     }
 
     if ((strcmp(argv[0], "ok") == 0) && (argc == 1)) {
-        rc = ela_session_reply_request(session_ctx.ws, NULL, 0, NULL);
+        rc = carrier_session_reply_request(session_ctx.ws, NULL, 0, NULL);
         if (rc < 0) {
             output("response invite unsuccessfully.\n");
         }
@@ -675,14 +675,14 @@ static void session_reply_request(ElaCarrier *w, int argc, char *argv[])
             while (session_ctx.unchanged_streams > 0)
                 usleep(200);
 
-            rc = ela_session_start(session_ctx.ws, session_ctx.remote_sdp,
+            rc = carrier_session_start(session_ctx.ws, session_ctx.remote_sdp,
                                        session_ctx.sdp_len);
 
             output("Session start %s.\n", rc == 0 ? "successfully" : "unsuccessfully");
         }
     }
     else if ((strcmp(argv[0], "refuse") == 0) && (argc == 2)) {
-        rc = ela_session_reply_request(session_ctx.ws, NULL, 1, argv[2]);
+        rc = carrier_session_reply_request(session_ctx.ws, NULL, 1, argv[2]);
         if (rc < 0) {
             output("response invite unsuccessfully.\n");
         }
@@ -722,18 +722,18 @@ static void *bulk_write_thread(void *arg)
     gettimeofday(&start, NULL);
 
     while ((rc = read(trans_fd, packet, sizeof(packet))) > 0) {
-        rc = ela_stream_write(session_ctx.ws, args->stream,
+        rc = carrier_stream_write(session_ctx.ws, args->stream,
                                   packet, rc);
         if (rc == 0) {
             usleep(100);
             continue;
         } else if (rc < 0) {
-            if (ela_get_error() == ELA_GENERAL_ERROR(ELAERR_BUSY)) {
+            if (carrier_get_error() == CARRIER_GENERAL_ERROR(ERROR_BEING_BUSY)) {
                 usleep(100);
                 continue;
             } else {
                 output("\nWrite data unsuccessfully.\n");
-                output("error no:%x", ela_get_error());
+                output("error no:%x", carrier_get_error());
                 close(trans_fd);
                 return NULL;
             }
@@ -756,7 +756,7 @@ static void *bulk_write_thread(void *arg)
     return NULL;
 }
 
-static void stream_bulk_write(ElaCarrier *w, int argc, char *argv[])
+static void stream_bulk_write(Carrier *w, int argc, char *argv[])
 {
     pthread_attr_t attr;
     pthread_t th;
@@ -780,10 +780,10 @@ static void stream_bulk_write(ElaCarrier *w, int argc, char *argv[])
     pthread_attr_destroy(&attr);
 }
 
-static void stream_get_info(ElaCarrier *w, int argc, char *argv[])
+static void stream_get_info(Carrier *w, int argc, char *argv[])
 {
     int rc;
-    ElaTransportInfo info;
+    CarrierTransportInfo info;
 
     const char *topology_name[] = {
         "LAN",
@@ -803,7 +803,7 @@ static void stream_get_info(ElaCarrier *w, int argc, char *argv[])
         return;
     }
 
-    rc = ela_stream_get_transport_info(session_ctx.ws, atoi(argv[0]), &info);
+    rc = carrier_stream_get_transport_info(session_ctx.ws, atoi(argv[0]), &info);
     if (rc < 0) {
         output("get remote addr unsuccessfully.\n");
         return;
@@ -825,16 +825,16 @@ static void stream_get_info(ElaCarrier *w, int argc, char *argv[])
         output("\n");
 }
 
-static void idle_callback(ElaCarrier *w, void *context)
+static void idle_callback(Carrier *w, void *context)
 {
     static int first_time = 1;
 
-    if (g_connected && (ela_is_ready(w)) && (first_time == 1)) {
+    if (g_connected && (carrier_is_ready(w)) && (first_time == 1)) {
         if (strlen(g_friend_address) > 0) {
             char *addr_arg[1] = {(char*)g_friend_address};
             char *p = NULL;
 
-            p = ela_get_id_by_address(g_friend_address, g_peer_id, ELA_MAX_ID_LEN + 1);
+            p = carrier_get_id_by_address(g_friend_address, g_peer_id, CARRIER_MAX_ID_LEN + 1);
             if (p != NULL) {
                 char *arg[1] = {g_peer_id};
                 friend_remove(w, 1, arg);
@@ -847,16 +847,16 @@ static void idle_callback(ElaCarrier *w, void *context)
     }
 }
 
-static void connection_callback(ElaCarrier *w, ElaConnectionStatus status,
+static void connection_callback(Carrier *w, CarrierConnectionStatus status,
                                 void *context)
 {
     switch (status) {
-    case ElaConnectionStatus_Connected:
+    case CarrierConnectionStatus_Connected:
         g_connected = true;
         output("Connected to carrier network.\n");
         break;
 
-    case ElaConnectionStatus_Disconnected:
+    case CarrierConnectionStatus_Disconnected:
         g_connected = false;
         output("Disconnected from carrier network.\n");
         break;
@@ -866,18 +866,18 @@ static void connection_callback(ElaCarrier *w, ElaConnectionStatus status,
     }
 }
 
-static void friend_info_callback(ElaCarrier *w, const char *friendid,
-                                 const ElaFriendInfo *info, void *context)
+static void friend_info_callback(Carrier *w, const char *friendid,
+                                 const CarrierFriendInfo *info, void *context)
 {
     output("Friend information changed:\n");
     display_friend_info(info);
 }
 
-static void friend_connection_callback(ElaCarrier *w, const char *friendid,
-                                       ElaConnectionStatus status, void *context)
+static void friend_connection_callback(Carrier *w, const char *friendid,
+                                       CarrierConnectionStatus status, void *context)
 {
     switch (status) {
-    case ElaConnectionStatus_Connected:
+    case CarrierConnectionStatus_Connected:
         output("Friend[%s] connection changed to be online\n", friendid);
 
         if ((strcmp(g_peer_id, friendid) == 0) && (g_mode == ACTIVE_MODE)) {
@@ -889,7 +889,7 @@ static void friend_connection_callback(ElaCarrier *w, const char *friendid,
         }
         break;
 
-    case ElaConnectionStatus_Disconnected:
+    case CarrierConnectionStatus_Disconnected:
         output("Friend[%s] connection changed to be offline.\n", friendid);
         break;
 
@@ -898,20 +898,20 @@ static void friend_connection_callback(ElaCarrier *w, const char *friendid,
     }
 }
 
-static void friend_presence_callback(ElaCarrier *w, const char *friendid,
-                                     ElaPresenceStatus status,
+static void friend_presence_callback(Carrier *w, const char *friendid,
+                                     CarrierPresenceStatus status,
                                      void *context)
 {
-    if (status >= ElaPresenceStatus_None &&
-        status <= ElaPresenceStatus_Busy) {
+    if (status >= CarrierPresenceStatus_None &&
+        status <= CarrierPresenceStatus_Busy) {
         output("Friend[%s] change presence to %s\n", friendid, presence_name[status]);
     } else {
         output("Error!!! Got unknown presence status %d.\n", status);
     }
 }
 
-static void friend_request_callback(ElaCarrier *w, const char *userid,
-                                    const ElaUserInfo *info, const char *hello,
+static void friend_request_callback(Carrier *w, const char *userid,
+                                    const CarrierUserInfo *info, const char *hello,
                                     void *context)
 {
     char *arg[1] = {NULL};
@@ -923,7 +923,7 @@ static void friend_request_callback(ElaCarrier *w, const char *userid,
     friend_accept(w, 1, arg);
 }
 
-static void message_callback(ElaCarrier *w, const char *from,
+static void message_callback(Carrier *w, const char *from,
                              const void *msg, size_t len,
                              int64_t timestamp, bool is_offline, void *context)
 {
@@ -953,7 +953,7 @@ static void message_callback(ElaCarrier *w, const char *from,
     }
 }
 
-static void invite_request_callback(ElaCarrier *w, const char *from, const char *bundle,
+static void invite_request_callback(Carrier *w, const char *from, const char *bundle,
                                     const void *data, size_t len, void *context)
 {
     char *new_arg[1] = {NULL};
@@ -972,7 +972,7 @@ static void invite_request_callback(ElaCarrier *w, const char *from, const char 
     stream_add(w, 2, add_stream_arg);
 }
 
-static void ready_callback(ElaCarrier *w, void *context)
+static void ready_callback(Carrier *w, void *context)
 {
     output("ready_callback invoked\n");
 }
@@ -1039,11 +1039,11 @@ const char *get_config_path(const char *config_file, const char *config_files[])
 int main(int argc, char *argv[])
 {
     const char *config_file = NULL;
-    ElaCarrier *w;
-    ElaOptions opts;
+    Carrier *w;
+    CarrierOptions opts;
     int wait_for_attach = 0;
-    char buf[ELA_MAX_ADDRESS_LEN+1];
-    ElaCallbacks callbacks;
+    char buf[CARRIER_MAX_ADDRESS_LEN+1];
+    CarrierCallbacks callbacks;
     int rc;
     int i;
 
@@ -1079,7 +1079,7 @@ int main(int argc, char *argv[])
 
         case 'a':
             if (optarg != NULL)
-                strncpy(g_friend_address, optarg, ELA_MAX_ADDRESS_LEN);
+                strncpy(g_friend_address, optarg, CARRIER_MAX_ADDRESS_LEN);
             break;
 
         case 'f':
@@ -1145,25 +1145,25 @@ int main(int argc, char *argv[])
     callbacks.friend_invite = invite_request_callback;
     callbacks.ready = ready_callback;
 
-    w = ela_new(&opts, &callbacks, NULL);
+    w = carrier_new(&opts, &callbacks, NULL);
     carrier_config_free(&opts);
     if (!w) {
-        output("Error create carrier instance: 0x%x\n", ela_get_error());
+        output("Error create carrier instance: 0x%x\n", carrier_get_error());
         output("Press any key to quit...");
         goto quit;
     }
 
     output("Carrier node identities:\n");
-    output("   Node ID: %s\n", ela_get_nodeid(w, buf, sizeof(buf)));
-    output("   User ID: %s\n", ela_get_userid(w, buf, sizeof(buf)));
-    output("   Address: %s\n\n", ela_get_address(w, buf, sizeof(buf)));
+    output("   Node ID: %s\n", carrier_get_nodeid(w, buf, sizeof(buf)));
+    output("   User ID: %s\n", carrier_get_userid(w, buf, sizeof(buf)));
+    output("   Address: %s\n\n", carrier_get_address(w, buf, sizeof(buf)));
     output("\n");
 
-    rc = ela_run(w, 10);
+    rc = carrier_run(w, 10);
     if (rc != 0) {
-        output("Error start carrier loop: 0x%x\n", ela_get_error());
+        output("Error start carrier loop: 0x%x\n", carrier_get_error());
         output("Press any key to quit...");
-        ela_kill(w);
+        carrier_kill(w);
         goto quit;
     }
 

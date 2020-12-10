@@ -85,7 +85,7 @@ static void user_destructor(void *p)
         free(*s);
 }
 
-static int extra_config_parser(void *p, ElaOptions *options)
+static int extra_config_parser(void *p, CarrierOptions *options)
 {
     config_t *cfg = (config_t *)p;
     PFConfig *config = (PFConfig *)options;
@@ -135,8 +135,8 @@ static int extra_config_parser(void *p, ElaOptions *options)
 
     rc = config_lookup_bool(cfg, "plain", &intopt);
     if (rc && intopt)
-        config->options |= ELA_STREAM_PLAIN;
-    config->options |= ELA_STREAM_RELIABLE;
+        config->options |= CARRIER_STREAM_PLAIN;
+    config->options |= CARRIER_STREAM_RELIABLE;
 
     setting = config_lookup(cfg, "services");
     if (!setting) {
@@ -239,7 +239,7 @@ static int extra_config_parser(void *p, ElaOptions *options)
                 return -1;
             }
 
-            if (!ela_id_is_valid(stropt)) {
+            if (!carrier_id_is_valid(stropt)) {
                 fprintf(stderr, "User id '%s' is invalid in users list", stropt);
                 extra_config_free(config);
                 return -1;
@@ -284,7 +284,7 @@ PFConfig *load_config(const char *config_file, PFConfig *config)
     memset(config, 0, sizeof(PFConfig));
 
     return (PFConfig *)carrier_config_load(config_file, extra_config_parser,
-                (ElaOptions *)config);
+                (CarrierOptions *)config);
 }
 
 void free_config(PFConfig *config)
