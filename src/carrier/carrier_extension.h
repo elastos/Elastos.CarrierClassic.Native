@@ -80,7 +80,7 @@ typedef struct ExtensionAPIs {
      * @param
      *      len         [in] The data length in bytes.
      * @param
-     *      callback    [in] A pointer to ElaFriendInviteResponseCallback
+     *      callback    [in] A pointer to CarrierFriendInviteResponseCallback
      *                       function to receive the invite response.
      * @param
      *      context      [in] The application defined context data.

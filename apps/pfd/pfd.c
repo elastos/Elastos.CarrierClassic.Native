@@ -63,32 +63,32 @@ static const char *default_config_files[] = {
 
 static PFConfig config;
 
-static ElaCarrier *carrier;
+static Carrier *carrier;
 
 typedef struct SessionEntry {
     hash_entry_t he;
-    ElaSession *session;
+    CarrierSession *session;
 } SessionEntry;
 
 hashtable_t *sessions;
 
 // Client only
-static ElaSession *cli_session;
+static CarrierSession *cli_session;
 static int cli_streamid;
 
 static void session_entry_destroy(void *p)
 {
     SessionEntry *entry = (SessionEntry *)p;
     if (entry && entry->session) {
-        char peer[ELA_MAX_ID_LEN*2+8];
+        char peer[CARRIER_MAX_ID_LEN*2+8];
 
-        ela_session_get_peer(entry->session, peer, sizeof(peer));
-        ela_session_close(entry->session);
+        carrier_session_get_peer(entry->session, peer, sizeof(peer));
+        carrier_session_close(entry->session);
         vlogI("Session to %s closed", peer);
     }
 }
 
-static void add_session(ElaSession *ws)
+static void add_session(CarrierSession *ws)
 {
     assert(ws);
 
@@ -100,7 +100,7 @@ static void add_session(ElaSession *ws)
 
     entry->he.data = entry;
     entry->he.key = ws;
-    entry->he.keylen = sizeof(ElaSession *);
+    entry->he.keylen = sizeof(CarrierSession *);
     entry->session = ws;
 
     hashtable_put(sessions, &entry->he);
@@ -108,20 +108,20 @@ static void add_session(ElaSession *ws)
     deref(entry);
 }
 
-static int exist_session(ElaSession *ws)
+static int exist_session(CarrierSession *ws)
 {
     if (sessions)
-        return hashtable_exist(sessions, ws, sizeof(ElaSession *));
+        return hashtable_exist(sessions, ws, sizeof(CarrierSession *));
     else
         return 0;
 }
 
-static void delete_session(ElaSession *ws)
+static void delete_session(CarrierSession *ws)
 {
     if (!sessions)
         return;
 
-    SessionEntry *entry = hashtable_remove(sessions, ws, sizeof(ElaSession *));
+    SessionEntry *entry = hashtable_remove(sessions, ws, sizeof(CarrierSession *));
     if (entry) {
         if (config.mode == MODE_CLIENT) {
             cli_session = NULL;
@@ -135,9 +135,9 @@ static void delete_session(ElaSession *ws)
 static void setup_portforwardings(void);
 
 // Client only
-static void peer_connection_changed(ElaConnectionStatus status)
+static void peer_connection_changed(CarrierConnectionStatus status)
 {
-    if (status == ElaConnectionStatus_Connected) {
+    if (status == CarrierConnectionStatus_Connected) {
         vlogI("Portforwarding server is online, setup portforwardings...");
         setup_portforwardings();
     } else {
@@ -152,41 +152,41 @@ static void peer_connection_changed(ElaConnectionStatus status)
 }
 
 // Client only
-static void carrier_ready(ElaCarrier *w, void *context)
+static void carrier_ready(Carrier *w, void *context)
 {
     int rc;
-    char uid[ELA_MAX_ID_LEN+1];
-    char addr[ELA_MAX_ADDRESS_LEN+1];
+    char uid[CARRIER_MAX_ID_LEN+1];
+    char addr[CARRIER_MAX_ADDRESS_LEN+1];
 
     vlogI("Carrier is ready!");
-    vlogI("User ID: %s", ela_get_userid(w, uid, sizeof(uid)));
-    vlogI("Address: %s", ela_get_address(w, addr, sizeof(addr)));
+    vlogI("User ID: %s", carrier_get_userid(w, uid, sizeof(uid)));
+    vlogI("Address: %s", carrier_get_address(w, addr, sizeof(addr)));
 
     if (config.mode == MODE_SERVER)
         return; // Server mode: do nothing.
 
     const char *friendid = config.serverid;
 
-    if (!ela_is_friend(w, friendid)) {
+    if (!carrier_is_friend(w, friendid)) {
         vlogI("Portforwarding server not friend yet, send friend request...");
 
-        rc = ela_add_friend(w, config.server_address, "Elastos Carrier PFD/C");
+        rc = carrier_add_friend(w, config.server_address, "Elastos Carrier PFD/C");
         if (rc < 0) {
             vlogE("Add portforwarding server as friend failed (0x%8X)",
-                  ela_get_error());
+                  carrier_get_error());
         } else {
             vlogI("Add portforwarding server as friend success!");
         }
     } else {
-        ElaFriendInfo fi;
-        ela_get_friend_info(w, friendid, &fi);
+        CarrierFriendInfo fi;
+        carrier_get_friend_info(w, friendid, &fi);
         peer_connection_changed(fi.status);
     }
 }
 
 // Client only
-static void friend_connection(ElaCarrier *w, const char *friendid,
-                              ElaConnectionStatus status, void *context)
+static void friend_connection(Carrier *w, const char *friendid,
+                              CarrierConnectionStatus status, void *context)
 {
     if (config.mode == MODE_SERVER)
         return; // Server mode: do nothing.
@@ -198,8 +198,8 @@ static void friend_connection(ElaCarrier *w, const char *friendid,
 }
 
 // Server and client
-static void friend_request(ElaCarrier *w, const char *userid,
-            const ElaUserInfo *info, const char *hello, void *context)
+static void friend_request(Carrier *w, const char *userid,
+            const CarrierUserInfo *info, const char *hello, void *context)
 {
     int rc;
     int status = -1;
@@ -216,9 +216,9 @@ static void friend_request(ElaCarrier *w, const char *userid,
         vlogI("Skipped unathorized friend request from %s.", userid);
         return;
     } else {
-        rc = ela_accept_friend(w, userid);
+        rc = carrier_accept_friend(w, userid);
         if (rc < 0) {
-            vlogE("Accept friend request failed(%08X).", ela_get_error());
+            vlogE("Accept friend request failed(%08X).", carrier_get_error());
             return;
         } else {
             vlogI("Accepted user %s to be friend.", userid);
@@ -227,7 +227,7 @@ static void friend_request(ElaCarrier *w, const char *userid,
 }
 
 // Client only
-static void session_request_complete(ElaSession *ws, const char *bundle, int status,
+static void session_request_complete(CarrierSession *ws, const char *bundle, int status,
                 const char *reason, const char *sdp, size_t len, void *context)
 {
     const char *state_name[] = {
@@ -240,7 +240,7 @@ static void session_request_complete(ElaSession *ws, const char *bundle, int sta
         "closed",
         "error"
     };
-    ElaStreamState state;
+    CarrierStreamState state;
     int rc;
 
     if (status != 0) {
@@ -248,63 +248,63 @@ static void session_request_complete(ElaSession *ws, const char *bundle, int sta
         return;
     }
 
-    rc = ela_stream_get_state(ws, cli_streamid, &state);
-    while (rc == 0 && state < ElaStreamState_transport_ready) {
+    rc = carrier_stream_get_state(ws, cli_streamid, &state);
+    while (rc == 0 && state < CarrierStreamState_transport_ready) {
         usleep(100);
-        rc = ela_stream_get_state(ws, cli_streamid, &state);
+        rc = carrier_stream_get_state(ws, cli_streamid, &state);
     }
 
     if (rc < 0) {
-        vlogE("Acquire stream state in session failed(%08X).", ela_get_error());
+        vlogE("Acquire stream state in session failed(%08X).", carrier_get_error());
         delete_session(ws);
         return;
     }
 
-    if (state != ElaStreamState_transport_ready) {
+    if (state != CarrierStreamState_transport_ready) {
         vlogE("Session stream state wrong %s.", state_name[state]);
         delete_session(ws);
         return;
     }
 
-    rc = ela_session_start(ws, sdp, len);
+    rc = carrier_session_start(ws, sdp, len);
     if (rc < 0) {
-        vlogE("Start session to portforwarding server peer failed(%08X).", ela_get_error());
+        vlogE("Start session to portforwarding server peer failed(%08X).", carrier_get_error());
         delete_session(ws);
     } else
         vlogI("Start session to portforwarding server peer success.");
 }
 
 // Server and client
-static void stream_state_changed(ElaSession *ws, int stream,
-                                 ElaStreamState state, void *context)
+static void stream_state_changed(CarrierSession *ws, int stream,
+                                 CarrierStreamState state, void *context)
 {
     int rc;
-    char peer[ELA_MAX_ID_LEN*2+8];
+    char peer[CARRIER_MAX_ID_LEN*2+8];
 
-    ela_session_get_peer(ws, peer, sizeof(peer));
+    carrier_session_get_peer(ws, peer, sizeof(peer));
 
-    if (state == ElaStreamState_failed
-            || state == ElaStreamState_closed) {
+    if (state == CarrierStreamState_failed
+            || state == CarrierStreamState_closed) {
         vlogI("Session to %s closed %s.", peer,
-              state == ElaStreamState_closed ? "normally" : "on connection error");
+              state == CarrierStreamState_closed ? "normally" : "on connection error");
 
         if (config.mode == MODE_SERVER && exist_session(ws))
-            free(ela_session_get_userdata(ws));
+            free(carrier_session_get_userdata(ws));
 
         delete_session(ws);
         return;
     }
 
     if (config.mode == MODE_CLIENT) {
-        if (state == ElaStreamState_initialized) {
-            rc = ela_session_request(ws, NULL, session_request_complete, NULL);
+        if (state == CarrierStreamState_initialized) {
+            rc = carrier_session_request(ws, NULL, session_request_complete, NULL);
             if (rc < 0) {
-                vlogE("Session request to portforwarding server peer failed(%08X)", ela_get_error());
+                vlogE("Session request to portforwarding server peer failed(%08X)", carrier_get_error());
                 delete_session(ws);
             } else {
                 vlogI("Session request to portforwarding server success.");
             }
-        } else if (state == ElaStreamState_connected) {
+        } else if (state == CarrierStreamState_connected) {
             hashtable_iterator_t it;
 
             hashtable_iterate(config.services, &it);
@@ -312,11 +312,11 @@ static void stream_state_changed(ElaSession *ws, int stream,
                 PFService *svc;
                 hashtable_iterator_next(&it, NULL, NULL, (void **)&svc);
 
-                int rc = ela_stream_open_port_forwarding(ws, stream,
+                int rc = carrier_stream_open_port_forwarding(ws, stream,
                             svc->name, PortForwardingProtocol_TCP, svc->host, svc->port);
                 if (rc <= 0)
                     vlogE("Open portforwarding for service %s on %s:%s failed(%08X).",
-                          svc->name, svc->host, svc->port, ela_get_error());
+                          svc->name, svc->host, svc->port, carrier_get_error());
                 else
                     vlogI("Open portforwarding for service %s on %s:%s success.",
                           svc->name, svc->host, svc->port);
@@ -325,23 +325,23 @@ static void stream_state_changed(ElaSession *ws, int stream,
             }
         }
     } else {
-        if (state == ElaStreamState_initialized) {
-            rc = ela_session_reply_request(ws, NULL, 0, NULL);
+        if (state == CarrierStreamState_initialized) {
+            rc = carrier_session_reply_request(ws, NULL, 0, NULL);
             if (rc < 0) {
-                vlogE("Session request from %s, reply failed(%08X)", peer, ela_get_error());
-                free(ela_session_get_userdata(ws));
+                vlogE("Session request from %s, reply failed(%08X)", peer, carrier_get_error());
+                free(carrier_session_get_userdata(ws));
                 delete_session(ws);
                 return;
             }
             vlogI("Session request from %s, accepted!", peer);
-        } else if (state == ElaStreamState_transport_ready) {
-            char *sdp = (char *)ela_session_get_userdata(ws);
+        } else if (state == CarrierStreamState_transport_ready) {
+            char *sdp = (char *)carrier_session_get_userdata(ws);
 
-            rc = ela_session_start(ws, sdp, strlen(sdp));
-            ela_session_set_userdata(ws, NULL);
+            rc = carrier_session_start(ws, sdp, strlen(sdp));
+            carrier_session_set_userdata(ws, NULL);
             free(sdp);
             if (rc < 0) {
-                vlogE("Start session to %s failed(%08X).", peer, ela_get_error());
+                vlogE("Start session to %s failed(%08X).", peer, carrier_get_error());
                 delete_session(ws);
             } else
                 vlogI("Start session to %s success.", peer);
@@ -350,32 +350,32 @@ static void stream_state_changed(ElaSession *ws, int stream,
 }
 
 // Server and client
-static void session_request_callback(ElaCarrier *w, const char *from, const char *bundle,
+static void session_request_callback(Carrier *w, const char *from, const char *bundle,
                                    const char *sdp, size_t len, void *context)
 {
-    ElaSession *ws;
+    CarrierSession *ws;
     PFUser *user;
-    char userid[ELA_MAX_ID_LEN + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
     char *p;
     int i;
     int rc;
     int options = config.options;
 
-    ElaStreamCallbacks stream_callbacks;
+    CarrierStreamCallbacks stream_callbacks;
 
     vlogI("Session request from %s", from);
 
-    ws = ela_session_new(w, from);
+    ws = carrier_session_new(w, from);
     if (ws == NULL) {
-        vlogE("Create session failed(%08X).", ela_get_error());
+        vlogE("Create session failed(%08X).", carrier_get_error());
         return;
     }
 
     if (config.mode == MODE_CLIENT) {
         // Client mode: just refuse the request.
         vlogI("Refuse session request from %s.", from);
-        ela_session_reply_request(ws, NULL, -1, "Refuse");
-        ela_session_close(ws);
+        carrier_session_reply_request(ws, NULL, -1, "Refuse");
+        carrier_session_close(ws);
         return;
     }
 
@@ -393,8 +393,8 @@ static void session_request_callback(ElaCarrier *w, const char *from, const char
     if (user == NULL) {
         // Not in allowed user list. Refuse session request.
         vlogI("Refuse session request from %s.", from);
-        ela_session_reply_request(ws, NULL, -1, "Refuse");
-        ela_session_close(ws);
+        carrier_session_reply_request(ws, NULL, -1, "Refuse");
+        carrier_session_close(ws);
         return;
     }
 
@@ -402,27 +402,27 @@ static void session_request_callback(ElaCarrier *w, const char *from, const char
         PFService *svc = (PFService *)hashtable_get(config.services,
                             user->services[i], strlen(user->services[i]));
 
-        rc = ela_session_add_service(ws, svc->name,
+        rc = carrier_session_add_service(ws, svc->name,
                         PortForwardingProtocol_TCP, svc->host, svc->port);
         if (rc < 0)
             vlogE("Prepare service %s for %s failed(%08X).",
-                  svc->name, userid, ela_get_error());
+                  svc->name, userid, carrier_get_error());
         else
             vlogI("Add service %s for %s.", svc->name, userid);
     }
 
     p = strdup(sdp);
-    ela_session_set_userdata(ws, p);
+    carrier_session_set_userdata(ws, p);
 
     add_session(ws);
     memset(&stream_callbacks, 0, sizeof(stream_callbacks));
     stream_callbacks.state_changed = stream_state_changed;
-    rc = ela_session_add_stream(ws, ElaStreamType_application,
-                    options | ELA_STREAM_MULTIPLEXING | ELA_STREAM_PORT_FORWARDING,
+    rc = carrier_session_add_stream(ws, CarrierStreamType_application,
+                    options | CARRIER_STREAM_MULTIPLEXING | CARRIER_STREAM_MULTIPLEXING,
                     &stream_callbacks, NULL);
     if (rc <= 0) {
-        vlogE("Session request from %s, can not add stream(%08X)", from, ela_get_error());
-        ela_session_reply_request(ws, NULL, -1, "Error");
+        vlogE("Session request from %s, can not add stream(%08X)", from, carrier_get_error());
+        carrier_session_reply_request(ws, NULL, -1, "Error");
         delete_session(ws);
         free(p);
     }
@@ -431,16 +431,16 @@ static void session_request_callback(ElaCarrier *w, const char *from, const char
 // Client only
 static void setup_portforwardings(void)
 {
-    ElaStreamCallbacks stream_callbacks;
+    CarrierStreamCallbacks stream_callbacks;
     int options = config.options;
 
     // May be previous session not closed properly.
     if (cli_session != NULL)
         delete_session(cli_session);
 
-    cli_session = ela_session_new(carrier, config.serverid);
+    cli_session = carrier_session_new(carrier, config.serverid);
     if (cli_session == NULL) {
-        vlogE("Create session to portforwarding server failed(%08X).", ela_get_error());
+        vlogE("Create session to portforwarding server failed(%08X).", carrier_get_error());
         return;
     }
 
@@ -451,11 +451,11 @@ static void setup_portforwardings(void)
     memset(&stream_callbacks, 0, sizeof(stream_callbacks));
     stream_callbacks.state_changed = stream_state_changed;
 
-    cli_streamid = ela_session_add_stream(cli_session, ElaStreamType_application,
-                options | ELA_STREAM_MULTIPLEXING | ELA_STREAM_PORT_FORWARDING,
+    cli_streamid = carrier_session_add_stream(cli_session, CarrierStreamType_application,
+                options | CARRIER_STREAM_MULTIPLEXING | CARRIER_STREAM_MULTIPLEXING,
                 &stream_callbacks, NULL);
     if (cli_streamid <= 0) {
-        vlogE("Add stream to session failed(%08X)", ela_get_error());
+        vlogE("Add stream to session failed(%08X)", carrier_get_error());
         delete_session(cli_session);
     } else {
         vlogI("Add stream %d to session success.", cli_streamid);
@@ -471,8 +471,8 @@ static void stop(void)
         deref(ss);
 
     if (carrier) {
-        ela_session_cleanup(carrier);
-        ela_kill(carrier);
+        carrier_session_cleanup(carrier);
+        carrier_kill(carrier);
         carrier = NULL;
     }
 
@@ -570,7 +570,7 @@ static void usage(void)
 
 int main(int argc, char *argv[])
 {
-    ElaCallbacks callbacks;
+    CarrierCallbacks callbacks;
     const char *config_file = NULL;
     int wait_for_attach = 0;
     int rc;
@@ -653,31 +653,31 @@ int main(int argc, char *argv[])
     callbacks.friend_connection = friend_connection;
     callbacks.friend_request = friend_request;
 
-    carrier = ela_new(&config.ela_options, &callbacks, &config);
+    carrier = carrier_new(&config.ela_options, &callbacks, &config);
     if (!carrier) {
         fprintf(stderr, "Can not create Carrier instance (%08X).\n",
-                ela_get_error());
+                carrier_get_error());
         stop();
         return -1;
     }
 
-    rc = ela_session_init(carrier);
+    rc = carrier_session_init(carrier);
     if (rc < 0) {
         fprintf(stderr, "Can not initialize Carrier session extension (%08X).",
-                ela_get_error());
+                carrier_get_error());
         stop();
         return -1;
     }
 
-    rc = ela_session_set_callback(carrier, NULL, session_request_callback, NULL);
+    rc = carrier_session_set_callback(carrier, NULL, session_request_callback, NULL);
     if (rc < 0) {
         fprintf(stderr, "Can not set callbacks (%08X).",
-                ela_get_error());
+                carrier_get_error());
         stop();
         return -1;
     }
 
-    rc = ela_run(carrier, 500);
+    rc = carrier_run(carrier, 500);
     if (rc < 0)
         fprintf(stderr, "Can not start Carrier.\n");
 

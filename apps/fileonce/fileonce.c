@@ -79,7 +79,7 @@ static const char *default_config_files[] = {
     NULL
 };
 
-#define EFRIEND      ELA_GENERAL_ERROR(ELAERR_ALREADY_EXIST)
+#define EFRIEND      CARRIER_GENERAL_ERROR(CARRIER_SUCCESS)
 #define TAG          "Fileonce: "
 
 const char *hello_pin = "fileonce_greetings";
@@ -87,13 +87,13 @@ const char *hello_pin = "fileonce_greetings";
 typedef struct filectx filectx_t;
 
 struct filectx {
-    ElaCarrier *carrier;
+    Carrier *carrier;
     bool in_progress;
     char path[PATH_MAX];
 
     bool receiver;
-    char friendid[ELA_MAX_ID_LEN + 1];
-    char friend_addr[ELA_MAX_ADDRESS_LEN + 1];
+    char friendid[CARRIER_MAX_ID_LEN + 1];
+    char friend_addr[CARRIER_MAX_ADDRESS_LEN + 1];
 };
 
 static void file_state_changed(FileTransferConnection state, void *context)
@@ -113,7 +113,7 @@ static void file_state_changed(FileTransferConnection state, void *context)
         case FileTransferConnection_failed:
         case FileTransferConnection_closed:
             printf("fileonce is disconnected to %s.\n", fctx->friendid);
-            ela_kill(fctx->carrier);
+            carrier_kill(fctx->carrier);
             break;
 
         case FileTransferConnection_initialized:
@@ -163,31 +163,31 @@ static CarrierFileProgressCallbacks progress_callbacks = {
     .state_changed = file_state_changed
 };
 
-static void connection_callback(ElaCarrier *w, ElaConnectionStatus status,
+static void connection_callback(Carrier *w, CarrierConnectionStatus status,
                                 void *context)
 {
     filectx_t *fctx = (filectx_t *)context;
     int rc;
 
     switch (status) {
-        case ElaConnectionStatus_Connected:
+        case CarrierConnectionStatus_Connected:
             vlogD("Self carrier node connected to carrier network.");
             if (fctx->receiver)
                 return;
-            if (!ela_is_friend(w, fctx->friendid)) {
-                rc = ela_add_friend(w, fctx->friend_addr, hello_pin);
+            if (!carrier_is_friend(w, fctx->friendid)) {
+                rc = carrier_add_friend(w, fctx->friend_addr, hello_pin);
                 if (rc < 0) {
-                    vlogE("Try to adding friend error (0x%x).", ela_get_error());
-                    ela_kill(w);
+                    vlogE("Try to adding friend error (0x%x).", carrier_get_error());
+                    carrier_kill(w);
                     return;
                 }
             }
             break;
 
-        case ElaConnectionStatus_Disconnected:
+        case CarrierConnectionStatus_Disconnected:
             vlogD("Self carrier node disconnected from carrier network.");
             if (!fctx->in_progress)
-                ela_kill(w);
+                carrier_kill(w);
             break;
 
         default:
@@ -195,13 +195,13 @@ static void connection_callback(ElaCarrier *w, ElaConnectionStatus status,
     }
 }
 
-static void friend_connection_callback(ElaCarrier *w, const char *friendid,
-                                       ElaConnectionStatus status, void *context)
+static void friend_connection_callback(Carrier *w, const char *friendid,
+                                       CarrierConnectionStatus status, void *context)
 {
     filectx_t *fctx = (filectx_t *)context;
 
     switch (status) {
-        case ElaConnectionStatus_Connected: {
+        case CarrierConnectionStatus_Connected: {
             int rc;
             vlogD("Friend %s connected to carrier network.", friendid);
             if (fctx->receiver || strcmp(friendid, fctx->friendid) != 0)
@@ -211,16 +211,16 @@ static void friend_connection_callback(ElaCarrier *w, const char *friendid,
                                &progress_callbacks, fctx);
             if (rc < 0) {
                 vlogE("Sender sending a  file [%s] to friend [%s] error (0x%x).",
-                      fctx->path, friendid, ela_get_error());
-                ela_kill(w);
+                      fctx->path, friendid, carrier_get_error());
+                carrier_kill(w);
             }
             break;
         }
 
-        case ElaConnectionStatus_Disconnected:
+        case CarrierConnectionStatus_Disconnected:
             vlogD("Friend %s disconnected from carrier network.", friendid);
             if (!fctx->in_progress)
-                ela_kill(w);
+                carrier_kill(w);
             break;
 
         default:
@@ -228,8 +228,8 @@ static void friend_connection_callback(ElaCarrier *w, const char *friendid,
     }
 }
 
-static void friend_request_callback(ElaCarrier *w, const char *userid,
-                                    const ElaUserInfo *info, const char *hello,
+static void friend_request_callback(Carrier *w, const char *userid,
+                                    const CarrierUserInfo *info, const char *hello,
                                     void *context)
 {
     int rc;
@@ -237,20 +237,20 @@ static void friend_request_callback(ElaCarrier *w, const char *userid,
     if (strcmp(hello, hello_pin) != 0) {
         vlogE(TAG "Received invalid friend request from %s with hello %s.",
               userid, hello);
-        ela_kill(w);
+        carrier_kill(w);
         return;
     }
 
-    rc = ela_accept_friend(w, userid);
-    if (rc < 0 && ela_get_error() != EFRIEND) {
+    rc = carrier_accept_friend(w, userid);
+    if (rc < 0 && carrier_get_error() != EFRIEND) {
         vlogE(TAG "Accepting user %s as friend error (0x%x).", userid,
-              ela_get_error());
-        ela_kill(w);
+              carrier_get_error());
+        carrier_kill(w);
     }
 }
 
-static void transfer_connect_callback(ElaCarrier *w, const char *from,
-                                      const ElaFileTransferInfo *fileinfo,
+static void transfer_connect_callback(Carrier *w, const char *from,
+                                      const CarrierFileTransferInfo *fileinfo,
                                       void *context)
 {
     filectx_t *fctx = (filectx_t *)context;
@@ -267,21 +267,21 @@ static void transfer_connect_callback(ElaCarrier *w, const char *from,
     rc = stat(fctx->path, &st);
     if (rc < 0 && errno != ENOENT) {
         fprintf(stderr, "Error: get file %s stat error.\n", fctx->path);
-        ela_kill(w);
+        carrier_kill(w);
         return;
     }
 
     if (st.st_size >= fileinfo->size) {
         printf("file %s already exists.\n", fctx->path);
-        ela_kill(w);
+        carrier_kill(w);
         return;
     }
 
     rc = carrier_file_recv(w, from, fctx->path, &progress_callbacks, fctx);
     if (rc < 0) {
         vlogE(TAG "Receiver receiving file [%s] from user [%s] error (0x%x).",
-              fileinfo->filename, from, ela_get_error());
-        ela_kill(w);
+              fileinfo->filename, from, carrier_get_error());
+        carrier_kill(w);
     }
 }
 
@@ -333,12 +333,12 @@ int main(int argc, char *argv[])
 {
     filectx_t fctx;
     const char *config_file;
-    ElaCarrier *w;
-    ElaOptions opts;
+    Carrier *w;
+    CarrierOptions opts;
     int wait_for_attach = 0;
-    ElaCallbacks callbacks;
-    char addr[ELA_MAX_ADDRESS_LEN + 1];
-    char userid[ELA_MAX_ID_LEN + 1];
+    CarrierCallbacks callbacks;
+    char addr[CARRIER_MAX_ADDRESS_LEN + 1];
+    char userid[CARRIER_MAX_ID_LEN + 1];
     struct stat st;
     int rc;
     int i;
@@ -374,7 +374,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'd':
-                if (!ela_address_is_valid(optarg)) {
+                if (!carrier_address_is_valid(optarg)) {
                     printf("Invalid target address, please check it.\n");
                     exit(-1);
                 } else {
@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
                 }
                 break;
             case 'u':
-                if (!ela_id_is_valid(optarg)) {
+                if (!carrier_id_is_valid(optarg)) {
                     printf("Invalid target userid, please check it.\n");
                     exit(-1);
                 } else {
@@ -479,30 +479,30 @@ int main(int argc, char *argv[])
     if (fctx.receiver)
         callbacks.friend_request = friend_request_callback;
 
-    w = ela_new(&opts, &callbacks, &fctx);
+    w = carrier_new(&opts, &callbacks, &fctx);
     carrier_config_free(&opts);
     if (!w) {
-        vlogE("Creating carrier instance error (0x%x).", ela_get_error());
+        vlogE("Creating carrier instance error (0x%x).", carrier_get_error());
         return -1;
     }
 
     fctx.carrier = w;
 
-    printf("userid : %s\n", ela_get_userid(w, addr, sizeof(addr)));
-    printf("address: %s\n", ela_get_address(w, addr, sizeof(addr)));
+    printf("userid : %s\n", carrier_get_userid(w, addr, sizeof(addr)));
+    printf("address: %s\n", carrier_get_address(w, addr, sizeof(addr)));
 
-    rc = ela_filetransfer_init(w,
+    rc = carrier_filetransfer_init(w,
                 fctx.receiver ? transfer_connect_callback : NULL, &fctx);
     if (rc < 0) {
-        vlogE("Fileltransfer initialized error (0x%x).", ela_get_error());
-        ela_kill(w);
+        vlogE("Fileltransfer initialized error (0x%x).", carrier_get_error());
+        carrier_kill(w);
         return -1;
     }
 
-    rc = ela_run(w, 10);
+    rc = carrier_run(w, 10);
     if (rc != 0) {
-        vlogE("Start carrier routine error (0x%x).", ela_get_error());
-        ela_kill(w);
+        vlogE("Start carrier routine error (0x%x).", carrier_get_error());
+        carrier_kill(w);
         return -1;
     }
 

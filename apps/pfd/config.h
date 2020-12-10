@@ -44,7 +44,7 @@ typedef struct {
 } PFUser;
 
 typedef struct {
-    ElaOptions ela_options;
+    CarrierOptions ela_options;
 
     int mode;
     int options;

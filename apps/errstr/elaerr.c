@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
 
     carrier_session_register_strerror();
 
-    errstr = ela_get_strerror(errnum, strerr_buf, sizeof(strerr_buf));
+    errstr = carrier_get_strerror(errnum, strerr_buf, sizeof(strerr_buf));
 
     if (errstr)
         printf("%s\n\n", errstr);

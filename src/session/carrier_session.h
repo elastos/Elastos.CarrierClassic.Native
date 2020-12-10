@@ -873,7 +873,7 @@ int carrier_stream_get_state(CarrierSession *session, int stream,
  *      stream      [in] The stream ID.
  * @param
  *      info        [out] The stream transport information defined in
- *                        ElaTransportInfo.
+ *                        CarrierTransportInfo.
  *
  * @return
  *      0 on success, or -1 if an error occurred.
