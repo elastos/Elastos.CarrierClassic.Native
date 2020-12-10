@@ -66,8 +66,8 @@
 
 #include "carrier_config.h"
 
-#define EFRIEND      ELA_GENERAL_ERROR(ELAERR_ALREADY_EXIST)
-#define ELIMITS      ELA_GENERAL_ERROR(ELAERR_LIMIT_EXCEEDED)
+#define EFRIEND      CARRIER_GENERAL_ERROR(CARRIER_SUCCESS)
+#define ELIMITS      CARRIER_GENERAL_ERROR(ERROR_LIMIT_EXCEEDED)
 #define TAG          "Elafile: "
 
 #define CONFIG_NAME   "carrier.conf"
@@ -90,21 +90,21 @@ typedef struct filectx  filectx_t;
 struct filectx {
     list_t *filentries;
 
-    ElaCarrier *carrier;
+    Carrier *carrier;
     char default_path[PATH_MAX];
 
     bool receiver;
-    char friendid[ELA_MAX_ID_LEN + 1];
+    char friendid[CARRIER_MAX_ID_LEN + 1];
     char path[PATH_MAX];
-    ElaFileTransfer *ft;
+    CarrierFileTransfer *ft;
 };
 
 struct filentry {
     list_entry_t le;
 
-    ElaFileTransfer *ft;
-    char fileid[ELA_MAX_FILE_ID_LEN + 1];
-    char realpath[ELA_MAX_FILE_NAME_LEN + 1];
+    CarrierFileTransfer *ft;
+    char fileid[CARRIER_MAX_FILE_ID_LEN + 1];
+    char realpath[CARRIER_MAX_FILE_NAME_LEN + 1];
 
     FILE *fp;
     uint64_t filesz;
@@ -163,11 +163,11 @@ static int file_context_init(filectx_t *fctx)
 
 static void file_context_reset(filectx_t *fctx)
 {
-    ElaFileTransfer *ft = fctx->ft;
+    CarrierFileTransfer *ft = fctx->ft;
     fctx->ft = NULL;
 
     if (ft) {
-        ela_filetransfer_close(ft);
+        carrier_filetransfer_close(ft);
     }
 
     list_clear(fctx->filentries);
@@ -187,7 +187,7 @@ static void file_entry_destroy(void *p)
         fclose(entry->fp);
 }
 
-static void transfer_state_changed_cb(ElaFileTransfer *ft,
+static void transfer_state_changed_cb(CarrierFileTransfer *ft,
                                       FileTransferConnection state,
                                       void *context)
 {
@@ -215,7 +215,7 @@ static void transfer_state_changed_cb(ElaFileTransfer *ft,
     }
 }
 
-static void transfer_file_cb(ElaFileTransfer *ft, const char *fileid,
+static void transfer_file_cb(CarrierFileTransfer *ft, const char *fileid,
                              const char *filename, uint64_t size, void *context)
 {
     filectx_t *fctx = (filectx_t *)context;
@@ -267,13 +267,13 @@ static void transfer_file_cb(ElaFileTransfer *ft, const char *fileid,
 
     entry->le.data = entry;
     list_add(fctx->filentries, &entry->le);
-    ela_filetransfer_set_userdata(fctx->ft, fileid, entry);
+    carrier_filetransfer_set_userdata(fctx->ft, fileid, entry);
 
     console("send pull %s request (offset:%llu).", fileid, (uint64_t)st.st_size);
-    rc = ela_filetransfer_pull(fctx->ft, fileid, st.st_size);
+    rc = carrier_filetransfer_pull(fctx->ft, fileid, st.st_size);
     if (rc < 0) {
-        console("sending pull %s request error (0x%x)", fileid, ela_get_error());
-        vlogE("pull file %s error (0x%x).", fileid, ela_get_error());
+        console("sending pull %s request error (0x%x)", fileid, carrier_get_error());
+        vlogE("pull file %s error (0x%x).", fileid, carrier_get_error());
         goto cancel_transfer;
     }
 
@@ -283,8 +283,8 @@ static void transfer_file_cb(ElaFileTransfer *ft, const char *fileid,
 
 cancel_transfer:
     console("cancel file %s transfer because of error (%d).", fileid, errno);
-    ela_filetransfer_cancel(fctx->ft, fileid, errno, strerror(errno));
-    ela_filetransfer_set_userdata(fctx->ft, fileid, NULL);
+    carrier_filetransfer_cancel(fctx->ft, fileid, errno, strerror(errno));
+    carrier_filetransfer_set_userdata(fctx->ft, fileid, NULL);
     if (entry) {
         deref(entry);
         deref(list_remove_entry(fctx->filentries, &entry->le));
@@ -326,9 +326,9 @@ static void *send_file_routine(void *args)
             goto cancel_transfer;
         }
 
-        rc = ela_filetransfer_send(entry->ft, entry->fileid, buf, (size_t)bytes);
+        rc = carrier_filetransfer_send(entry->ft, entry->fileid, buf, (size_t)bytes);
         if (rc < 0) {
-            console("sending file %s error (0x%x).", entry->fileid, ela_get_error());
+            console("sending file %s error (0x%x).", entry->fileid, carrier_get_error());
             goto cancel_transfer;
         }
 
@@ -350,7 +350,7 @@ static void *send_file_routine(void *args)
     pthread_mutex_unlock(&entry->lock);
 
 cancel_transfer:
-    ela_filetransfer_set_userdata(entry->ft, entry->fileid, NULL);
+    carrier_filetransfer_set_userdata(entry->ft, entry->fileid, NULL);
     deref(list_remove_entry(entry->fctx->filentries, &entry->le));
 
     return NULL;
@@ -380,13 +380,13 @@ static void notify_cancel_cb(filentry_t *entry)
     pthread_mutex_unlock(&entry->lock);
 }
 
-static void transfer_pull_cb(ElaFileTransfer *ft, const char *fileid,
+static void transfer_pull_cb(CarrierFileTransfer *ft, const char *fileid,
                              uint64_t offset, void *context)
 {
     filentry_t *entry;
     pthread_t thread;
 
-    entry = ela_filetransfer_get_userdata(ft, fileid);
+    entry = carrier_filetransfer_get_userdata(ft, fileid);
     if (!entry)
         return;
 
@@ -403,13 +403,13 @@ static void transfer_pull_cb(ElaFileTransfer *ft, const char *fileid,
     pthread_detach(thread);
 }
 
-static bool transfer_data_cb(ElaFileTransfer *ft, const char *fileid,
+static bool transfer_data_cb(CarrierFileTransfer *ft, const char *fileid,
                              const uint8_t *data, size_t length, void *context)
 {
     filentry_t *entry;
     size_t rc;
 
-    entry = ela_filetransfer_get_userdata(ft, fileid);
+    entry = carrier_filetransfer_get_userdata(ft, fileid);
     if (!entry) {
         errno = ENOENT;
         goto cancel_transfer;
@@ -417,7 +417,7 @@ static bool transfer_data_cb(ElaFileTransfer *ft, const char *fileid,
 
     if (!length) {
         console("received cancel to transfer %s", fileid);
-        ela_filetransfer_set_userdata(ft, fileid, NULL);
+        carrier_filetransfer_set_userdata(ft, fileid, NULL);
         deref(list_remove_entry(entry->fctx->filentries, &entry->le));
         return false;
     }
@@ -435,12 +435,12 @@ static bool transfer_data_cb(ElaFileTransfer *ft, const char *fileid,
         errno = ENOSPC;
         goto cancel_transfer;
     } else if (entry->sentsz == entry->filesz) {
-        char filename[ELA_MAX_FILE_NAME_LEN + 1] = {0};
+        char filename[CARRIER_MAX_FILE_NAME_LEN + 1] = {0};
 
-        ela_filetransfer_get_filename(ft, fileid, filename, sizeof(filename));
+        carrier_filetransfer_get_filename(ft, fileid, filename, sizeof(filename));
         console("\nfile %s received with total size: %llu", fileid, entry->sentsz);
 
-        ela_filetransfer_set_userdata(ft, fileid, NULL);
+        carrier_filetransfer_set_userdata(ft, fileid, NULL);
         deref(list_remove_entry(entry->fctx->filentries, &entry->le));
         return false;
     } else {
@@ -454,39 +454,39 @@ static bool transfer_data_cb(ElaFileTransfer *ft, const char *fileid,
 
 cancel_transfer:
     if (entry) {
-        ela_filetransfer_cancel(ft, fileid, errno, strerror(errno));
-        ela_filetransfer_set_userdata(ft, fileid, NULL);
+        carrier_filetransfer_cancel(ft, fileid, errno, strerror(errno));
+        carrier_filetransfer_set_userdata(ft, fileid, NULL);
         deref(list_remove_entry(entry->fctx->filentries, &entry->le));
     }
 
     return true;
 }
 
-static void transfer_pend_cb(ElaFileTransfer *ft, const char *fileid,
+static void transfer_pend_cb(CarrierFileTransfer *ft, const char *fileid,
                              void *context)
 {
     filentry_t *entry;
 
     console("received pending indication to transfer %s.", fileid);
 
-    entry = ela_filetransfer_get_userdata(ft, fileid);
+    entry = carrier_filetransfer_get_userdata(ft, fileid);
     if (entry)
         entry->pend(entry);
 }
 
-static void transfer_resume_cb(ElaFileTransfer *ft, const char *fileid,
+static void transfer_resume_cb(CarrierFileTransfer *ft, const char *fileid,
                                void *context)
 {
     filentry_t *entry;
 
     console("received resume indication to transfer %s.", fileid);
 
-    entry = ela_filetransfer_get_userdata(ft, fileid);
+    entry = carrier_filetransfer_get_userdata(ft, fileid);
     if (entry)
         entry->resume(entry);
 }
 
-static void transfer_cancel_cb(ElaFileTransfer *ft, const char *fileid,
+static void transfer_cancel_cb(CarrierFileTransfer *ft, const char *fileid,
                                int status, const char *reason, void *context)
 {
     filentry_t *entry;
@@ -494,16 +494,16 @@ static void transfer_cancel_cb(ElaFileTransfer *ft, const char *fileid,
     console("received cancel to transfer %s with status %d and reason %s",
             fileid, status, reason);
 
-    entry = ela_filetransfer_get_userdata(ft, fileid);
+    entry = carrier_filetransfer_get_userdata(ft, fileid);
     if (entry)
         entry->cancel(entry);
 }
 
-static bool get_friends_callback(const ElaFriendInfo *friend_info, void *context)
+static bool get_friends_callback(const CarrierFriendInfo *friend_info, void *context)
 {
     int *count = (int *)context;
 
-    if (friend_info && friend_info->status == ElaConnectionStatus_Connected) {
+    if (friend_info && friend_info->status == CarrierConnectionStatus_Connected) {
         console("  %-46s %s", friend_info->user_info.userid, friend_info->label);
         *count += 1;
     }
@@ -521,7 +521,7 @@ static void friends(filectx_t *fctx, int argc, char *argv[])
     }
 
     console("online friends list:");
-    ela_get_friends(fctx->carrier, get_friends_callback, &count);
+    carrier_get_friends(fctx->carrier, get_friends_callback, &count);
     if (count > 0)
         console("total %d.", count);
     else
@@ -530,14 +530,14 @@ static void friends(filectx_t *fctx, int argc, char *argv[])
 
 static void address(filectx_t *fctx, int argc, char *argv[])
 {
-    ElaCarrier *w = fctx->carrier;
-    char buf[ELA_MAX_ADDRESS_LEN + 1];
+    Carrier *w = fctx->carrier;
+    char buf[CARRIER_MAX_ADDRESS_LEN + 1];
 
     if (argc != 1 && argc != 2) {
         console("Error: invalid command syntax.");
     } else if (argc == 1) {
-        console("address: %s", ela_get_address(w, buf, sizeof(buf)));
-        console("userid:  %s", ela_get_userid(w, buf, sizeof(buf)));
+        console("address: %s", carrier_get_address(w, buf, sizeof(buf)));
+        console("userid:  %s", carrier_get_userid(w, buf, sizeof(buf)));
     } else if (strcmp(argv[1], "nospam")) {
         console("Error: invalid command syntax.");
     } else {
@@ -546,8 +546,8 @@ static void address(filectx_t *fctx, int argc, char *argv[])
             nospam = (int)time(NULL) + rand();
         } while(nospam == 0);
 
-        ela_set_self_nospam(fctx->carrier, nospam);
-        console("updated address: %s", ela_get_address(w, buf, sizeof(buf)));
+        carrier_set_self_nospam(fctx->carrier, nospam);
+        console("updated address: %s", carrier_get_address(w, buf, sizeof(buf)));
     }
 }
 
@@ -560,10 +560,10 @@ static void add_friend(filectx_t *fctx, int argc, char *argv[])
         return;
     }
 
-    rc = ela_add_friend(fctx->carrier, argv[1], hello_pin);
+    rc = carrier_add_friend(fctx->carrier, argv[1], hello_pin);
     if (rc >= 0)
         console("user %s added as friend", argv[1]);
-    else if (ela_get_error() == EFRIEND)
+    else if (carrier_get_error() == EFRIEND)
         console("user %s is already friend", argv[1]);
     else
         console("Error: adding user %s as friend failed", argv[1]);
@@ -571,8 +571,8 @@ static void add_friend(filectx_t *fctx, int argc, char *argv[])
 
 static void bind_transfer(filectx_t *fctx, int argc, char *argv[])
 {
-    ElaFileTransferCallbacks cbs;
-    ElaFileTransfer *ft;
+    CarrierFileTransferCallbacks cbs;
+    CarrierFileTransfer *ft;
     int rc;
     char *friendid;
 
@@ -583,12 +583,12 @@ static void bind_transfer(filectx_t *fctx, int argc, char *argv[])
 
     friendid = argc == 1 ? fctx->friendid : argv[1];
 
-    if (!ela_id_is_valid(friendid)) {
+    if (!carrier_id_is_valid(friendid)) {
         console("Error: invalid userid %s", friendid);
         return;
     }
 
-    if (!ela_is_friend(fctx->carrier, friendid)) {
+    if (!carrier_is_friend(fctx->carrier, friendid)) {
         console("Error: user %s not friend yet", argv[1]);
         return;
     }
@@ -606,13 +606,13 @@ static void bind_transfer(filectx_t *fctx, int argc, char *argv[])
     cbs.resume = transfer_resume_cb;
     cbs.cancel = transfer_cancel_cb;
 
-    ft = ela_filetransfer_new(fctx->carrier, friendid, NULL, &cbs, fctx);
+    ft = carrier_filetransfer_new(fctx->carrier, friendid, NULL, &cbs, fctx);
     if (!ft) {
         console("Error: binding filetransfer connection failed");
         return;
     }
 
-    rc = ela_filetransfer_connect(ft);
+    rc = carrier_filetransfer_connect(ft);
     if (rc < 0) {
         console("Error: accepting filetransfer connection failed");
         return;
@@ -626,8 +626,8 @@ static void bind_transfer(filectx_t *fctx, int argc, char *argv[])
 
 static void accept_transfer(filectx_t *fctx, int argc, char *argv[])
 {
-    ElaFileTransferCallbacks cbs;
-    ElaFileTransfer *ft;
+    CarrierFileTransferCallbacks cbs;
+    CarrierFileTransfer *ft;
     struct stat st;
     int rc;
     char *friendid;
@@ -641,12 +641,12 @@ static void accept_transfer(filectx_t *fctx, int argc, char *argv[])
     friendid = argc == 1 ? fctx->friendid : argv[1];
     path = argc != 3 ? fctx->default_path : argv[2];
 
-    if (!ela_id_is_valid(friendid)) {
+    if (!carrier_id_is_valid(friendid)) {
         console("Error: invalid userid %s", friendid);
         return;
     }
 
-    if (!ela_is_friend(fctx->carrier, friendid)) {
+    if (!carrier_is_friend(fctx->carrier, friendid)) {
         console("Error: user %s not friend yet", friendid);
         return;
     }
@@ -670,13 +670,13 @@ static void accept_transfer(filectx_t *fctx, int argc, char *argv[])
     cbs.resume = transfer_resume_cb;
     cbs.cancel = transfer_cancel_cb;
 
-    ft = ela_filetransfer_new(fctx->carrier, friendid, NULL, &cbs, fctx);
+    ft = carrier_filetransfer_new(fctx->carrier, friendid, NULL, &cbs, fctx);
     if (!ft) {
         console("Error: accepting filetransfer connection failed");
         return;
     }
 
-    rc = ela_filetransfer_accept_connect(ft);
+    rc = carrier_filetransfer_accept_connect(ft);
     if (rc < 0) {
         console("Error: accepting filetransfer connection failed");
     }
@@ -690,7 +690,7 @@ static void accept_transfer(filectx_t *fctx, int argc, char *argv[])
 
 static void unbind_transfer(filectx_t *fctx, int argc, char *argv[])
 {
-    ElaFileTransfer *ft = fctx->ft;
+    CarrierFileTransfer *ft = fctx->ft;
 
     if (argc != 1) {
         console("Error: invalid command syntax");
@@ -702,7 +702,7 @@ static void unbind_transfer(filectx_t *fctx, int argc, char *argv[])
 
 static void send_file(filectx_t *fctx, int argc, char *argv[])
 {
-    ElaFileTransferInfo fi;
+    CarrierFileTransferInfo fi;
     filentry_t *entry;
     char path[PATH_MAX] = {0};
     char *p;
@@ -725,7 +725,7 @@ static void send_file(filectx_t *fctx, int argc, char *argv[])
     }
 
     rp = realpath(argv[1], path);
-    if (!rp || strlen(rp) > ELA_MAX_FILE_NAME_LEN)
+    if (!rp || strlen(rp) > CARRIER_MAX_FILE_NAME_LEN)
         return;
 
     p = basename(path);
@@ -736,7 +736,7 @@ static void send_file(filectx_t *fctx, int argc, char *argv[])
     if (!entry)
         return;
 
-    ela_filetransfer_fileid(fi.fileid, sizeof(fi.fileid));
+    carrier_filetransfer_fileid(fi.fileid, sizeof(fi.fileid));
     strcpy(fi.filename, p);
     fi.size = st.st_size;
 
@@ -760,14 +760,14 @@ static void send_file(filectx_t *fctx, int argc, char *argv[])
     entry->le.data = entry;
     list_add(fctx->filentries, &entry->le);
 
-    rc = ela_filetransfer_add(fctx->ft, &fi);
+    rc = carrier_filetransfer_add(fctx->ft, &fi);
     if (rc < 0) {
-        ela_filetransfer_set_userdata(fctx->ft, fi.fileid, NULL);
+        carrier_filetransfer_set_userdata(fctx->ft, fi.fileid, NULL);
         deref(list_remove_entry(fctx->filentries, &entry->le));
         console("Error: adding %s failed (0x%x), please try later.",
-                fi.filename, ela_get_error());
+                fi.filename, carrier_get_error());
     } else {
-        ela_filetransfer_set_userdata(fctx->ft, fi.fileid, entry);
+        carrier_filetransfer_set_userdata(fctx->ft, fi.fileid, entry);
         console("file %s added, waiting pull request.", fi.fileid);
     }
     deref(entry);
@@ -783,20 +783,20 @@ static void cancel_file(filectx_t *fctx, int argc, char *argv[])
         return;
     }
 
-    entry = ela_filetransfer_get_userdata(fctx->ft, argv[1]);
+    entry = carrier_filetransfer_get_userdata(fctx->ft, argv[1]);
     if (!entry)
         return;
 
     rc = fctx->receiver ?
-         ela_filetransfer_cancel(fctx->ft, argv[1], 1, "cancel filetransfer") :
-         ela_filetransfer_send(fctx->ft, argv[1], NULL, 0);
+         carrier_filetransfer_cancel(fctx->ft, argv[1], 1, "cancel filetransfer") :
+         carrier_filetransfer_send(fctx->ft, argv[1], NULL, 0);
     if (rc < 0) {
-        console("Error: cancel %s failed (0x%x)", argv[1], ela_get_error());
+        console("Error: cancel %s failed (0x%x)", argv[1], carrier_get_error());
         return;
     }
 
     if (fctx->receiver) {
-        ela_filetransfer_set_userdata(fctx->ft, argv[1], NULL);
+        carrier_filetransfer_set_userdata(fctx->ft, argv[1], NULL);
         if (entry)
             deref(list_remove_entry(fctx->filentries, &entry->le));
     } else
@@ -952,7 +952,7 @@ static void do_cmd(filectx_t *fctx, char *line)
     }
 }
 
-static void idle_callback(ElaCarrier *w, void *context)
+static void idle_callback(Carrier *w, void *context)
 {
     filectx_t *fctx = (filectx_t *)context;
     char *cmd;
@@ -964,15 +964,15 @@ static void idle_callback(ElaCarrier *w, void *context)
     }
 }
 
-static void connection_callback(ElaCarrier *w, ElaConnectionStatus status,
+static void connection_callback(Carrier *w, CarrierConnectionStatus status,
                                 void *context)
 {
     switch (status) {
-    case ElaConnectionStatus_Connected:
+    case CarrierConnectionStatus_Connected:
         console("self connected to carrier network.");
         break;
 
-    case ElaConnectionStatus_Disconnected:
+    case CarrierConnectionStatus_Disconnected:
         console("self disconnected from carrier network.");
         break;
 
@@ -981,13 +981,13 @@ static void connection_callback(ElaCarrier *w, ElaConnectionStatus status,
     }
 }
 
-static void friend_connection_callback(ElaCarrier *w, const char *friendid,
-                                       ElaConnectionStatus status, void *context)
+static void friend_connection_callback(Carrier *w, const char *friendid,
+                                       CarrierConnectionStatus status, void *context)
 {
     filectx_t *fctx = (filectx_t *)context;
 
     switch (status) {
-    case ElaConnectionStatus_Connected:
+    case CarrierConnectionStatus_Connected:
         console("friend %s connected to carrier network.", friendid);
         if (!strcmp(fctx->friendid, friendid) && !fctx->receiver) {
             char *argv[] = {
@@ -998,7 +998,7 @@ static void friend_connection_callback(ElaCarrier *w, const char *friendid,
         }
         break;
 
-    case ElaConnectionStatus_Disconnected:
+    case CarrierConnectionStatus_Disconnected:
         console("friend %s disconnected from carrier network.", friendid);
         break;
 
@@ -1007,8 +1007,8 @@ static void friend_connection_callback(ElaCarrier *w, const char *friendid,
     }
 }
 
-static void friend_request_callback(ElaCarrier *w, const char *userid,
-                                    const ElaUserInfo *info, const char *hello,
+static void friend_request_callback(Carrier *w, const char *userid,
+                                    const CarrierUserInfo *info, const char *hello,
                                     void *context)
 {
     int rc;
@@ -1019,16 +1019,16 @@ static void friend_request_callback(ElaCarrier *w, const char *userid,
         return;
     }
 
-    rc = ela_accept_friend(w, userid);
-    if (rc < 0 && ela_get_error() != EFRIEND) {
+    rc = carrier_accept_friend(w, userid);
+    if (rc < 0 && carrier_get_error() != EFRIEND) {
         vlogE(TAG "Accepting user %s as friend error (0x%x).", userid,
-              ela_get_error());
+              carrier_get_error());
         return;
     }
 }
 
-static void transfer_connect_callback(ElaCarrier *w, const char *from,
-                                      const ElaFileTransferInfo *fileinfo,
+static void transfer_connect_callback(Carrier *w, const char *from,
+                                      const CarrierFileTransferInfo *fileinfo,
                                       void *context)
 {
     filectx_t *fctx = (filectx_t *)context;
@@ -1090,11 +1090,11 @@ int main(int argc, char *argv[])
 {
     filectx_t fctx;
     const char *config_file;
-    ElaCarrier *w;
-    ElaOptions opts;
+    Carrier *w;
+    CarrierOptions opts;
     int wait_for_attach = 0;
-    ElaCallbacks callbacks;
-    char addr[ELA_MAX_ADDRESS_LEN + 1];
+    CarrierCallbacks callbacks;
+    char addr[CARRIER_MAX_ADDRESS_LEN + 1];
     int rc;
 
     int opt;
@@ -1131,7 +1131,7 @@ int main(int argc, char *argv[])
             break;
 
         case 't':
-            if (!ela_id_is_valid(optarg)) {
+            if (!carrier_id_is_valid(optarg)) {
                 printf("Invalid target friendid, please check it.\n");
                 exit(-1);
             } else {
@@ -1213,30 +1213,30 @@ int main(int argc, char *argv[])
     callbacks.friend_connection = friend_connection_callback;
     callbacks.friend_request = friend_request_callback;
 
-    w = ela_new(&opts, &callbacks, &fctx);
+    w = carrier_new(&opts, &callbacks, &fctx);
     carrier_config_free(&opts);
     if (!w) {
-        vlogE("Creating carrier instance error (0x%x).", ela_get_error());
+        vlogE("Creating carrier instance error (0x%x).", carrier_get_error());
         return -1;
     }
 
-    console("userid : %s", ela_get_userid(w, addr, sizeof(addr)));
-    console("address: %s", ela_get_address(w, addr, sizeof(addr)));
+    console("userid : %s", carrier_get_userid(w, addr, sizeof(addr)));
+    console("address: %s", carrier_get_address(w, addr, sizeof(addr)));
     console_prompt();
 
-    rc = ela_filetransfer_init(w, transfer_connect_callback, &fctx);
+    rc = carrier_filetransfer_init(w, transfer_connect_callback, &fctx);
     if (rc < 0) {
-        vlogE("Fileltransfer initialized error (0x%x).", ela_get_error());
-        ela_kill(w);
+        vlogE("Fileltransfer initialized error (0x%x).", carrier_get_error());
+        carrier_kill(w);
         return -1;
     }
 
     fctx.carrier = w;
 
-    rc = ela_run(w, 10);
+    rc = carrier_run(w, 10);
     if (rc != 0) {
-        vlogE("Start carrier routine error (0x%x).", ela_get_error());
-        ela_kill(w);
+        vlogE("Start carrier routine error (0x%x).", carrier_get_error());
+        carrier_kill(w);
         return -1;
     }
 

@@ -296,13 +296,13 @@ typedef struct ExpressNode {
 
 /**
  * \~English
- * ElaOptions defines several settings that control the way the Carrier
+ * CarrierOptions defines several settings that control the way the Carrier
  * node connects to others.
  *
  * @remark
  *      Default values are not defined for persistent_location of Carrier-
  *      Options, so application should be set persistent_location clearly.
- *      If the ElaOptions structure is defined as a static variable,
+ *      If the CarrierOptions structure is defined as a static variable,
  *      initialization (in compliant compilers) sets all values to 0 (NULL
  *      for pointers).
  */
@@ -649,7 +649,7 @@ typedef struct CarrierCallbacks {
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
-     *      status      [in] Current connection status. @see ElaConnectionStatus.
+     *      status      [in] Current connection status. @see CarrierConnectionStatus.
      * @param
      *      context     [in] The application defined context data.
      */
@@ -677,7 +677,7 @@ typedef struct CarrierCallbacks {
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
-     *      info        [in] The ElaUserInfo pointer to the new user info.
+     *      info        [in] The CarrierUserInfo pointer to the new user info.
      * @param
      *      context     [in] The application defined context data.
      */
@@ -690,7 +690,7 @@ typedef struct CarrierCallbacks {
      * @param
      *      carrier     [in] A handle to the Carrier node instance.
      * @param
-     *      info        [in] A pointer to ElaFriendInfo structure that
+     *      info        [in] A pointer to CarrierFriendInfo structure that
      *                       representing a friend(NULL indicates
      *                       iteration finished).
      * @param
@@ -713,7 +713,7 @@ typedef struct CarrierCallbacks {
      * @param
      *      friendid    [in] The friend's user id.
      * @param
-     *      status      [in] Connection status. @see ElaConnectionStatus
+     *      status      [in] Connection status. @see CarrierConnectionStatus
      * @param
      *      context     [in] The application defined context data.
      */
@@ -730,7 +730,7 @@ typedef struct CarrierCallbacks {
      * @param
      *      friendid    [in] The friend's user id.
      * @param
-     *      info        [in] The ElaFriendInfo pointer to the new friend info.
+     *      info        [in] The CarrierFriendInfo pointer to the new friend info.
      * @param
      *      context     [in] The application defined context data.
      */
@@ -929,7 +929,7 @@ char *carrier_get_id_by_address(const char *address, char *userid, size_t len);
  * ready for connection to Carrier network.
  *
  * @param
- *      options     [in] A pointer to a valid ElaOptions structure.
+ *      options     [in] A pointer to a valid CarrierOptions structure.
  * @param
  *      callbacks   [in] The Application defined callback functions.
  * @param
@@ -1098,7 +1098,7 @@ int carrier_get_self_nospam(Carrier *carrier, uint32_t *nospam);
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
- *      info        [in] The ElaUserInfo pointer to the updated user info.
+ *      info        [in] The CarrierUserInfo pointer to the updated user info.
  *
  * @return
  *      0 on success, or -1 if an error occurred. The specific error code
@@ -1114,7 +1114,7 @@ int carrier_set_self_info(Carrier *carrier, const CarrierUserInfo *info);
  * @param
  *      carrier     [in] A handle to the Carrier node instance.
  * @param
- *      info        [in] The ElaUserInfo pointer to receive user info.
+ *      info        [in] The CarrierUserInfo pointer to receive user info.
  *
  * @return
  *      0 on success, or -1 if an error occurred. The specific error code
@@ -1179,10 +1179,10 @@ bool carrier_is_ready(Carrier *carrier);
  * \~English
  * An application-defined function that iterate the each friends list item.
  *
- * ElaFriendsIterateCallback is the callback function type.
+ * CarrierFriendsIterateCallback is the callback function type.
  *
  * @param
- *      info        [in] A pointer to ElaFriendInfo structure that
+ *      info        [in] A pointer to CarrierFriendInfo structure that
  *                       representing a friend(NULL indicates
  *                       iteration finished).
  * @param
@@ -1202,7 +1202,7 @@ typedef bool CarrierFriendsIterateCallback(const CarrierFriendInfo *info,
  * @param
  *      carrier     [in] a handle to the Carrier node instance.
  * @param
- *      callback    [in] a pointer to ElaFriendsIterateCallback function.
+ *      callback    [in] a pointer to CarrierFriendsIterateCallback function.
  * @param
  *      context     [in] the application defined context data.
  *
@@ -1223,7 +1223,7 @@ int carrier_get_friends(Carrier *carrier,
  * @param
  *      friendid    [in] The friend's user id.
  * @param
- *      info        [in] The ElaFriendInfo pointer to receive the friend
+ *      info        [in] The CarrierFriendInfo pointer to receive the friend
  *                       information.
  *
  * @return
@@ -1373,7 +1373,7 @@ typedef enum CarrierReceiptState {
  * \~English
  * An application-defined function that notify the message receipt status.
  *
- * ElaFriendMessageReceiptCallback is the callback function type.
+ * CarrierFriendMessageReceiptCallback is the callback function type.
  *
  * @param
  *      msgid        [in] The unique id.
@@ -1475,7 +1475,7 @@ typedef void CarrierFriendInviteResponseCallback(Carrier *carrier,
  * @param
  *      len         [in] The data length in bytes.
  * @param
- *      callback    [in] A pointer to ElaFriendInviteResponseCallback
+ *      callback    [in] A pointer to CarrierFriendInviteResponseCallback
  *                       function to receive the invite response.
  * @param
  *      context      [in] The application defined context data.
@@ -1681,10 +1681,10 @@ int carrier_group_set_title(Carrier *carrier, const char *groupid, const char *t
  * An application-defined function that iterate the each peers list item
  * of a specified group.
  *
- * ElaGroupPeersIterateCallback is the callback function type.
+ * CarrierGroupPeersIterateCallback is the callback function type.
  *
  * @param
- *      peer        [in] A pointer to ElaGroupPeer structure that
+ *      peer        [in] A pointer to CarrierGroupPeer structure that
  *                       representing a group peer(NULL indicates
  *                       iteration finished).
  * @param
@@ -1706,7 +1706,7 @@ typedef bool CarrierGroupPeersIterateCallback(const CarrierGroupPeer *peer,
  * @param
  *      groupid     [in] The target group.
  * @param
- *      callback    [in] a pointer to ElaGroupPeersIterateCallback function.
+ *      callback    [in] a pointer to CarrierGroupPeersIterateCallback function.
  * @param
  *      context     [in] the application defined context data.
  *
@@ -1730,7 +1730,7 @@ int carrier_group_get_peers(Carrier *carrier, const char *groupid,
  * @param
  *      peerId      [in] The target peerId to get it's information.
  * @param
- *      peer        [in] The ElaGroupPeer pointer to receive the peer
+ *      peer        [in] The CarrierGroupPeer pointer to receive the peer
  *                       information.
  *
  * @return
@@ -1745,7 +1745,7 @@ int carrier_group_get_peer(Carrier *carrier, const char *groupid,
  * \~English
  * An application-defined function that iterate the each group.
  *
- * ElaIterateGroupCallback is the callback function type.
+ * CarrierIterateGroupCallback is the callback function type.
  *
  * @param
  *      groupid     [in] A pointer to iterating group Id(NULL
@@ -1767,7 +1767,7 @@ typedef bool CarrierIterateGroupCallback(const char *groupid, void *context);
  * @param
  *      carrier     [in] a handle to the Carrier node instance.
  * @param
- *      callback    [in] a pointer to ElaIterateGroupCallback function.
+ *      callback    [in] a pointer to CarrierIterateGroupCallback function.
  * @param
  *      context     [in] the application defined context data.
  *
