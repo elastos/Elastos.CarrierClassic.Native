@@ -70,7 +70,8 @@ set(SRC
     express.c)
 
 set(HEADERS
-    carrier.h)
+    carrier.h
+    carrier_deprecated.h)
 
 add_custom_command(
     OUTPUT packet_generated.h
