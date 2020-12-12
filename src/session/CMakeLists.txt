@@ -68,7 +68,8 @@ set(SRC
     pseudotcp/gqueue.c)
 
 set(HEADERS
-    carrier_session.h)
+    carrier_session.h
+    carrier_session_deprecated.h)
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     set(SYSTEM_LIBS pthread m)

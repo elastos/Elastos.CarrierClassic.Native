@@ -49,7 +49,8 @@ set(SRC
     easyfile.c)
 
 set(HEADERS
-    carrier_filetransfer.h)
+    carrier_filetransfer.h
+    carrier_filetransfer_deprecated.h)
 
 if(WIN32)
     set(SYSTEM_LIBS Ws2_32 )
