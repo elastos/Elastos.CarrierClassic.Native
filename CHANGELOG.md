@@ -1,3 +1,21 @@
+12/16/2020 Li Fenxiang lifenxiang@trinity-tech.io
+
+**version 6.0.1**, main changes to previous version:
+
+```markdown
+- Bugfix for internal dependency library: libcurl;
+- Upgraded to the almost latest versions for internal dependency libraries:  libcrystal/pjsip/toxcore;
+- Add checking mechanism for consistency of internal persistent data before creating carrier instance;
+- Checking thread reentrancy safety for internal library use;
+- Bugfixes for api-tests test cases, especially the synchronization between tests and test-robot;
+- Improvements on message delivery confirmation in the edge case that friends become offline or were removed.
+- Improvements on the message-id generation mechanism, where now globally managed the message-id for all online and offline messages both;
+- Implemented the new extension module to unify the layer for extension modules, such as session, file-transfer, and WebRTC wrapper;
+- Refactored all APIs name with the new prefix "carrier-" instead of "ela-" to make it more official as Carrier service, but still keep the original APIs as deprecated APIs for original use;
+- Refactored the libraries name with the prefix "libcarrier" instead of "libela-*;
+- Removed the deprecated API: int ela_send_friend_message(ElaCarrier *carrier, const char *to,     constvoid *message, size_t len, bool *offline);
+```
+
 08/10/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
 
 **version 5.6.3**, main changes to previous version:
@@ -30,8 +48,6 @@
 - Improvement on internal implementation of ela_run function.
 - Improvement on implementation of mechanism to triggger for pulling offline messages.
 ```
-
-06/18/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
 
 07/06/2020 Meng Xiaokun mengxiaokun@trinity-tech.io
 
