@@ -39,7 +39,7 @@
 #include "ice.h"
 
 #define SDP_MAX_LEN                 2048
-static const char *extension_name = "carrier-session";
+static const char *extension_name = "session";
 
 #if defined(__ANDROID__)
 extern int PJ_JNI_OnLoad(void *vm, void* reserved);
