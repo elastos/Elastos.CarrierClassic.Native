@@ -1,3 +1,11 @@
+12/29/2020 Li Fenxiang lifenxiang@trinity-tech.io
+
+**version 6.0.2-hotfix**, main changes to previous version:
+
+```markdown
+- revert session extension name to remain compatibility.
+```
+
 12/16/2020 Li Fenxiang lifenxiang@trinity-tech.io
 
 **version 6.0.1**, main changes to previous version:
