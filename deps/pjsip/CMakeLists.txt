@@ -83,9 +83,9 @@ ExternalProject_Add(
     pjsip
 
     PREFIX ${CARRIER_DEPS_BUILD_PREFIX}
-    URL "http://www.pjsip.org/release/2.5.5/pjproject-2.5.5.tar.bz2"
-    URL_HASH SHA256=ab39207b761d3485199cd881410afeb2d171dff7c2bf75e8caae91c6dca508f3
-    DOWNLOAD_NAME "pjproject-2.5.5.tar.bz2"
+    URL "https://github.com/pjsip/pjproject/archive/2.5.5.tar.gz"
+    URL_HASH SHA256=d67390dea0b6bfe8d0ddbeb13b5d29d5cf1fc52f73ed43ea5f7d826267f8fcfa
+    DOWNLOAD_NAME "pjproject-2.5.5.tar.gz"
     DOWNLOAD_DIR ${CARRIER_DEPS_TARBALL_DIR}
     DOWNLOAD_NO_PROGRESS 1
 
