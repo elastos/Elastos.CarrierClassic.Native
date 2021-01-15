@@ -205,7 +205,7 @@ ALIAS(ela_session_jni_onload, carrier_session_jni_onload);
  * ElaSessionRequestCallback is the callback function type.
  *
  * @param
- *      carrier     [in] A handle to the ElaCarrier node instance.
+ *      carrier     [in] A handle to the Carrier node instance.
  * @param
  *      from        [in] The id from who send the message.
  * @param
@@ -218,7 +218,7 @@ ALIAS(ela_session_jni_onload, carrier_session_jni_onload);
  * @param
  *      context     [in] The application defined context data.
  */
-typedef void ElaSessionRequestCallback(ElaCarrier *carrier, const char *from,
+typedef void ElaSessionRequestCallback(Carrier *carrier, const char *from,
         const char *bundle, const char *sdp, size_t len, void *context);
 
 /**
@@ -236,7 +236,7 @@ typedef void ElaSessionRequestCallback(ElaCarrier *carrier, const char *from,
  *      can be retrieved by calling carrier_get_error().
  */
 DEPRECATED_WITH(carrier_session_init)
-int ela_session_init(ElaCarrier *carrier)
+int ela_session_init(Carrier *carrier)
 ALIAS(ela_session_init, carrier_session_init);
 
 /**
@@ -252,7 +252,7 @@ ALIAS(ela_session_init, carrier_session_init);
  *      carrier [in] A handle to the carrier node instance.
  */
 DEPRECATED_WITH(carrier_sesion_cleanup)
-void ela_session_cleanup(ElaCarrier *carrier)
+void ela_session_cleanup(Carrier *carrier)
 ALIAS(ela_session_cleanup, carrier_session_cleanup);
 
 /**
@@ -277,7 +277,7 @@ ALIAS(ela_session_cleanup, carrier_session_cleanup);
  *      retrieved by calling carrier_get_error().
  */
 DEPRECATED_WITH(carrier_session_set_callback)
-int ela_session_set_callback(ElaCarrier *carrier, const char *bundle_prefix,
+int ela_session_set_callback(Carrier *carrier, const char *bundle_prefix,
         ElaSessionRequestCallback *callback, void *context)
 ALIAS(ela_session_set_callback, carrier_session_set_callback);
 
@@ -298,7 +298,7 @@ ALIAS(ela_session_set_callback, carrier_session_set_callback);
  *      retrieved by calling carrier_get_error().
  */
 DEPRECATED_WITH(carrier_session_new)
-ElaSession *ela_session_new(ElaCarrier *carrier, const char *address)
+ElaSession *ela_session_new(Carrier *carrier, const char *address)
 ALIAS(ela_session_new, carrier_session_new);
 
 /**

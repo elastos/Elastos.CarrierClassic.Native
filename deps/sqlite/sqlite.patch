@@ -1,0 +1,13 @@
+diff -ruN sqlite/CMakeLists.txt sqlite-mod/CMakeLists.txt
+--- sqlite/CMakeLists.txt	1970-01-01 08:00:00.000000000 +0800
++++ sqlite-mod/CMakeLists.txt	2020-12-18 15:57:37.000000000 +0800
+@@ -0,0 +1,9 @@
++project(sqlite3)
++
++add_library(sqlite3 STATIC sqlite3.c)
++
++install(TARGETS sqlite3
++    RUNTIME DESTINATION "bin"
++    ARCHIVE DESTINATION "lib"
++    LIBRARY DESTINATION "lib")
++install(FILES sqlite3.h DESTINATION include)

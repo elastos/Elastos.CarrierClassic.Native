@@ -178,9 +178,9 @@ extern "C" {
 
 /**
  * \~English
- * ElaCarrier representing carrier node singleton instance.
+ * Carrier representing carrier node singleton instance.
  */
-typedef struct ElaCarrier ElaCarrier;
+typedef struct Carrier Carrier;
 
 /**
  * \~English
@@ -567,7 +567,7 @@ typedef struct ElaGroupCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*group_connected)(ElaCarrier *carrier, const char *groupid, void *context);
+    void (*group_connected)(Carrier *carrier, const char *groupid, void *context);
 
     /**
      * \~English
@@ -586,7 +586,7 @@ typedef struct ElaGroupCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*group_message)(ElaCarrier *carrier, const char *groupid,
+    void (*group_message)(Carrier *carrier, const char *groupid,
                           const char *from, const void *message, size_t length,
                           void *context);
 
@@ -606,7 +606,7 @@ typedef struct ElaGroupCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*group_title)(ElaCarrier *carrier, const char *groupid,
+    void (*group_title)(Carrier *carrier, const char *groupid,
                         const char *from, const char *title, void *context);
 
     /**
@@ -625,7 +625,7 @@ typedef struct ElaGroupCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*peer_name)(ElaCarrier *carrier, const char *groupid,
+    void (*peer_name)(Carrier *carrier, const char *groupid,
                       const char *peerid, const char *peer_name,
                       void *context);
 
@@ -641,7 +641,7 @@ typedef struct ElaGroupCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*peer_list_changed)(ElaCarrier *carrier, const char *groupid,
+    void (*peer_list_changed)(Carrier *carrier, const char *groupid,
                               void *context);
 } ElaGroupCallbacks;
 
@@ -659,7 +659,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*idle)(ElaCarrier *carrier, void *context);
+    void (*idle)(Carrier *carrier, void *context);
 
     /**
      * \~English
@@ -672,7 +672,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*connection_status)(ElaCarrier *carrier,
+    void (*connection_status)(Carrier *carrier,
                               ElaConnectionStatus status, void *context);
 
     /**
@@ -686,7 +686,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*ready)(ElaCarrier *carrier, void *context);
+    void (*ready)(Carrier *carrier, void *context);
 
     /**
      * \~English
@@ -700,7 +700,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*self_info)(ElaCarrier *carrier, const ElaUserInfo *info, void *context);
+    void (*self_info)(Carrier *carrier, const ElaUserInfo *info, void *context);
 
     /**
      * \~English
@@ -719,7 +719,7 @@ typedef struct ElaCallbacks {
      *      Return true to continue iterate next friend user info,
      *      false to stop iterate.
      */
-    bool (*friend_list)(ElaCarrier *carrier, const ElaFriendInfo* info,
+    bool (*friend_list)(Carrier *carrier, const ElaFriendInfo* info,
                         void* context);
 
     /**
@@ -736,7 +736,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*friend_connection)(ElaCarrier *carrier,const char *friendid,
+    void (*friend_connection)(Carrier *carrier,const char *friendid,
                               ElaConnectionStatus status, void *context);
 
     /**
@@ -753,7 +753,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*friend_info)(ElaCarrier *carrier, const char *friendid,
+    void (*friend_info)(Carrier *carrier, const char *friendid,
                         const ElaFriendInfo *info, void *context);
 
     /**
@@ -770,7 +770,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*friend_presence)(ElaCarrier *carrier, const char *friendid,
+    void (*friend_presence)(Carrier *carrier, const char *friendid,
                             ElaPresenceStatus presence, void *context);
 
     /**
@@ -789,7 +789,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*friend_request)(ElaCarrier *carrier, const char *userid,
+    void (*friend_request)(Carrier *carrier, const char *userid,
                            const ElaUserInfo *info,
                            const char *hello, void *context);
 
@@ -805,7 +805,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*friend_added)(ElaCarrier *carrier, const ElaFriendInfo *info,
+    void (*friend_added)(Carrier *carrier, const ElaFriendInfo *info,
                          void *context);
 
     /**
@@ -820,7 +820,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*friend_removed)(ElaCarrier *carrier, const char *friendid,
+    void (*friend_removed)(Carrier *carrier, const char *friendid,
                            void *context);
 
     /**
@@ -846,7 +846,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*friend_message)(ElaCarrier *carrier, const char *from,
+    void (*friend_message)(Carrier *carrier, const char *from,
                            const void *msg, size_t len,
                            int64_t timestamp, bool offline,
                            void *context);
@@ -868,7 +868,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*friend_invite)(ElaCarrier *carrier, const char *from,
+    void (*friend_invite)(Carrier *carrier, const char *from,
                           const char *bundle,
                           const void *data, size_t len, void *context);
 
@@ -887,7 +887,7 @@ typedef struct ElaCallbacks {
      * @param
      *      context     [in] The application defined context data.
      */
-    void (*group_invite)(ElaCarrier *w, const char *from,
+    void (*group_invite)(Carrier *w, const char *from,
                          const void *cookie, size_t len, void *context);
 
     /**
@@ -963,7 +963,7 @@ ALIAS(ela_get_id_by_address, carrier_get_id_by_address);
  *      retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_new)
-ElaCarrier *ela_new(const ElaOptions *options, ElaCallbacks *callbacks,
+Carrier *ela_new(const ElaOptions *options, ElaCallbacks *callbacks,
                     void *context)
 ALIAS(ela_new, carrier_new);
 
@@ -980,7 +980,7 @@ ALIAS(ela_new, carrier_new);
  *                       to kill.
  */
 DEPRECATED_WITH(carrier_kill)
-void ela_kill(ElaCarrier *carrier)
+void ela_kill(Carrier *carrier)
 ALIAS(ela_kill, carrier_kill);
 
 /******************************************************************************
@@ -1005,7 +1005,7 @@ ALIAS(ela_kill, carrier_kill);
  *      retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_run)
-int ela_run(ElaCarrier *carrier, int interval)
+int ela_run(Carrier *carrier, int interval)
 ALIAS(ela_run, carrier_run);
 
 /******************************************************************************
@@ -1029,7 +1029,7 @@ ALIAS(ela_run, carrier_run);
  *      The address string pointer, or NULL if buffer is too small.
  */
 DEPRECATED_WITH(carrier_get_address)
-char *ela_get_address(ElaCarrier *carrier, char *address, size_t len)
+char *ela_get_address(Carrier *carrier, char *address, size_t len)
 ALIAS(ela_get_address, carrier_get_address);
 
 /**
@@ -1049,7 +1049,7 @@ ALIAS(ela_get_address, carrier_get_address);
  *      The nodeId string pointer, or NULL if buffer is too small.
  */
 DEPRECATED_WITH(carrier_get_nodeid)
-char *ela_get_nodeid(ElaCarrier *carrier, char *nodeid, size_t len)
+char *ela_get_nodeid(Carrier *carrier, char *nodeid, size_t len)
 ALIAS(ela_get_nodeid, carrier_get_nodeid);
 
 /**
@@ -1069,7 +1069,7 @@ ALIAS(ela_get_nodeid, carrier_get_nodeid);
  *      The userId string pointer, or NULL if buffer is too small.
  */
 DEPRECATED_WITH(carrier_get_userid)
-char *ela_get_userid(ElaCarrier *carrier, char *userid, size_t len)
+char *ela_get_userid(Carrier *carrier, char *userid, size_t len)
 ALIAS(ela_get_userid, carrier_get_userid);
 
 /******************************************************************************
@@ -1094,7 +1094,7 @@ ALIAS(ela_get_userid, carrier_get_userid);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_set_self_nospam)
-int ela_set_self_nospam(ElaCarrier *carrier, uint32_t nospam)
+int ela_set_self_nospam(Carrier *carrier, uint32_t nospam)
 ALIAS(ela_set_self_nospam, carrier_set_self_nospam);
 
 /**
@@ -1114,7 +1114,7 @@ ALIAS(ela_set_self_nospam, carrier_set_self_nospam);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_get_self_nospam)
-int ela_get_self_nospam(ElaCarrier *carrier, uint32_t *nospam)
+int ela_get_self_nospam(Carrier *carrier, uint32_t *nospam)
 ALIAS(ela_get_self_nospam, carrier_get_self_nospam);
 
 /**
@@ -1135,7 +1135,7 @@ ALIAS(ela_get_self_nospam, carrier_get_self_nospam);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_set_self_info)
-int ela_set_self_info(ElaCarrier *carrier, const ElaUserInfo *info)
+int ela_set_self_info(Carrier *carrier, const ElaUserInfo *info)
 ALIAS(ela_set_self_info, carrier_set_self_info);
 
 /**
@@ -1152,7 +1152,7 @@ ALIAS(ela_set_self_info, carrier_set_self_info);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_get_self_info)
-int ela_get_self_info(ElaCarrier *carrier, ElaUserInfo *info)
+int ela_get_self_info(Carrier *carrier, ElaUserInfo *info)
 ALIAS(ela_get_self_info, carrier_get_self_info);
 
 /**
@@ -1169,7 +1169,7 @@ ALIAS(ela_get_self_info, carrier_get_self_info);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_set_self_presence)
-int ela_set_self_presence(ElaCarrier *carrier, ElaPresenceStatus presence)
+int ela_set_self_presence(Carrier *carrier, ElaPresenceStatus presence)
 ALIAS(ela_set_self_presence, carrier_set_self_presence);
 
 /**
@@ -1186,7 +1186,7 @@ ALIAS(ela_set_self_presence, carrier_set_self_presence);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_get_self_presence)
-int ela_get_self_presence(ElaCarrier *carrier, ElaPresenceStatus *presence)
+int ela_get_self_presence(Carrier *carrier, ElaPresenceStatus *presence)
 ALIAS(ela_get_self_presence, carrier_get_self_presence);
 
 /**
@@ -1203,7 +1203,7 @@ ALIAS(ela_get_self_presence, carrier_get_self_presence);
  *      true if the carrier node instance is ready, or false if not.
  */
 DEPRECATED_WITH(carrier_is_ready)
-bool ela_is_ready(ElaCarrier *carrier)
+bool ela_is_ready(Carrier *carrier)
 ALIAS(ela_is_ready, carrier_is_ready);
 
 /******************************************************************************
@@ -1246,7 +1246,7 @@ typedef bool ElaFriendsIterateCallback(const ElaFriendInfo *info,
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_get_friends)
-int ela_get_friends(ElaCarrier *carrier,
+int ela_get_friends(Carrier *carrier,
                     ElaFriendsIterateCallback *callback, void *context)
 ALIAS(ela_get_friends, carrier_get_friends);
 
@@ -1267,7 +1267,7 @@ ALIAS(ela_get_friends, carrier_get_friends);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_get_friend_info)
-int ela_get_friend_info(ElaCarrier *carrier, const char *friendid,
+int ela_get_friend_info(Carrier *carrier, const char *friendid,
                         ElaFriendInfo *info)
 ALIAS(ela_get_friend_info, carrier_get_friend_info);
 
@@ -1293,7 +1293,7 @@ ALIAS(ela_get_friend_info, carrier_get_friend_info);
  *      seen by yourself only, and has no impact to the target friend.
  */
 DEPRECATED_WITH(carrier_set_friend_label)
-int ela_set_friend_label(ElaCarrier *carrier,
+int ela_set_friend_label(Carrier *carrier,
                          const char *friendid, const char *label)
 ALIAS(ela_set_friend_label, carrier_set_friend_label);
 
@@ -1310,7 +1310,7 @@ ALIAS(ela_set_friend_label, carrier_set_friend_label);
  *      true if the user id is friend, or false if not;
  */
 DEPRECATED_WITH(carrier_is_friend)
-bool ela_is_friend(ElaCarrier* carrier, const char* userid)
+bool ela_is_friend(Carrier* carrier, const char* userid)
 ALIAS(ela_is_friend, carrier_is_friend);
 
 /******************************************************************************
@@ -1337,7 +1337,7 @@ ALIAS(ela_is_friend, carrier_is_friend);
  *      error code can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_add_friend)
-int ela_add_friend(ElaCarrier *carrier, const char *address, const char *hello)
+int ela_add_friend(Carrier *carrier, const char *address, const char *hello)
 ALIAS(ela_add_friend, carrier_add_friend);
 
 /**
@@ -1357,7 +1357,7 @@ ALIAS(ela_add_friend, carrier_add_friend);
  *      retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_accept_friend)
-int ela_accept_friend(ElaCarrier *carrier, const char *userid)
+int ela_accept_friend(Carrier *carrier, const char *userid)
 ALIAS(ela_accept_friend, carrier_accept_friend);
 
 /**
@@ -1380,7 +1380,7 @@ ALIAS(ela_accept_friend, carrier_accept_friend);
  *      retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_remove_friend)
-int ela_remove_friend(ElaCarrier *carrier, const char *userid)
+int ela_remove_friend(Carrier *carrier, const char *userid)
 ALIAS(ela_remove_friend, carrier_remove_friend);
 
 /******************************************************************************
@@ -1463,7 +1463,7 @@ typedef void ElaFriendMessageReceiptCallback(uint32_t msgid,
  *      retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_send_friend_message)
-int ela_send_friend_message(ElaCarrier *carrier, const char *to,
+int ela_send_friend_message(Carrier *carrier, const char *to,
                             const void *message, size_t len,
                             uint32_t *msgid,
                             ElaFriendMessageReceiptCallback *cb, void *context)
@@ -1493,7 +1493,7 @@ ALIAS(ela_send_friend_message, carrier_send_friend_message);
  * @param
  *      context      [in] The application defined context data.
  */
-typedef void ElaFriendInviteResponseCallback(ElaCarrier *carrier,
+typedef void ElaFriendInviteResponseCallback(Carrier *carrier,
                                              const char *from,
                                              const char *bundle,
                                              int status, const char *reason,
@@ -1529,7 +1529,7 @@ typedef void ElaFriendInviteResponseCallback(ElaCarrier *carrier,
  *      retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_invite_friend)
-int ela_invite_friend(ElaCarrier *carrier, const char *to, const char *bundle,
+int ela_invite_friend(Carrier *carrier, const char *to, const char *bundle,
                       const void *data, size_t len,
                       ElaFriendInviteResponseCallback *callback,
                       void *context)
@@ -1566,7 +1566,7 @@ ALIAS(ela_invite_friend, carrier_invite_friend);
  *      retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_reply_friend_invite)
-int ela_reply_friend_invite(ElaCarrier *carrier, const char *to,
+int ela_reply_friend_invite(Carrier *carrier, const char *to,
                             const char *bundle,
                             int status, const char *reason,
                             const void *data, size_t len)
@@ -1591,7 +1591,7 @@ ALIAS(ela_reply_friend_invite, carrier_reply_friend_invite);
  *      error code can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_new_group)
-int ela_new_group(ElaCarrier *carrier, char *groupid, size_t length)
+int ela_new_group(Carrier *carrier, char *groupid, size_t length)
 ALIAS(ela_new_group, carrier_new_group);
 
 /**
@@ -1608,7 +1608,7 @@ ALIAS(ela_new_group, carrier_new_group);
  *      error code can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_leave_group)
-int ela_leave_group(ElaCarrier *carrier, const char *groupid)
+int ela_leave_group(Carrier *carrier, const char *groupid)
 ALIAS(ela_leave_group, carrier_leave_group);
 
 /**
@@ -1627,7 +1627,7 @@ ALIAS(ela_leave_group, carrier_leave_group);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_group_invite)
-int ela_group_invite(ElaCarrier *carrier, const char *groupid, const char *friendid)
+int ela_group_invite(Carrier *carrier, const char *groupid, const char *friendid)
 ALIAS(ela_group_invite, carrier_group_invite);
 
 /**
@@ -1655,7 +1655,7 @@ ALIAS(ela_group_invite, carrier_group_invite);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_group_join)
-int ela_group_join(ElaCarrier *carrier, const char *friendid, const void *cookie,
+int ela_group_join(Carrier *carrier, const char *friendid, const void *cookie,
                    size_t cookie_len, char *groupId, size_t group_len)
 ALIAS(ela_group_join, carrier_group_join);
 
@@ -1682,7 +1682,7 @@ ALIAS(ela_group_join, carrier_group_join);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_group_send_message)
-int ela_group_send_message(ElaCarrier *carrier, const char *groupid,
+int ela_group_send_message(Carrier *carrier, const char *groupid,
                            const void *message, size_t length)
 ALIAS(ela_group_send_message, carrier_group_send_message);
 
@@ -1704,7 +1704,7 @@ ALIAS(ela_group_send_message, carrier_group_send_message);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_group_get_title)
-int ela_group_get_title(ElaCarrier *carrier, const char *groupid, char *title,
+int ela_group_get_title(Carrier *carrier, const char *groupid, char *title,
                         size_t length)
 ALIAS(ela_group_get_title, carrier_group_get_title);
 
@@ -1725,7 +1725,7 @@ ALIAS(ela_group_get_title, carrier_group_get_title);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_group_set_title)
-int ela_group_set_title(ElaCarrier *carrier, const char *groupid, const char *title)
+int ela_group_set_title(Carrier *carrier, const char *groupid, const char *title)
 ALIAS(ela_group_set_title, carrier_group_set_title);
 
 /**
@@ -1767,7 +1767,7 @@ typedef bool ElaGroupPeersIterateCallback(const ElaGroupPeer *peer,
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_group_get_peers)
-int ela_group_get_peers(ElaCarrier *carrier, const char *groupid,
+int ela_group_get_peers(Carrier *carrier, const char *groupid,
                         ElaGroupPeersIterateCallback *callback,
                         void *context)
 ALIAS(ela_group_get_peers, carrier_group_get_peers);
@@ -1791,7 +1791,7 @@ ALIAS(ela_group_get_peers, carrier_group_get_peers);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_group_get_peer)
-int ela_group_get_peer(ElaCarrier *carrier, const char *groupid,
+int ela_group_get_peer(Carrier *carrier, const char *groupid,
                        const char *peerId, ElaGroupPeer *peer)
 ALIAS(ela_group_get_peer, carrier_group_get_peer);
 
@@ -1830,9 +1830,10 @@ typedef bool ElaIterateGroupCallback(const char *groupid, void *context);
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_get_groups)
-int ela_get_groups(ElaCarrier *carrier, ElaIterateGroupCallback *callback,
+int ela_get_groups(Carrier *carrier, ElaIterateGroupCallback *callback,
                    void *context)
 ALIAS(ela_get_groups, carrier_get_groups);
+
 /******************************************************************************
  * Error handling
  *****************************************************************************/
@@ -1852,7 +1853,7 @@ ALIAS(ela_get_groups, carrier_get_groups);
  * \~English
  * Argument(s) is(are) invalid.
  */
-#define ELAERR_INVALID_ARGS                         ERROER_INVALID_ARGS
+#define ELAERR_INVALID_ARGS                         ERROR_INVALID_ARGS
 
 /**
  * \~English

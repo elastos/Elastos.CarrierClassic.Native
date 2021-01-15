@@ -68,13 +68,137 @@ table invitersp {
     data   : [uint8];
 }
 
+table mgrpsyncreq {
+    cur_ver: uint64;
+}
+
+table mgrpnewreq {
+    id     : string;
+    title  : string;
+}
+
+table mgrpnewrsp {
+    status : int32;
+    name   : string;
+    ver    : uint64;
+}
+
+table mgrpinvitereq {
+    svr_id : string;
+    id     : string;
+    title  : string;
+}
+
+table mgrpjoinreq {
+    id     : string;
+}
+
+table mgrpmsgreq {
+    id     : string;
+    msg    : [ubyte];
+}
+
+table mgrptitlereq {
+    id     : string;
+    title  : string;
+}
+
+table mgrpnamereq {
+    id     : string;
+    name   : string;
+}
+
+table mgrpleavereq {
+    id     : string;
+}
+
+table mgrpkickreq {
+    id     : string;
+    peer_id: string;
+}
+
+table mgrprsp {
+    status : int32;
+    ver    : uint64;
+}
+
+table mgrpnew {
+    id     : string;
+    title  : string;
+    admin  : string;
+    name   : string;
+    ver    : uint64;
+}
+
+table mgrpjoin {
+    id     : string;
+    peer_id: string;
+    name   : string;
+    ver    : uint64;
+}
+
+table mgrptitlechange {
+    id     : string;
+    title  : string;
+    ver    : uint64;
+}
+
+table mgrpdismiss {
+    id     : string;
+    ver    : uint64;
+}
+
+table mgrpleft {
+    id     : string;
+    peer_id: string;
+    ver    : uint64;
+}
+
+table mgrpkick {
+    id     : string;
+    peer_id: string;
+    ver    : uint64;
+}
+
+table mgrpnamechange {
+    id     : string;
+    peer_id: string;
+    name   : string;
+    ver    : uint64;
+}
+
+table mgrpmsg {
+    id     : string;
+    peer_id: string;
+    msg    : [ubyte];
+}
+
 union anybody {
     userinfo,
     friendreq,
     friendmsg,
     invitereq,
     invitersp,
-    bulkmsg
+    bulkmsg,
+    mgrpnewreq,
+    mgrpsyncreq,
+    mgrpleavereq,
+    mgrpinvitereq,
+    mgrpjoinreq,
+    mgrpkickreq,
+    mgrpmsgreq,
+    mgrptitlereq,
+    mgrpnamereq,
+    mgrprsp,
+    mgrpnewrsp,
+    mgrpnew,
+    mgrpjoin,
+    mgrpdismiss,
+    mgrptitlechange,
+    mgrpleft,
+    mgrpkick,
+    mgrpnamechange,
+    mgrpmsg
 }
 
 table packet

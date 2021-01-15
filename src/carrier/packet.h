@@ -42,6 +42,26 @@ typedef struct Packet Packet;
 #define PACKET_TYPE_INVITE_RESPONSE            35
 #define PACKET_TYPE_BULKMSG                    36
 
+#define PACKET_TYPE_MGRP_NEW_REQ               50
+#define PACKET_TYPE_MGRP_SYNC_REQ              51
+#define PACKET_TYPE_MGRP_LEAVE_REQ             52
+#define PACKET_TYPE_MGRP_INVITE_REQ            53
+#define PACKET_TYPE_MGRP_JOIN_REQ              54
+#define PACKET_TYPE_MGRP_KICK_REQ              55
+#define PACKET_TYPE_MGRP_MSG_REQ               56
+#define PACKET_TYPE_MGRP_SET_TITLE_REQ         57
+#define PACKET_TYPE_MGRP_SET_NAME_REQ          58
+#define PACKET_TYPE_MGRP_RESP                  70
+#define PACKET_TYPE_MGRP_NEW_RESP              71
+#define PACKET_TYPE_MGRP_DISMISSED             72
+#define PACKET_TYPE_MGRP_TITLE_CHANGED         73
+#define PACKET_TYPE_MGRP_NEW_GRP               74
+#define PACKET_TYPE_MGRP_PEER_JOINED           75
+#define PACKET_TYPE_MGRP_PEER_LEFT             76
+#define PACKET_TYPE_MGRP_PEER_KICKED           77
+#define PACKET_TYPE_MGRP_PEER_NAME_CHANGED     78
+#define PACKET_TYPE_MGRP_PEER_MSG              79
+
 #define PACKET_TYPE_MAX                        95
 
 Packet *packet_create(uint8_t type, const char *ext_name);
@@ -73,6 +93,26 @@ int64_t packet_get_tid(Packet *packet);
 size_t packet_get_totalsz(Packet *packet);
 
 int packet_get_status(Packet *packet);
+
+uint64_t packet_get_ver(Packet *cp);
+
+const char *packet_get_title(Packet *cp);
+
+const char *packet_get_admin(Packet *cp);
+
+const char *packet_get_peer_id_at(Packet *cp, size_t idx);
+
+size_t packet_get_peer_ids_length(Packet *cp);
+
+const char *packet_get_peer_name_at(Packet *cp, size_t idx);
+
+size_t packet_get_peer_names_length(Packet *cp);
+
+const char *packet_get_group_id(Packet *cp);
+
+const char *packet_get_peer_id(Packet *cp);
+
+const char *packet_get_server_id(Packet *cp);
 
 const void *packet_get_raw_data(Packet *packet);
 
@@ -109,6 +149,18 @@ void packet_set_raw_data(Packet *packet, const void *data, size_t len);
 void packet_set_bundle(Packet *packet, const char *bundle);
 
 void packet_set_reason(Packet *packet, const char *reason);
+
+void packet_set_group_id(Packet *cp, const char *id);
+
+void packet_set_peer_id(Packet *cp, const char *peer_id);
+
+void packet_set_admin(Packet *cp, const char *admin);
+
+void packet_set_server_id(Packet *cp, const char *id);
+
+void packet_set_title(Packet *cp, const char *title);
+
+void packet_set_ver(Packet *cp, uint64_t ver);
 
 uint8_t *packet_encode(Packet *packet, size_t *len);
 

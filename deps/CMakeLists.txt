@@ -22,6 +22,8 @@ add_submodule(curl
     DEPENDS platform-specific libressl zlib)
 add_submodule(cJSON
     DEPENDS platform-specific)
+add_submodule(sqlite
+    DEPENDS platform-specific)
 
 if(WIN32)
     add_submodule(PDCurses

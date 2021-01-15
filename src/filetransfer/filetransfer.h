@@ -165,8 +165,6 @@ static inline void filename_safe_free(FileTransferItem *item) {
     }
 }
 
-void ela_set_error(int error);
-
 #ifdef __cplusplus
 }
 #endif

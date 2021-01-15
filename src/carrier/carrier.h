@@ -628,6 +628,177 @@ typedef struct CarrierGroupCallbacks {
 
 /**
  * \~English
+ * Managed group status.
+ */
+typedef enum CarrierManagedGroupStatus {
+    /**
+     * \~English
+     * Managed group is out of sync with server.
+     */
+    CarrierManagedGroupStatus_OutOfSync,
+    /**
+     * \~English
+     * Managed group is syncing with server.
+     */
+    CarrierManagedGroupStatus_Syncing,
+    /**
+     * \~English
+     * Managed group is synced with server.
+     */
+    CarrierManagedGroupStatus_Synced
+} CarrierManagedGroupStatus;
+
+/**
+ * \~English
+ * Managed group peer status.
+ */
+typedef enum CarrierManagedGroupPeerStatus {
+    /**
+     * \~English
+     * Managed group peer joined the group.
+     */
+    CarrierManagedGroupPeerStatus_Joined,
+    /**
+     * \~English
+     * Managed group peer left the group.
+     */
+    CarrierManagedGroupPeerStatus_Left,
+    /**
+     * \~English
+     * Managed group peer was kicked out of the group.
+     */
+    CarrierManagedGroupPeerStatus_Kicked
+} CarrierManagedGroupPeerStatus;
+
+/**
+ * \~English
+ * Managed group callbacks.
+ */
+typedef struct CarrierManagedGroupCallbacks {
+    /**
+     * \~English
+     * An application-defined function that handles group status change.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      group_id    [in] Group ID.
+     * @param
+     *      status      [in] The group new status.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*group_status)(Carrier *carrier, const char *group_id,
+                         CarrierManagedGroupStatus status, void *context);
+
+    /**
+     * \~English
+     * An application-defined function that handles new group which is created by you
+     * in the past. At the time of the callback is called, the status of the group is
+     * ElaManagedGroupStatus_Syncing.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      group_id    [in] Group ID.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*new_group)(Carrier *carrier, const char *group_id, void *context);
+
+    /**
+     * \~English
+     * An application-defined function that handles group dismiss.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      group_id    [in] Group ID.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*dismissed)(Carrier *carrier, const char *group_id, void *context);
+
+    /**
+     * \~English
+     * An application-defined function that handles group title change.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      group_id    [in] Group ID.
+     * @param
+     *      title       [in] New group title.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*title)(Carrier *carrier, const char *group_id,
+                  const char *title, void *context);
+
+    /**
+     * \~English
+     * An application-defined function that handles peer status change. The peer may be
+     * yourself, this occurs when the group is syncing with the server.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      group_id    [in] Group ID.
+     * @param
+     *      peer_id     [in] Peer ID.
+     * @param
+     *      status      [in] Peer status.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*peer_status)(Carrier *carrier, const char *group_id,
+                        const char *peer_id, CarrierManagedGroupPeerStatus status,
+                        void *context);
+
+    /**
+     * \~English
+     * An application-defined function that handles peer name change. The peer may be
+     * yourself, this occurs when the group is syncing with the server.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      group_id    [in] Group ID.
+     * @param
+     *      peer_id     [in] Peer ID.
+     * @param
+     *      peer_name   [in] Peer name.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*peer_name)(Carrier *carrier, const char *group_id,
+                      const char *peer_id, const char *peer_name,
+                      void *context);
+
+    /**
+     * \~English
+     * An application-defined function that handles group message.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      group_id    [in] Group ID.
+     * @param
+     *      from        [in] Peer ID posting the message.
+     * @param
+     *      message     [in] Message.
+     * @param
+     *      length      [in] Message length.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*message)(Carrier *carrier, const char *group_id,
+                    const char *from, const void *message, size_t length,
+                    void *context);
+} CarrierManagedGroupCallbacks;
+
+/**
+ * \~English
  * Carrier callbacks, include all global callbacks for Carrier.
  */
 typedef struct CarrierCallbacks {
@@ -876,6 +1047,33 @@ typedef struct CarrierCallbacks {
      * Group related callbacks.
      */
     CarrierGroupCallbacks group_callbacks;
+
+    /**
+     * \~English
+     * An application-defined function that process the managed group invite request.
+     *
+     * @param
+     *      carrier     [in] A handle to the Carrier node instance.
+     * @param
+     *      group_id    [in] The group ID.
+     * @param
+     *      from        [in] The user id from who send the invite request.
+     * @param
+     *      server_id   [in] The group server ID.
+     * @param
+     *      title       [in] The group title.
+     * @param
+     *      context     [in] The application defined context data.
+     */
+    void (*managed_group_invite)(Carrier *w, const char *group_id,
+                                 const char *from, const char *server_id,
+                                 const char *title, void *context);
+
+    /**
+     * \~English
+     * Managed group related callbacks.
+     */
+    CarrierManagedGroupCallbacks managed_group_callbacks;
 } CarrierCallbacks;
 
 /**
@@ -1778,6 +1976,559 @@ typedef bool CarrierIterateGroupCallback(const char *groupid, void *context);
 CARRIER_API
 int carrier_get_groups(Carrier *carrier, CarrierIterateGroupCallback *callback,
                        void *context);
+
+/******************************************************************************
+ * Managed group lifecycle and messaging.
+ *****************************************************************************/
+/**
+ * \~English
+ * Mark a friend as managed group server.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      friend_id   [in] Friend ID to mark as server.
+ *
+ * @return
+ *      0 if succeeds, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_mark_as_server(Carrier *w, const char *friend_id);
+
+/**
+ * \~English
+ * Unmark a managed group server.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      server_id   [in] The server ID to unmark.
+ *
+ * @return
+ *      0 if succeeds, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_unmark_server(Carrier *w, const char *server_id);
+
+/**
+ * \~English
+ * Callback to notify the result of creating new managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] Group ID.
+ * @param
+ *      server_id   [in] Server ID.
+ * @param
+ *      title       [in] Group title.
+ * @param
+ *      result      [in] The result of creating group.
+ * @param
+ *      context     [in] The context data application defined in carrier_managed_group_new().
+ */
+typedef void CarrierManagedGroupNewCallback(Carrier *w, const char *group_id, const char *server_id,
+                                            const char *title, int result, void *context);
+
+/**
+ * \~English
+ * Create a new managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      server_id   [in] The server hosting the group.
+ * @param
+ *      title       [in] Group title.
+ * @param
+ *      callback    [in] Callback called on finish.
+ * @param
+ *      context     [in] User defined data passed in callback.
+ * @param
+ *      group_id    [out] The buffer to receive a created group Id.
+ *
+ * @return
+ *      0 if creating group in progress, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_new(Carrier *w, const char *server_id, const char *title,
+                              CarrierManagedGroupNewCallback *callback, void *context, char *group_id);
+
+/**
+ * \~English
+ * Callback to notify the result of leaving managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] Group ID.
+ * @param
+ *      result      [in] The result of leaving group.
+ * @param
+ *      context     [in] The context data application defined in carrier_managed_group_leave().
+ */
+typedef void CarrierManagedGroupLeaveCallback(Carrier *w, const char *group_id,
+                                              int result, void *context);
+
+/**
+ * \~English
+ * Leave from a specified managed group
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] The group to leave from.
+ * @param
+ *      callback    [in] Callback called on finish.
+ * @param
+ *      context     [in] User defined data passed in callback.
+ *
+ * @return
+ *      0 if leaving from group in progress, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_leave(Carrier *w, const char *group_id,
+                                CarrierManagedGroupLeaveCallback *callback, void *context);
+
+/**
+ * \~English
+ * Callback to notify the result of inviting a friend to a managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] Group ID.
+ * @param
+ *      friendId    [in] Friend ID to invite.
+ * @param
+ *      result      [in] The result of inviting friend.
+ * @param
+ *      context     [in] The context data application defined in carrier_managed_group_invite().
+ */
+typedef void CarrierManagedGroupInviteCallback(Carrier *w, const char *group_id, const char *friendId,
+                                               int result, void *context);
+
+/**
+ * \~English
+ * Invite a friend to join in a specified managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] The group to invite to.
+ * @param
+ *      friend_id   [in] The friend to invite.
+ * @param
+ *      callback    [in] Callback called on finish.
+ * @param
+ *      context     [in] User defined data passed in callback.
+ *
+ * @return
+ *      0 if inviting in progress, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_invite(Carrier *w, const char *group_id, const char *friend_id,
+                                 CarrierManagedGroupInviteCallback *callback, void *context);
+
+/**
+ * \~English
+ * Callback to notify the result of joining a managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] Group ID.
+ * @param
+ *      result      [in] The result of joining group.
+ * @param
+ *      context     [in] The context data application defined in carrier_managed_group_join().
+ */
+typedef void CarrierManagedGroupJoinCallback(Carrier *w, const char *group_id,
+                                             int result, void *context);
+
+/**
+ * \~English
+ * Join in a specified managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      server_id   [in] The server hosting the group.
+ * @param
+ *      group_id    [in] The group to join in.
+ * @param
+ *      callback    [in] Callback called on finish.
+ * @param
+ *      context     [in] User defined data passed in callback.
+ *
+ * @return
+ *      0 if join in progress, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_join(Carrier *w, const char *server_id, const char *group_id,
+                               CarrierManagedGroupJoinCallback *callback, void *context);
+
+/**
+ * \~English
+ * Callback to notify the result of kicking a peer in a managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] Group ID.
+ * @param
+ *      peer_id     [in] Peer ID.
+ * @param
+ *      result      [in] The result of kicking a peer.
+ * @param
+ *      context     [in] The context data application defined in carrier_managed_group_kick().
+ */
+typedef void CarrierManagedGroupKickCallback(Carrier *w, const char *group_id, const char *peer_id,
+                                             int result, void *context);
+
+/**
+ * \~English
+ * Kick a peer in a specified managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] The group ID.
+ * @param
+ *      peer_id     [in] The peer ID.
+ * @param
+ *      callback    [in] Callback called on finish.
+ * @param
+ *      context     [in] User defined data passed in callback.
+ *
+ * @return
+ *      0 if kick in progress, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_kick(Carrier *w, const char *group_id, const char *peer_id,
+                               CarrierManagedGroupKickCallback *callback, void *context);
+
+/**
+ * \~English
+ * Callback to notify the result of posting message in a managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] Group ID.
+ * @param
+ *      message     [in] Message.
+ * @param
+ *      length      [in] Message length.
+ * @param
+ *      result      [in] The result of posting message.
+ * @param
+ *      context     [in] The context data application defined in carrier_managed_group_send_message().
+ */
+typedef void CarrierManagedGroupSendMessageCallback(Carrier *w, const char *group_id,
+                                                    const void *message, size_t length,
+                                                    int result, void *context);
+
+/**
+ * \~English
+ * Posting message in a specified managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] The group ID.
+ * @param
+ *      message     [in] Message.
+ * @param
+ *      length      [in] Message length.
+ * @param
+ *      callback    [in] Callback called on finish.
+ * @param
+ *      context     [in] User defined data passed in callback.
+ *
+ * @return
+ *      0 if posting in progress, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_send_message(Carrier *w, const char *group_id,
+                                       const void *message, size_t length,
+                                       CarrierManagedGroupSendMessageCallback *callback, void *context);
+
+/**
+ * \~English
+ * Get server ID of specified managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] The group ID.
+ * @param
+ *      server_id   [out] Buffer to receive server ID.
+ *
+ * @return
+ *      0 if succeeds, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_get_server_id(Carrier *w, const char *group_id, char *server_id);
+
+/**
+ * \~English
+ * Get admin ID of specified managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] The group ID.
+ * @param
+ *      admin_id   [out] Buffer to receive admin ID.
+ *
+ * @return
+ *      0 if succeeds, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_get_admin(Carrier *w, const char *group_id, char *admin_id);
+
+/**
+ * \~English
+ * Get title of specified managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] The group ID.
+ * @param
+ *      title       [out] Buffer to receive title.
+ *
+ * @return
+ *      0 if succeeds, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_get_title(Carrier *w, const char *group_id, char *title);
+
+/**
+ * \~English
+ * Callback to notify the result of setting managed group title.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] Group ID.
+ * @param
+ *      title       [in] Title.
+ * @param
+ *      result      [in] The result of setting title.
+ * @param
+ *      context     [in] The context data application defined in carrier_managed_group_set_title().
+ */
+typedef void CarrierManagedGroupSetTitleCallback(Carrier *w, const char *group_id,
+                                                 const char *title, int result, void *context);
+
+/**
+ * \~English
+ * Set title of the specified managed group. You must be the admin.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] The group ID.
+ * @param
+ *      title       [in] Title.
+ * @param
+ *      callback    [in] Callback called on finish.
+ * @param
+ *      context     [in] User defined data passed in callback.
+ *
+ * @return
+ *      0 if operation in progress, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_set_title(Carrier *w, const char *group_id, const char *title,
+                                    CarrierManagedGroupSetTitleCallback *callback, void *context);
+
+/**
+ * \~English
+ * Callback to notify the result of setting name in managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] Group ID.
+ * @param
+ *      name        [in] Name.
+ * @param
+ *      result      [in] The result of setting name.
+ * @param
+ *      context     [in] The context data application defined in carrier_managed_group_set_name().
+ */
+typedef void CarrierManagedGroupSetNameCallback(Carrier *w, const char *group_id,
+                                                const char *name, int result, void *context);
+
+/**
+ * \~English
+ * Set your name in the specified managed group.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      group_id    [in] The group ID.
+ * @param
+ *      name        [in] Name.
+ * @param
+ *      callback    [in] Callback called on finish.
+ * @param
+ *      context     [in] User defined data passed in callback.
+ *
+ * @return
+ *      0 if operation in progress, Otherwise, return -1, and a specific
+ *      error code can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_set_name(Carrier *w, const char *group_id, const char *name,
+                                   CarrierManagedGroupSetNameCallback *callback, void *context);
+
+/**
+ * \~English
+ * An application-defined function that iterate the each peers list item
+ * of a specified managed group.
+ *
+ * ElaManagedGroupPeersIterateCallback is the callback function type.
+ *
+ * @param
+ *      peer        [in] A pointer to ElaGroupPeer structure that
+ *                       representing a group peer(NULL indicates
+ *                       iteration finished).
+ * @param
+ *      context     [in] The application defined context data.
+ *
+ * @return
+ *      Return true to continue iterate next group peer, false to stop
+ *      iteration.
+ */
+typedef bool CarrierManagedGroupPeersIterateCallback(const CarrierGroupPeer *peer,
+                                                     void *context);
+
+/**
+ * \~English
+ * Get managed group peer list. For each peer will call the application defined
+ * iterate callback.
+ *
+ * @param
+ *      carrier     [in] a handle to the Carrier node instance.
+ * @param
+ *      groupid     [in] The target group.
+ * @param
+ *      callback    [in] a pointer to ElaManagedGroupPeersIterateCallback function.
+ * @param
+ *      context     [in] the application defined context data.
+ *
+ * @return
+ *      0 on success, or -1 if an error occurred. The specific error code
+ *      can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_get_peers(Carrier *w, const char *group_id,
+                                    CarrierManagedGroupPeersIterateCallback *callback,
+                                    void *context);
+
+/**
+ * \~English
+ * Get managed group peer information.
+ *
+ * @param
+ *      carrier     [in] A handle to the Carrier node instance.
+ * @param
+ *      groupid     [in] The target group.
+ * @param
+ *      peerId      [in] The target peerId to get it's information.
+ * @param
+ *      peer        [in] The ElaGroupPeer pointer to receive the peer
+ *                       information.
+ *
+ * @return
+ *      0 on success, or -1 if an error occurred. The specific error code
+ *      can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_get_peer(Carrier *w, const char *group_id,
+                                   const char *peer_id, CarrierGroupPeer *peer);
+
+/**
+ * \~English
+ * An application-defined function that iterate the each group.
+ *
+ * ElaIterateManagedGroupCallback is the callback function type.
+ *
+ * @param
+ *      groupid     [in] A pointer to iterating group Id(NULL
+ *                       indicates iteration finished).
+ * @param
+ *      context     [in] The application defined context data.
+ *
+ * @return
+ *      Return true to continue iterate next group peer, false to stop
+ *      iteration.
+ */
+typedef bool CarrierIterateManagedGroupCallback(const char *group_id, void *context);
+
+/**
+ * \~English
+ * Get managed group list. For each group will call the application defined
+ * iterate callback.
+ *
+ * @param
+ *      carrier     [in] a handle to the Carrier node instance.
+ * @param
+ *      callback    [in] a pointer to ElaIterateManagedGroupCallback function.
+ * @param
+ *      context     [in] the application defined context data.
+ *
+ * @return
+ *      0 on success, or -1 if an error occurred. The specific error code
+ *      can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_get_managed_groups(Carrier *w, CarrierIterateManagedGroupCallback *callback,
+                               void *context);
+
+/**
+ * \~English
+ * Start managed group server.
+ *
+ * @param
+ *      carrier     [in] a handle to the Carrier node instance.
+ *
+ * @return
+ *      0 on success, or -1 if an error occurred. The specific error code
+ *      can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_start_server(Carrier *w);
+
+/**
+ * \~English
+ * Stop managed group server.
+ *
+ * @param
+ *      carrier     [in] a handle to the Carrier node instance.
+ *
+ * @return
+ *      0 on success, or -1 if an error occurred. The specific error code
+ *      can be retrieved by calling carrier_get_error().
+ */
+CARRIER_API
+int carrier_managed_group_stop_server(Carrier *w);
 
 /******************************************************************************
  * Error handling

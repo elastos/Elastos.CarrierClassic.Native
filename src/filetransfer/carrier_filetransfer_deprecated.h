@@ -251,7 +251,7 @@ ALIAS(ela_filetransfer_fileid, carrier_filetransfer_fileid);
  * @param
  *      context         [in] The application defined context data.
  */
-typedef void ElaFileTransferConnectCallback(ElaCarrier *carrier,
+typedef void ElaFileTransferConnectCallback(Carrier *carrier,
                     const char *address, const ElaFileTransferInfo *fileinfo,
                     void *context);
 
@@ -274,7 +274,7 @@ typedef void ElaFileTransferConnectCallback(ElaCarrier *carrier,
  *      can be retrieved by calling ela_get_error().
  */
 DEPRECATED_WITH(carrier_filetransfer_init)
-int ela_filetransfer_init(ElaCarrier *carrier,
+int ela_filetransfer_init(Carrier *carrier,
                           ElaFileTransferConnectCallback *callback,
                           void *context)
 ALIAS(ela_filetransfer_init, carrier_filetransfer_init);
@@ -289,7 +289,7 @@ ALIAS(ela_filetransfer_init, carrier_filetransfer_init);
  * If the extension is not initialized, this function has no effect.
  */
 DEPRECATED_WITH(carrier_filetransfer_cleanup)
-void ela_filetransfer_cleanup(ElaCarrier *carrier)
+void ela_filetransfer_cleanup(Carrier *carrier)
 ALIAS(ela_filetransfer_cleanup, carrier_filetransfer_cleanup);
 
 /**
@@ -321,7 +321,7 @@ ALIAS(ela_filetransfer_cleanup, carrier_filetransfer_cleanup);
  *      specific error code can be retrieved by calling ela_get_error()).
  */
 DEPRECATED_WITH(carrier_filetransfer_new)
-ElaFileTransfer *ela_filetransfer_new(ElaCarrier *carrier,
+ElaFileTransfer *ela_filetransfer_new(Carrier *carrier,
                                       const char *address,
                                       const ElaFileTransferInfo *fileinfo,
                                       ElaFileTransferCallbacks *callbacks,

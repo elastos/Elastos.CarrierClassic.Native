@@ -1470,9 +1470,9 @@ static void group_invite(Carrier *w, int argc, char *argv[])
 
     rc = carrier_group_invite(w, argv[1], argv[2]);
     if (rc < 0) {
-        output("Invite friend[%s] into group[%s] failed.\n", argv[2], argv[1]);
+        output("Invite friend[%s] into group[%s] failed.\n", argv[1], argv[2]);
     } else {
-        output("Invite friend[%s] into group[%s] successfully.\n", argv[2], argv[1]);
+        output("Invite friend[%s] into group[%s] successfully.\n", argv[1], argv[2]);
     }
 }
 
@@ -2103,6 +2103,393 @@ static void portforwarding_open(Carrier *w, int argc, char *argv[])
     }
 }
 
+static void mark_mgrp_svr(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 2) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_mark_as_server(w, argv[1]);
+    if (rc == 0)
+        output("Mark [%s] as managed group server success.\n", argv[1]);
+    else
+        output("Mark [%s] as managed group server failed(0x%x).\n", argv[1], carrier_get_error());
+}
+
+static void unmark_mgrp_svr(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 2) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_unmark_server(w, argv[1]);
+    if (rc == 0)
+        output("Unmark managed group server [%s] success.\n", argv[1]);
+    else
+        output("Unmark managed group server [%s] failed(0x%x).\n", argv[1], carrier_get_error());
+}
+
+void mgrp_new_callback(Carrier *w, const char *group_id, const char *server_id,
+                       const char *title, int result, void *context)
+{
+    if (!result)
+        output("Manaegd group[%s](status: synced) is created by you.\n", group_id);
+    else
+        output("Managed group[%s] creation failed(0x%x).\n", group_id, carrier_get_error());
+}
+
+static void mgrp_new(Carrier *w, int argc, char *argv[])
+{
+    char gid[CARRIER_MAX_ID_LEN + 1];
+    int rc;
+
+    if (argc != 3) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_new(w, argv[1], argv[2], mgrp_new_callback, NULL, gid);
+    if (rc == 0)
+        output("Managed group[%s] creation ongoing.\n", gid);
+    else
+        output("Managed group[%s] creation failed(0x%x).\n", gid, carrier_get_error());
+}
+
+void mgrp_leave_callback(Carrier *w, const char *group_id, int result, void *context)
+{
+    if (!result)
+        output("You leave managed group[%s].\n", group_id);
+    else
+        output("Managed group[%s] leave failed(0x%x).\n", group_id, carrier_get_error());
+}
+
+static void mgrp_leave(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 2) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_leave(w, argv[1], mgrp_leave_callback, NULL);
+    if (rc == 0)
+        output("Leave managed group [%s] is ongoing.\n", argv[1]);
+    else
+        output("Leave managed group [%s] failed(0x%x).\n", argv[1], carrier_get_error());
+}
+
+void mgrp_invite_callback(Carrier *w, const char *group_id, const char *friendId,
+                          int result, void *context)
+{
+    if (!result)
+        output("You Invite [%s] to managed group[%s].\n", friendId, group_id);
+    else
+        output("Inviting [%s] to managed group[%s] failed(0x%x).\n", friendId, group_id, carrier_get_error());
+}
+
+static void mgrp_invite(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 3) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_invite(w, argv[2], argv[1], mgrp_invite_callback, NULL);
+    if (rc == 0)
+        output("Invite friend[%s] to managed group[%s] is ongoing.\n", argv[1], argv[2]);
+    else
+        output("Invite friend[%s] to managed group[%s] failed(0x%x).\n", argv[1], argv[2], carrier_get_error());
+}
+
+void mgrp_join_callback(Carrier *w, const char *group_id, int result, void *context)
+{
+    if (!result)
+        output("You join in managed group[%s](status: synced).\n", group_id);
+    else
+        output("Join in managed group[%s] failed(0x%x).\n", group_id, carrier_get_error());
+}
+
+static void mgrp_join(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 3) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_join(w, argv[1], argv[2], mgrp_join_callback, NULL);
+    if (rc == 0)
+        output("Join managed group[%s] is ongoing.\n", argv[2]);
+    else
+        output("Join managed group[%s] failed(0x%x).\n", argv[2], carrier_get_error());
+}
+
+void mgrp_kick_callback(Carrier *w, const char *group_id, const char *peer_id,
+                        int result, void *context)
+{
+    if (!result)
+        output("You kick [%s] out of managed group[%s].\n", peer_id, group_id);
+    else
+        output("You kick [%s] out of managed group[%s] failed(0x%x).\n", peer_id, group_id, carrier_get_error());
+}
+
+static void mgrp_kick(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 3) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_kick(w, argv[1], argv[2], mgrp_kick_callback, NULL);
+    if (rc == 0)
+        output("Kick [%s] out of managed group[%s] is ongoing.\n", argv[2], argv[1]);
+    else
+        output("Kick [%s] out of managed group[%s] failed(0x%x).\n", argv[2], argv[1], carrier_get_error());
+}
+
+void mgrp_msg_callback(Carrier *w, const char *group_id,
+                       const void *message, size_t length,
+                       int result, void *context)
+{
+    if (!result)
+        output("You send message in managed group[%s].\n", group_id);
+    else
+        output("You send message in managed group[%s] failed(0x%x).\n", group_id, carrier_get_error());
+}
+
+static void mgrp_msg(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 3) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_send_message(w, argv[1], argv[2], strlen(argv[2]) + 1,
+                                            mgrp_msg_callback, NULL);
+    if (rc == 0)
+        output("Send message in managed group[%s] is ongoing.\n", argv[1]);
+    else
+        output("Send message in managed group[%s] failed(0x%x).\n", argv[1], carrier_get_error());
+}
+
+static void mgrp_svr(Carrier *w, int argc, char *argv[])
+{
+    char sid[CARRIER_MAX_ID_LEN + 1];
+    int rc;
+
+    if (argc != 2) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_get_server_id(w, argv[1], sid);
+    if (rc == 0)
+        output("Managed group[%s] server ID:[%s]\n", argv[1], sid);
+    else
+        output("Get managed group[%s] server ID failed(0x%x).\n", argv[1], carrier_get_error());
+}
+
+static void mgrp_admin(Carrier *w, int argc, char *argv[])
+{
+    char admin[CARRIER_MAX_ID_LEN + 1];
+    int rc;
+
+    if (argc != 2) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_get_admin(w, argv[1], admin);
+    if (rc == 0)
+        output("Managed group[%s] admin ID:[%s]\n", argv[1], admin);
+    else
+        output("Get managed group[%s] admin ID failed(0x%x).\n", argv[1], carrier_get_error());
+}
+
+static void mgrp_title(Carrier *w, int argc, char *argv[])
+{
+    char title[CARRIER_MAX_GROUP_TITLE_LEN + 1];
+    int rc;
+
+    if (argc != 2) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_get_title(w, argv[1], title);
+    if (rc == 0)
+        output("Managed group[%s] title:[%s]\n", argv[1], title);
+    else
+        output("Get managed group[%s] title failed(0x%x).\n", argv[1], carrier_get_error());
+}
+
+void mgrp_set_title_callback(Carrier *w, const char *group_id,
+                             const char *title, int result, void *context)
+{
+    if (!result)
+        output("You set title in managed group[%s].\n", group_id);
+    else
+        output("You set title in managed group[%s] failed(0x%x).\n", group_id, carrier_get_error());
+}
+
+static void mgrp_set_title(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 3) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_set_title(w, argv[1], argv[2], mgrp_set_title_callback, NULL);
+    if (rc == 0)
+        output("Set title in managed group[%s] is ongoing.\n", argv[1]);
+    else
+        output("Set title in managed group[%s] failed(0x%x).\n", argv[1], carrier_get_error());
+}
+
+void mgrp_set_name_callback(Carrier *w, const char *group_id,
+                             const char *title, int result, void *context)
+{
+    if (!result)
+        output("You set name in managed group[%s].\n", group_id);
+    else
+        output("You set name in managed group[%s] failed(0x%x).\n", group_id, carrier_get_error());
+}
+
+static void mgrp_set_name(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 3) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_set_name(w, argv[1], argv[2], mgrp_set_name_callback, NULL);
+    if (rc == 0)
+        output("Set name in managed group[%s] is ongoing.\n", argv[1]);
+    else
+        output("Set name in managed group[%s] failed(0x%x).\n", argv[1], carrier_get_error());
+}
+
+bool mgrp_peers_callback(const CarrierGroupPeer *peer, void *context)
+{
+    int *i = context;
+
+    if (peer)
+        output("%d. ID[%s], name[%s].\n", (*i)++, peer->userid, peer->name);
+
+    return true;
+}
+
+static void mgrp_peers(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+    int i = 1;
+
+    if (argc != 2) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_get_peers(w, argv[1], mgrp_peers_callback, &i);
+    if (rc == 0)
+        output("Get managed group[%s] peers success.\n", argv[1]);
+    else
+        output("Get managed group[%s] peers failed(0x%x).\n", argv[1], carrier_get_error());
+}
+
+static void mgrp_peer(Carrier *w, int argc, char *argv[])
+{
+    CarrierGroupPeer gp;
+    int rc;
+
+    if (argc != 3) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_get_peer(w, argv[1], argv[2], &gp);
+    if (rc == 0)
+        output("Peer[%s] name:[%s].\n", argv[2], gp.name);
+    else
+        output("Get managed group peer failed(0x%x).\n", carrier_get_error());
+}
+
+bool mgrp_grps_callback(const char *group_id, void *context)
+{
+    int *i = context;
+
+    if (group_id)
+        output("%d. [%s]\n", (*i)++, group_id);
+
+    return true;
+}
+
+static void mgrp_grps(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+    int i = 1;
+
+    if (argc != 1) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_get_managed_groups(w, mgrp_grps_callback, &i);
+    if (rc == 0)
+        output("Get managed groups success.\n");
+    else
+        output("Get managed groups failed(0x%x).\n", carrier_get_error());
+}
+
+static void mgrp_svr_start(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 1) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_start_server(w);
+    if (rc == 0)
+        output("Start managed group server success.\n");
+    else
+        output("Start managed group server failed(0x%x).\n", carrier_get_error());
+}
+
+static void mgrp_svr_stop(Carrier *w, int argc, char *argv[])
+{
+    int rc;
+
+    if (argc != 1) {
+        output("Invalid command syntax.\n");
+        return;
+    }
+
+    rc = carrier_managed_group_stop_server(w);
+    if (rc == 0)
+        output("Stop managed group server success.\n");
+    else
+        output("Stop managed group server failed(0x%x).\n", carrier_get_error());
+}
+
 static void portforwarding_close(Carrier *w, int argc, char *argv[])
 {
     int pfid;
@@ -2163,6 +2550,25 @@ struct command {
     { "gtitle",     group_set_title,        "gtitle [Group ID] - Display title of group. *OR* gtitle [Group ID] [Title] -  Set title of group." },
     { "gpeers",     group_list_peers,       "gpeers [Group ID] - Display list of participants in group." },
     { "glist",      group_list,             "glist - Display list of joined group." },
+
+    { "mgmksvr",    mark_mgrp_svr,          "mgmksvr [Friend ID] - Mark friend as managed group server." },
+    { "mgunmksvr",  unmark_mgrp_svr,        "mgunmksvr [Server ID] - Unmark managed group server." },
+    { "mgnew",      mgrp_new,               "mgnew [server iD] [Title] - Create a managed group." },
+    { "mgleave",    mgrp_leave,             "mgleave [Group ID] - Leave managed group." },
+    { "mginvite",   mgrp_invite,            "mginvite [Friend ID] [Group ID] - Invite a friend to managed group." },
+    { "mgjoin",     mgrp_join,              "mgjoin [Server ID] [Group ID] - Join in mananged group." },
+    { "mgkick",     mgrp_kick,              "mgkick [Group ID] [Peer ID] - Kick peer out of managed group." },
+    { "mgmsg",      mgrp_msg,               "mgmsg [Group ID] [Message] - Post message in managed group." },
+    { "mgsvr",      mgrp_svr,               "mgsvr [Group ID] - Get server ID of managed group." },
+    { "mgadmin",    mgrp_admin,             "mgadmin [Group ID] - Get admin ID of managed group." },
+    { "mgtitle",    mgrp_title,             "mgtitle [Group ID] - Get title of managed group." },
+    { "mgsettitle", mgrp_set_title,         "mgsettitle [Group ID] [Title] - Set title of managed group." },
+    { "mgsetname",  mgrp_set_name,          "mgsetname [Group ID] [Name] - Set name in managed group." },
+    { "mgpeers",    mgrp_peers,             "mgpeers [Group ID] - Get peers in managed group." },
+    { "mgpeer",     mgrp_peer,              "mgpeer [Group ID] [Peer ID] - Get peer in managed group." },
+    { "mggrps",     mgrp_grps,              "mggrps - Get managed groups." },
+    { "mgsvrstart", mgrp_svr_start,         "mgsvrstart - start managed group server." },
+    { "mgsvrstop",  mgrp_svr_stop,          "mgsvrstop - stop managed group server." },
 
     { "sinit",      session_init,           "sinit - Initialize session." },
     { "snew",       session_new,            "snew [User ID] - Start new session with user." },
@@ -2621,6 +3027,90 @@ void signal_handler(int signum)
     exit(-1);
 }
 
+void managed_group_invite_callback(Carrier *w, const char *group_id,
+                                   const char *from, const char *server_id,
+                                   const char *title, void *context)
+{
+    output("[%s] invite you to join managed group[%s](title: %s, server: %s).\n",
+           from, group_id, title, server_id);
+}
+
+void managed_group_status_callback(Carrier *carrier, const char *group_id,
+                                   CarrierManagedGroupStatus status, void *context)
+{
+    output("Managed group[%s] status changed to [%s].\n",
+           group_id, status == CarrierManagedGroupStatus_OutOfSync ?
+                     "out of sync" :
+                     status == CarrierManagedGroupStatus_Syncing ? "syncing" : "synced");
+}
+
+void managed_group_new_group_callback(Carrier *carrier, const char *group_id, void *context)
+{
+    output("Managed group[%s](status: syncing) is created by you.\n",
+           group_id);
+}
+
+void managed_group_dismiss_callback(Carrier *carrier, const char *group_id, void *context)
+{
+    output("Managed group[%s] is dismissed.\n", group_id);
+}
+
+void managed_group_title_callback(Carrier *carrier, const char *group_id,
+                                  const char *title, void *context)
+{
+    output("Managed group[%s] title changes to [%s].\n", group_id, title);
+}
+
+void managed_group_peer_status_callback(Carrier *carrier, const char *group_id,
+                                        const char *peer_id, CarrierManagedGroupPeerStatus status,
+                                        void *context)
+{
+    CarrierUserInfo ui;
+
+    carrier_get_self_info(carrier, &ui);
+
+    if (!strcmp(peer_id, ui.userid)) {
+        output("You %s managed group[%s]",
+               status == CarrierManagedGroupPeerStatus_Left ?
+               "leave" :
+               status == CarrierManagedGroupPeerStatus_Joined ? "join in" :
+                                                            "are kicked out of",
+               group_id);
+        output("%s.\n", status == CarrierManagedGroupPeerStatus_Joined ?
+                        "(status: syncing)" : "");
+    } else
+        output("[%s] %s managed group[%s].\n", peer_id,
+               status == CarrierManagedGroupPeerStatus_Left ?
+               "leave" :
+               status == CarrierManagedGroupPeerStatus_Joined ? "join in" :
+                                                            "is kicked out of",
+               group_id);
+}
+
+void managed_group_peer_name_callback(Carrier *carrier, const char *group_id,
+                                      const char *peer_id, const char *peer_name,
+                                      void *context)
+{
+    CarrierUserInfo ui;
+
+    carrier_get_self_info(carrier, &ui);
+
+    if (!strcmp(peer_id, ui.userid))
+        output("You change name to [%s] in managed group[%s].\n",
+               peer_name, group_id);
+    else
+        output("[%s] changes name to [%s] in managed group[%s].\n", peer_id,
+               peer_name, group_id);
+}
+
+void managed_group_message_callback(Carrier *carrier, const char *group_id,
+                                    const char *from, const void *message, size_t length,
+                                    void *context)
+{
+    output("[%s] posts message [%s] in managed group[%s].\n", from,
+           message, group_id);
+}
+
 int main(int argc, char *argv[])
 {
     const char *config_file = NULL;
@@ -2730,6 +3220,14 @@ int main(int argc, char *argv[])
     callbacks.group_callbacks.group_title = group_title_callback;
     callbacks.group_callbacks.peer_name = group_peer_name_callback;
     callbacks.group_callbacks.peer_list_changed = group_peer_list_changed_callback;
+    callbacks.managed_group_invite = managed_group_invite_callback;
+    callbacks.managed_group_callbacks.group_status = managed_group_status_callback;
+    callbacks.managed_group_callbacks.new_group = managed_group_new_group_callback;
+    callbacks.managed_group_callbacks.dismissed = managed_group_dismiss_callback;
+    callbacks.managed_group_callbacks.title = managed_group_title_callback;
+    callbacks.managed_group_callbacks.peer_status = managed_group_peer_status_callback;
+    callbacks.managed_group_callbacks.peer_name = managed_group_peer_name_callback;
+    callbacks.managed_group_callbacks.message = managed_group_message_callback;
 
     w = carrier_new(&opts, &callbacks, NULL);
     carrier_config_free(&opts);

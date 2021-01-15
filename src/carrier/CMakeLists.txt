@@ -67,7 +67,9 @@ set(SRC
     carrier_extension.c
     carrier_turnserver.c
     http_client.c
-    express.c)
+    express.c
+    managed_group_client.c
+    managed_group_server.c)
 
 set(HEADERS
     carrier.h
@@ -113,7 +115,8 @@ set(LIBS
     libcurl
     crystal
     toxcore
-    flatccrt)
+    flatccrt
+    sqlite3)
 
 if(WIN32)
     set(LIBS
@@ -123,7 +126,8 @@ if(WIN32)
 else()
     set(LIBS
         ${LIBS}
-        sodium)
+        sodium
+        dl)
 endif()
 
 add_definitions(-DCARRIER_BUILD)

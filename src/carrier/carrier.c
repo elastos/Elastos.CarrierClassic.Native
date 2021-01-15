@@ -102,15 +102,6 @@ const char* carrier_get_version(void)
     return carrier_version;
 }
 
-static bool is_valid_key(const char *key)
-{
-    char result[DHT_PUBLIC_KEY_SIZE];
-    ssize_t len;
-
-    len = base58_decode(key, strlen(key), result, sizeof(result));
-    return len == DHT_PUBLIC_KEY_SIZE;
-}
-
 bool carrier_id_is_valid(const char *id)
 {
     if (!id || !*id) {
@@ -194,32 +185,6 @@ void carrier_log_init(CarrierLogLevel level, const char *log_file,
 #if !defined(__ANDROID__)
     vlog_init(level, log_file, log_printer);
 #endif
-}
-
-static
-int get_friend_number(Carrier *w, const char *friendid, uint32_t *friend_number)
-{
-    uint8_t pk[DHT_PUBLIC_KEY_SIZE];
-    ssize_t len;
-    int rc;
-
-    assert(w);
-    assert(friendid);
-    assert(friend_number);
-
-    len = base58_decode(friendid, strlen(friendid), pk, sizeof(pk));
-    if (len != DHT_PUBLIC_KEY_SIZE) {
-        vlogE("Carrier: friendid %s is not base58-encoded string", friendid);
-        return CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS);
-    }
-
-    rc = dht_get_friend_number(&w->dht, pk, friend_number);
-    if (rc < 0) {
-        //vlogE("Carrier: friendid %s is not friend yet.", friendid);
-        return CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST);
-    }
-
-    return rc;
 }
 
 static void fill_empty_user_descr(Carrier *w)
@@ -857,50 +822,6 @@ static void free_persistence_data(persistence_data *data)
         free((void *)data->dht_savedata);
 }
 
-static int mkdir_internal(const char *path, mode_t mode)
-{
-    struct stat st;
-    int rc = 0;
-
-    if (stat(path, &st) != 0) {
-        /* Directory does not exist. EEXIST for race condition */
-        if (mkdir(path, mode) != 0 && errno != EEXIST)
-            rc = -1;
-    } else if (!S_ISDIR(st.st_mode)) {
-        errno = ENOTDIR;
-        rc = -1;
-    }
-
-    return rc;
-}
-
-static int mkdirs(const char *path, mode_t mode)
-{
-    int rc = 0;
-    char *pp;
-    char *sp;
-    char copypath[PATH_MAX];
-
-    strncpy(copypath, path, sizeof(copypath));
-    copypath[sizeof(copypath) - 1] = 0;
-
-    pp = copypath;
-    while (rc == 0 && (sp = strchr(pp, '/')) != 0) {
-        if (sp != pp) {
-            /* Neither root nor double slash in path */
-            *sp = '\0';
-            rc = mkdir_internal(copypath, mode);
-            *sp = '/';
-        }
-        pp = sp + 1;
-    }
-
-    if (rc == 0)
-        rc = mkdir_internal(path, mode);
-
-    return rc;
-}
-
 static size_t get_extra_savedata_size(Carrier *w)
 {
     linked_hashtable_iterator_t it;
@@ -1121,6 +1042,12 @@ static void carrier_destroy(void *argv)
 
     if (w->connector)
         deref(w->connector);
+
+    if (w->mgrp_client)
+        deref(w->mgrp_client);
+
+    if (w->mgrp_server)
+        deref(w->mgrp_server);
 
     if (w->exts)
         deref(w->exts);
@@ -1381,6 +1308,14 @@ Carrier *carrier_new(const CarrierOptions *opts, CarrierCallbacks *callbacks,
         }
     }
 
+    w->mgrp_client = managed_group_client_create(w);
+    if (!w->mgrp_client) {
+        free_persistence_data(&data);
+        deref(w);
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
+        return NULL;
+    }
+
     apply_extra_data(w, data.extra_savedata, data.extra_savedata_len);
     free_persistence_data(&data);
 
@@ -1613,6 +1548,12 @@ void notify_friend_connection_cb(uint32_t friend_number, bool connected,
 
         fi->info.status = status;
         strcpy(friendid, fi->info.user_info.userid);
+
+        connected ? managed_group_client_handle_server_connected(w->mgrp_client, friendid) :
+                    managed_group_client_handle_server_disconnected(w->mgrp_client, friendid);
+
+        if (!connected && w->mgrp_server)
+            managed_group_server_handle_client_disconnected(w->mgrp_server, friendid);
 
         notify_friend_connection(w, friendid, status);
     }
@@ -2374,6 +2315,29 @@ void notify_friend_message_cb(uint32_t friend_number, const uint8_t *message,
     case PACKET_TYPE_BULKMSG:
         handle_friend_bulkmsg(w, friend_number, cp);
         break;
+    case PACKET_TYPE_MGRP_RESP:
+    case PACKET_TYPE_MGRP_NEW_RESP:
+    case PACKET_TYPE_MGRP_DISMISSED:
+    case PACKET_TYPE_MGRP_TITLE_CHANGED:
+    case PACKET_TYPE_MGRP_NEW_GRP:
+    case PACKET_TYPE_MGRP_PEER_JOINED:
+    case PACKET_TYPE_MGRP_PEER_LEFT:
+    case PACKET_TYPE_MGRP_PEER_KICKED:
+    case PACKET_TYPE_MGRP_PEER_NAME_CHANGED:
+    case PACKET_TYPE_MGRP_PEER_MSG:
+        managed_group_client_handle_packet(w->mgrp_client, friend_number, cp);
+        break;
+    case PACKET_TYPE_MGRP_NEW_REQ:
+    case PACKET_TYPE_MGRP_SYNC_REQ:
+    case PACKET_TYPE_MGRP_LEAVE_REQ:
+    case PACKET_TYPE_MGRP_JOIN_REQ:
+    case PACKET_TYPE_MGRP_KICK_REQ:
+    case PACKET_TYPE_MGRP_MSG_REQ:
+    case PACKET_TYPE_MGRP_SET_TITLE_REQ:
+    case PACKET_TYPE_MGRP_SET_NAME_REQ:
+        if (w->mgrp_server)
+            managed_group_server_handle_packet(w->mgrp_server, friend_number, cp);
+        break;
     default:
         vlogE("Carrier: Unknown DHT message, dropped.");
         break;
@@ -2687,7 +2651,7 @@ int carrier_run(Carrier *w, int interval)
         do_transacted_callabcks_expire(w);
         do_bulkmsgs_expire(w->bulkmsgs);
         do_express_expire(w);
-
+        managed_group_client_do_backgroud_routine(w->mgrp_client);
         if (idle_interval > 0)
             notify_idle(w);
 
@@ -2700,6 +2664,8 @@ int carrier_run(Carrier *w, int interval)
 
         dht_iterate(&w->dht, &w->dht_callbacks);
     }
+
+    managed_group_client_end_backgroud_routine(w->mgrp_client);
 
     w->running = 0;
 
@@ -3222,6 +3188,10 @@ int carrier_remove_friend(Carrier *w, const char *friendid)
     uint32_t friend_number;
     FriendInfo *fi;
     int rc;
+
+    rc = carrier_managed_group_unmark_server(w, friendid);
+    if (rc < 0)
+        return -1;
 
     if (!w || !friendid || !*friendid) {
         carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
@@ -4528,3 +4498,25 @@ int carrier_leave_all_groups(Carrier *w)
 
     return 0;
 }
+
+int carrier_managed_group_start_server(Carrier *w)
+{
+    if (w->mgrp_server)
+        return 0;
+
+    w->mgrp_server = managed_group_server_create(w);
+    if (!w->mgrp_server) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
+        return -1;
+    }
+
+    return 0;
+}
+
+int carrier_managed_group_stop_server(Carrier *w)
+{
+    deref(w->mgrp_server);
+    w->mgrp_server = NULL;
+    return 0;
+}
+

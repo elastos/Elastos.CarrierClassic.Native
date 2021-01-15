@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Elastos Foundation
+ * Copyright (c) 2020 Elastos Foundation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,42 +20,24 @@
  * SOFTWARE.
  */
 
-#ifndef __PFD_CONFIG_H__
-#define __PFD_CONFIG_H__
+#ifndef __MANAGED_GROUP_CLIENT_H__
+#define __MANAGED_GROUP_CLIENT_H__
 
-#include <carrier.h>
-#include <carrier_session.h>
-#include <crystal.h>
+#include "carrier.h"
+#include "packet.h"
 
-#define MODE_CLIENT     1
-#define MODE_SERVER     2
+typedef struct ManagedGroupClient ManagedGroupClient;
 
-typedef struct {
-    linked_hash_entry_t he;
-    char *name;
-    char *host;
-    char *port;
-} PFService;
+ManagedGroupClient *managed_group_client_create(Carrier *w);
 
-typedef struct {
-    linked_hash_entry_t he;
-    char *userid;
-    char *services[0];
-} PFUser;
+void managed_group_client_do_backgroud_routine(ManagedGroupClient *client);
 
-typedef struct {
-    CarrierOptions carrier_options;
+void managed_group_client_end_backgroud_routine(ManagedGroupClient *client);
 
-    int mode;
-    int options;
-    char *serverid;
-    char *server_address;
+void managed_group_client_handle_server_connected(ManagedGroupClient *client, const char *server_id);
 
-    linked_hashtable_t *services;
-    linked_hashtable_t *users;
-} PFConfig;
+void managed_group_client_handle_server_disconnected(ManagedGroupClient *client, const char *server_id);
 
-PFConfig *load_config(const char *config_file, PFConfig *config);
-void free_config(PFConfig *config);
+void managed_group_client_handle_packet(ManagedGroupClient *client, uint32_t friend_number, Packet *cp);
 
-#endif /* __PFD_CONFIG_H__ */
+#endif // __MANAGED_GROUP_CLIENT_H__

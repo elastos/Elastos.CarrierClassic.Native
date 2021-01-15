@@ -640,7 +640,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    carrier_config_update(&config.ela_options, argc, argv);
+    carrier_config_update(&config.carrier_options, argc, argv);
 
     sessions = linked_hashtable_create(16, 1, session_hash_code, session_hash_compare);
     if (!sessions) {
@@ -653,7 +653,7 @@ int main(int argc, char *argv[])
     callbacks.friend_connection = friend_connection;
     callbacks.friend_request = friend_request;
 
-    carrier = carrier_new(&config.ela_options, &callbacks, &config);
+    carrier = carrier_new(&config.carrier_options, &callbacks, &config);
     if (!carrier) {
         fprintf(stderr, "Can not create Carrier instance (%08X).\n",
                 carrier_get_error());

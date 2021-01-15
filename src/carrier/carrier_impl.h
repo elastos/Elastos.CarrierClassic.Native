@@ -26,11 +26,13 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
+#include <sys/stat.h>
 #include <stdlib.h>
-#include <crystal.h>
+#include <errno.h>
+#include <limits.h>
 
-#include "carrier.h"
+#include <crystal.h>
+#include <sqlite3.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,9 +41,12 @@ extern "C" {
 #include "dht.h"
 #include "dht_callbacks.h"
 
+#include "carrier.h"
 #include "express.h"
 #include "carrier_extension.h"
 #include "carrier_impl.h"
+#include "managed_group_client.h"
+#include "managed_group_server.h"
 
 #define BOOTSTRAP_DEFAULT_PORT 33445
 
@@ -145,6 +150,9 @@ struct Carrier {
     linked_hashtable_t *exts;
     pthread_t main_thread;
 
+    ManagedGroupClient *mgrp_client;
+    ManagedGroupServer *mgrp_server;
+
     int running;
     int quit;
 };
@@ -157,9 +165,166 @@ typedef struct ExtensionHolder {
     linked_hash_entry_t he;
 } ExtensionHolder;
 
+#define list_foreach(list, entry, task)                      \
+    do {                                                     \
+        linked_list_iterator_t __it;                         \
+        void *__entry;                                       \
+        if (!(list))                                         \
+            break;                                           \
+        for (linked_list_iterate((list), &__it);             \
+             linked_list_iterator_next(&__it, &__entry) == 1;\
+             deref(__entry)) {                               \
+            (entry) = __entry;                               \
+            task                                             \
+        }                                                    \
+    } while (0)
+
+#define list_foreach_break \
+    {                      \
+        deref(__entry);    \
+        break;             \
+    }
+
+#define list_foreach_goto(label) \
+    {                            \
+        deref(__entry);          \
+        goto label;              \
+    }
+
+#define list_foreach_return \
+    {                       \
+        deref(__entry);     \
+        return;             \
+    }
+
+#define list_foreach_return_val(val) \
+    {                                \
+        deref(__entry);              \
+        return (val);                \
+    }
+
+#define list_foreach_remove_cur_entry() linked_list_iterator_remove(&__it)
+
+#define hashtable_foreach(htab, entry, task)                                             \
+    do {                                                                                 \
+        linked_hashtable_iterator_t __it;                                                \
+        void *__entry;                                                                   \
+        if (!(htab))                                                                     \
+            break;                                                                       \
+        for (linked_hashtable_iterate((htab), &__it);                                    \
+            linked_hashtable_iterator_next(&__it, NULL, NULL, (void **)&(__entry)) == 1; \
+            deref(__entry)) {                                                            \
+            (entry) = __entry;                                                           \
+            task                                                                         \
+        }                                                                                \
+    } while (0)
+
+#define hashtable_foreach_break \
+    {                           \
+        deref(__entry);         \
+        break;                  \
+    }
+
+#define hashtable_foreach_goto(label) \
+    {                                 \
+        deref(__entry);               \
+        goto label;                   \
+    }
+
+#define hashtable_foreach_return \
+    {                            \
+        deref(__entry);          \
+        return;                  \
+    }
+
+#define hashtable_foreach_return_val(val) \
+    {                                     \
+        deref(__entry);                   \
+        return (val);                     \
+    }
+
+#define hashtable_foreach_remove_cur_entry() linked_hashtable_iterator_remove(&__it)
+
 CARRIER_API
 int carrier_leave_all_groups(Carrier *w);
 
+static int get_friend_number(Carrier *w, const char *friendid, uint32_t *friend_number)
+{
+    uint8_t pk[DHT_PUBLIC_KEY_SIZE];
+    ssize_t len;
+    int rc;
+
+    assert(w);
+    assert(friendid);
+    assert(friend_number);
+
+    len = base58_decode(friendid, strlen(friendid), pk, sizeof(pk));
+    if (len != DHT_PUBLIC_KEY_SIZE) {
+        vlogE("Carrier: friendid %s is not base58-encoded string", friendid);
+        return CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS);
+    }
+
+    rc = dht_get_friend_number(&w->dht, pk, friend_number);
+    if (rc < 0) {
+        //vlogE("Carrier: friendid %s is not friend yet.", friendid);
+        return CARRIER_GENERAL_ERROR(ERROR_NOT_EXIST);
+    }
+
+    return rc;
+}
+
+static inline bool is_valid_key(const char *key)
+{
+    char result[DHT_PUBLIC_KEY_SIZE];
+    ssize_t len;
+
+    len = base58_decode(key, strlen(key), result, sizeof(result));
+    return len == DHT_PUBLIC_KEY_SIZE;
+}
+
+static int mkdir_internal(const char *path, mode_t mode)
+{
+    struct stat st;
+    int rc = 0;
+
+    if (stat(path, &st) != 0) {
+        /* Directory does not exist. EEXIST for race condition */
+        if (mkdir(path, mode) != 0 && errno != EEXIST)
+            rc = -1;
+    } else if (!S_ISDIR(st.st_mode)) {
+        errno = ENOTDIR;
+        rc = -1;
+    }
+
+    return rc;
+}
+
+static int mkdirs(const char *path, mode_t mode)
+{
+    int rc = 0;
+    char *pp;
+    char *sp;
+    char copypath[PATH_MAX];
+
+    strncpy(copypath, path, sizeof(copypath));
+    copypath[sizeof(copypath) - 1] = 0;
+
+    pp = copypath;
+    while (rc == 0 && (sp = strchr(pp, '/')) != 0) {
+        if (sp != pp) {
+            /* Neither root nor double slash in path */
+            *sp = '\0';
+            rc = mkdir_internal(copypath, mode);
+            *sp = '/';
+        }
+        pp = sp + 1;
+    }
+
+    if (rc == 0)
+        rc = mkdir_internal(path, mode);
+
+    return rc;
+}
 
 static inline
 CarrierConnectionStatus connection_status(bool connected)

@@ -294,7 +294,7 @@ void free_config(PFConfig *config)
 
     extra_config_free(config);
 
-    carrier_config_free(&(config->ela_options));
+    carrier_config_free(&(config->carrier_options));
 
     memset(config, 0, sizeof(PFConfig));
 }
