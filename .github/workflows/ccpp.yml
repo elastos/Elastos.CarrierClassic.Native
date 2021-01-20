@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: brew
         run: |
-          brew list
+          brew list --formula
           brew install autoconf
           brew install automake
           brew install cmake
