@@ -64,7 +64,7 @@ struct FileTransferExt {
     void                    *connect_context;
 
     CarrierStreamCallbacks  stream_callbacks;
-    hashtable_t             *filereqs;
+    linked_hashtable_t             *filereqs;
 };
 
 enum {

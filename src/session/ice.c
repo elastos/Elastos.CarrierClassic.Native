@@ -1250,7 +1250,7 @@ static int ice_session_apply_remote_sdp(CarrierSession *base,
     pj_str_t pwd = { NULL, 0 };
     pj_str_t nonce = { NULL, 0 };
     pj_status_t status;
-    list_iterator_t iterator;
+    linked_list_iterator_t iterator;
     int media_index;
     int i;
     int rc;
@@ -1297,14 +1297,14 @@ static int ice_session_apply_remote_sdp(CarrierSession *base,
 
 rescan:
     media_index = 0;
-    list_iterate(base->streams, &iterator);
-    while (list_iterator_has_next(&iterator)) {
+    linked_list_iterate(base->streams, &iterator);
+    while (linked_list_iterator_has_next(&iterator)) {
         int af;
         int cand_index = 0;
         IceStream *stream;
         IceHandler *handler;
 
-        rc = list_iterator_next(&iterator, (void **)&stream);
+        rc = linked_list_iterator_next(&iterator, (void **)&stream);
         if (rc == 0)
             break;
 
@@ -1457,7 +1457,7 @@ static int ice_session_encode_local_sdp(CarrierSession *base,
     pjmedia_sdp_attr ufrag_attr;
     pjmedia_sdp_attr pwd_attr;
     pjmedia_sdp_attr nonce_attr;
-    list_iterator_t iterator;
+    linked_list_iterator_t iterator;
     int index = 0;
     int rc;
     int ops = 0;
@@ -1529,8 +1529,8 @@ static int ice_session_encode_local_sdp(CarrierSession *base,
     }
 
 rescan:
-    list_iterate(base->streams, &iterator);
-    while (list_iterator_has_next(&iterator)) {
+    linked_list_iterate(base->streams, &iterator);
+    while (linked_list_iterator_has_next(&iterator)) {
         IceStream *stream;
         IceHandler *handler;
         pjmedia_sdp_media *media;
@@ -1539,7 +1539,7 @@ rescan:
         unsigned ncomps;
         int i;
 
-        rc = list_iterator_next(&iterator, (void **)&stream);
+        rc = linked_list_iterator_next(&iterator, (void **)&stream);
         if (rc == 0)
             break;
 

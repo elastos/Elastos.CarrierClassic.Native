@@ -97,7 +97,7 @@ static void friend_invite(Carrier *w, const char *from, const char *bundle,
     SessionExtension *ext;
     CarrierSessionRequestCallback *callback = NULL;
     void *callback_context = NULL;
-    list_iterator_t it;
+    linked_list_iterator_t it;
 
     ext = (SessionExtension *)context;
     if (!ext) {
@@ -116,12 +116,12 @@ static void friend_invite(Carrier *w, const char *from, const char *bundle,
         callback_context = ext->default_context;
         bundle = NULL;
     } else {
-        list_iterate(ext->callbacks, &it);
-        while(list_iterator_has_next(&it)) {
+        linked_list_iterate(ext->callbacks, &it);
+        while(linked_list_iterator_has_next(&it)) {
             struct BundledRequestCallback *brc;
             int rc;
 
-            rc = list_iterator_next(&it, (void **)&brc);
+            rc = linked_list_iterator_next(&it, (void **)&brc);
             assert(rc == 1);
 
             if (strncmp(brc->prefix, bundle, strlen(brc->prefix)) == 0) {
@@ -185,7 +185,7 @@ static int add_transport(SessionExtension *ext)
     if (rc < 0)
         return rc;
 
-    transport->workers = list_create(1, NULL);
+    transport->workers = linked_list_create(1, NULL);
     if (!transport->workers) {
         deref(transport);
         return CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY);
@@ -233,7 +233,7 @@ int carrier_session_init(Carrier *w)
         return -1;
     }
 
-    ext->callbacks = list_create(0, NULL);
+    ext->callbacks = linked_list_create(0, NULL);
     if (!ext->callbacks) {
         deref(ext);
         carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
@@ -271,7 +271,7 @@ int carrier_session_set_callback(Carrier *w, const char *bundle_prefix,
 {
     SessionExtension *ext;
     struct BundledRequestCallback *brc;
-    list_iterator_t it;
+    linked_list_iterator_t it;
 
     if (!w || (bundle_prefix && strlen(bundle_prefix) > CARRIER_MAX_BUNDLE_LEN)) {
         carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
@@ -296,12 +296,12 @@ int carrier_session_set_callback(Carrier *w, const char *bundle_prefix,
     pthread_rwlock_wrlock(&ext->callbacks_lock);
 
     int idx = 0;
-    list_iterate(ext->callbacks, &it);
-    while(list_iterator_has_next(&it)) {
+    linked_list_iterate(ext->callbacks, &it);
+    while(linked_list_iterator_has_next(&it)) {
         size_t brc_prefix_len, bundle_prefix_len;
         int rc;
 
-        rc = list_iterator_next(&it, (void **)&brc);
+        rc = linked_list_iterator_next(&it, (void **)&brc);
         assert(rc == 1);
 
         brc_prefix_len = strlen(brc->prefix);
@@ -313,7 +313,7 @@ int carrier_session_set_callback(Carrier *w, const char *bundle_prefix,
                     brc->callback = callback;
                     brc->context = context;
                 } else {
-                    list_iterator_remove(&it);
+                    linked_list_iterator_remove(&it);
                 }
 
                 deref(brc);
@@ -342,7 +342,7 @@ int carrier_session_set_callback(Carrier *w, const char *bundle_prefix,
     strcpy(brc->prefix, bundle_prefix);
 
     brc->le.data = brc;
-    list_insert(ext->callbacks, idx, &brc->le);
+    linked_list_insert(ext->callbacks, idx, &brc->le);
     deref(brc);
 
     pthread_rwlock_unlock(&ext->callbacks_lock);
@@ -352,18 +352,18 @@ int carrier_session_set_callback(Carrier *w, const char *bundle_prefix,
 
 static void remove_transport(CarrierTransport *transport)
 {
-    list_iterator_t it;
+    linked_list_iterator_t it;
 
     if (!transport)
         return;
 
 restop_workers:
-    list_iterate(transport->workers, &it);
-    while(list_iterator_has_next(&it)) {
+    linked_list_iterate(transport->workers, &it);
+    while(linked_list_iterator_has_next(&it)) {
         TransportWorker *wk;
         int rc;
 
-        rc = list_iterator_next(&it, (void **)&wk);
+        rc = linked_list_iterator_next(&it, (void **)&wk);
         if (rc == 0)
             break;
 
@@ -462,7 +462,7 @@ CarrierSession *carrier_session_new(Carrier *w, const char *address)
         return NULL;
     }
 
-    ws->streams = list_create(1, NULL);
+    ws->streams = linked_list_create(1, NULL);
     if (!ws->streams) {
         deref(ws);
         carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_OUT_OF_MEMORY));
@@ -501,7 +501,7 @@ CarrierSession *carrier_session_new(Carrier *w, const char *address)
         return NULL;
     }
 
-    list_add(transport->workers, &ws->worker->le);
+    linked_list_add(transport->workers, &ws->worker->le);
 
     vlogD("Session: Session to %s created.", ws->to);
 
@@ -537,16 +537,16 @@ void *carrier_session_get_userdata(CarrierSession *ws)
 
 static void session_internal_close(CarrierSession *ws)
 {
-    list_iterator_t it;
+    linked_list_iterator_t it;
     assert(ws);
 
 restop:
-    list_iterate(ws->streams, &it);
-    while (list_iterator_has_next(&it)) {
+    linked_list_iterate(ws->streams, &it);
+    while (linked_list_iterator_has_next(&it)) {
         CarrierStream *s;
         int rc;
 
-        rc = list_iterator_next(&it, (void **)&s);
+        rc = linked_list_iterator_next(&it, (void **)&s);
         if (rc == 0)
             break;
 
@@ -560,7 +560,7 @@ restop:
     }
 
     if (ws->worker) {
-        deref(list_remove_entry(ws->transport->workers, &ws->worker->le));
+        deref(linked_list_remove_entry(ws->transport->workers, &ws->worker->le));
         ws->worker->stop(ws->worker);
     }
 
@@ -602,7 +602,7 @@ int carrier_session_request(CarrierSession *ws, const char *bundle,
 {
     Carrier *w;
     int rc = 0;
-    list_iterator_t iterator;
+    linked_list_iterator_t iterator;
     char sdp[SDP_MAX_LEN];
     char *ext_to;
 
@@ -615,7 +615,7 @@ int carrier_session_request(CarrierSession *ws, const char *bundle,
     w = session_get_extension(ws)->base.carrier;
     assert(w);
 
-    if (list_size(ws->streams) == 0) {
+    if (linked_list_size(ws->streams) == 0) {
         carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_WRONG_STATE));
         return -1;
     }
@@ -631,11 +631,11 @@ int carrier_session_request(CarrierSession *ws, const char *bundle,
     crypto_random_nonce(ws->credential);
 
 reprepare:
-    list_iterate(ws->streams, &iterator);
-    while (list_iterator_has_next(&iterator)) {
+    linked_list_iterate(ws->streams, &iterator);
+    while (linked_list_iterator_has_next(&iterator)) {
         CarrierStream *s;
 
-        rc = list_iterator_next(&iterator, (void **)&s);
+        rc = linked_list_iterator_next(&iterator, (void **)&s);
         if (rc == 0)
             break;
 
@@ -710,19 +710,19 @@ int carrier_session_reply_request(CarrierSession *ws, const char *bundle,
     crypto_random_nonce(ws->credential);
 
     if (status == 0) {
-        list_iterator_t iterator;
+        linked_list_iterator_t iterator;
 
-        if (list_size(ws->streams) == 0) {
+        if (linked_list_size(ws->streams) == 0) {
             carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_WRONG_STATE));
             return -1;
         }
 
 reprepare:
-        list_iterate(ws->streams, &iterator);
-        while (list_iterator_has_next(&iterator)) {
+        linked_list_iterate(ws->streams, &iterator);
+        while (linked_list_iterator_has_next(&iterator)) {
             CarrierStream *s;
 
-            rc = list_iterator_next(&iterator, (void **)&s);
+            rc = linked_list_iterator_next(&iterator, (void **)&s);
             if (rc == 0)
                 break;
 
@@ -771,14 +771,14 @@ reprepare:
 int carrier_session_start(CarrierSession *ws, const char *sdp, size_t len)
 {
     int rc;
-    list_iterator_t iterator;
+    linked_list_iterator_t iterator;
 
     if (!ws || !sdp || !len) {
         carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
         return -1;
     }
 
-    if (list_size(ws->streams) == 0) {
+    if (linked_list_size(ws->streams) == 0) {
         carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_WRONG_STATE));
         return -1;
     }
@@ -790,12 +790,12 @@ int carrier_session_start(CarrierSession *ws, const char *sdp, size_t len)
     ref(ws);
 
 recheck:
-    list_iterate(ws->streams, &iterator);
-    while (list_iterator_has_next(&iterator)) {
+    linked_list_iterate(ws->streams, &iterator);
+    while (linked_list_iterator_has_next(&iterator)) {
         CarrierStream *s;
         bool ready;
 
-        rc = list_iterator_next(&iterator, (void **)&s);
+        rc = linked_list_iterator_next(&iterator, (void **)&s);
         if (rc == 0)
             break;
 
@@ -822,11 +822,11 @@ recheck:
     }
 
 restart:
-    list_iterate(ws->streams, &iterator);
-    while (list_iterator_has_next(&iterator)) {
+    linked_list_iterate(ws->streams, &iterator);
+    while (linked_list_iterator_has_next(&iterator)) {
         CarrierStream *s;
 
-        rc = list_iterator_next(&iterator, (void **)&s);
+        rc = linked_list_iterator_next(&iterator, (void **)&s);
         if (rc == 0)
             break;
 
@@ -986,11 +986,11 @@ int carrier_session_add_stream(CarrierSession *ws, CarrierStreamType type,
     }
 
     s->le.data = s;
-    list_add(ws->streams, &s->le);
+    linked_list_add(ws->streams, &s->le);
 
     rc = s->pipeline.init(&s->pipeline);
     if (rc < 0) {
-        deref(list_remove_entry(ws->streams, &s->le));
+        deref(linked_list_remove_entry(ws->streams, &s->le));
         deref(s);
         carrier_set_error(rc);
         return -1;
@@ -1006,16 +1006,16 @@ int carrier_session_add_stream(CarrierSession *ws, CarrierStreamType type,
 static CarrierStream *get_stream(CarrierSession *ws, int stream)
 {
     CarrierStream *s;
-    list_iterator_t iterator;
+    linked_list_iterator_t iterator;
     int rc;
 
     assert(ws);
     assert(stream > 0);
 
 rescan:
-    list_iterate(ws->streams, &iterator);
-    while (list_iterator_has_next(&iterator)) {
-        rc = list_iterator_next(&iterator, (void **)&s);
+    linked_list_iterate(ws->streams, &iterator);
+    while (linked_list_iterator_has_next(&iterator)) {
+        rc = linked_list_iterator_next(&iterator, (void **)&s);
         if (rc == 0)
             break;
 
@@ -1048,7 +1048,7 @@ int carrier_session_remove_stream(CarrierSession *ws, int stream)
 
     s->pipeline.stop(&s->pipeline, 0);
 
-    deref(list_remove_entry(ws->streams, &s->le));
+    deref(linked_list_remove_entry(ws->streams, &s->le));
 
     vlogD("Session: Remove stream %d.", s->id);
 

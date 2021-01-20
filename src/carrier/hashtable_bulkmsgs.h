@@ -38,7 +38,7 @@ typedef struct BulkMsg {
     size_t  data_cap;
     size_t  data_offset;
     struct timeval expire_time;
-    hash_entry_t he;
+    linked_hash_entry_t he;
 } BulkMsg;
 
 static inline
@@ -49,31 +49,31 @@ int bulkmsgs_key_compare(const void *key1, size_t len1,
 }
 
 static inline
-hashtable_t *bulkmsgs_create(int capacity)
+linked_hashtable_t *bulkmsgs_create(int capacity)
 {
-    return hashtable_create(capacity, 1, NULL, bulkmsgs_key_compare);
+    return linked_hashtable_create(capacity, 1, NULL, bulkmsgs_key_compare);
 }
 
 static inline
-BulkMsg *bulkmsgs_get(hashtable_t *msgs, int64_t *tid)
-{
-    assert(msgs);
-    assert(tid);
-
-    return (BulkMsg *)hashtable_get(msgs, tid, sizeof(int64_t));
-}
-
-static inline
-int bulkmsgs_exist(hashtable_t *msgs, int64_t *tid)
+BulkMsg *bulkmsgs_get(linked_hashtable_t *msgs, int64_t *tid)
 {
     assert(msgs);
     assert(tid);
 
-    return hashtable_exist(msgs, tid, sizeof(int64_t));
+    return (BulkMsg *)linked_hashtable_get(msgs, tid, sizeof(int64_t));
 }
 
 static inline
-void bulkmsgs_put(hashtable_t *msgs, BulkMsg *msg)
+int bulkmsgs_exist(linked_hashtable_t *msgs, int64_t *tid)
+{
+    assert(msgs);
+    assert(tid);
+
+    return linked_hashtable_exist(msgs, tid, sizeof(int64_t));
+}
+
+static inline
+void bulkmsgs_put(linked_hashtable_t *msgs, BulkMsg *msg)
 {
     assert(msgs);
     assert(msg);
@@ -82,49 +82,49 @@ void bulkmsgs_put(hashtable_t *msgs, BulkMsg *msg)
     msg->he.key = &msg->tid;
     msg->he.keylen = sizeof(msg->tid);
 
-    hashtable_put(msgs, &msg->he);
+    linked_hashtable_put(msgs, &msg->he);
 }
 
 static inline
-void bulkmsgs_remove(hashtable_t *msgs, int64_t *tid)
+void bulkmsgs_remove(linked_hashtable_t *msgs, int64_t *tid)
 {
     assert(msgs);
     assert(tid);
 
-    deref(hashtable_remove(msgs, tid, sizeof(int64_t)));
+    deref(linked_hashtable_remove(msgs, tid, sizeof(int64_t)));
 }
 
 static inline
-hashtable_iterator_t *bulkmsgs_iterate(hashtable_t *msgs,
-                                       hashtable_iterator_t *iterator)
+linked_hashtable_iterator_t *bulkmsgs_iterate(linked_hashtable_t *msgs,
+                                       linked_hashtable_iterator_t *iterator)
 {
     assert(msgs);
     assert(iterator);
 
-    return hashtable_iterate(msgs, iterator);
+    return linked_hashtable_iterate(msgs, iterator);
 }
 
 static inline
-int bulkmsgs_iterator_next(hashtable_iterator_t *iterator, BulkMsg **item)
+int bulkmsgs_iterator_next(linked_hashtable_iterator_t *iterator, BulkMsg **item)
 {
     assert(item);
     assert(iterator);
 
-    return hashtable_iterator_next(iterator, NULL, NULL, (void **)item);
+    return linked_hashtable_iterator_next(iterator, NULL, NULL, (void **)item);
 }
 
 static inline
-int bulkmsgs_iterator_has_next(hashtable_iterator_t *iterator)
+int bulkmsgs_iterator_has_next(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    return hashtable_iterator_has_next(iterator);
+    return linked_hashtable_iterator_has_next(iterator);
 }
 
 static inline
-int bulkmsgs_iterator_remove(hashtable_iterator_t *iterator)
+int bulkmsgs_iterator_remove(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    return hashtable_iterator_remove(iterator);
+    return linked_hashtable_iterator_remove(iterator);
 }
 
 #ifdef __cplusplus

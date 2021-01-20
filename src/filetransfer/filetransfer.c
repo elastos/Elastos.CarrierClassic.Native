@@ -71,9 +71,9 @@
 static const char *bundle_prefix = "filetransfer";
 static const char *extension_name = "carrier-filetransfer";
 
-static void cleanup_expired_filereqs(hashtable_t *filereqs)
+static void cleanup_expired_filereqs(linked_hashtable_t *filereqs)
 {
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
     struct timeval now;
 
     gettimeofday(&now, NULL);
@@ -88,7 +88,7 @@ static void cleanup_expired_filereqs(hashtable_t *filereqs)
             break;
 
         if (timercmp(&now, &fr->expire_time, >))
-            hashtable_iterator_remove(&it);
+            linked_hashtable_iterator_remove(&it);
 
         deref(fr);
     }
