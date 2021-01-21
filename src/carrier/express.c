@@ -66,7 +66,7 @@ struct ExpConnector {
     pthread_mutex_t lock;
     pthread_cond_t cond;
 
-    list_t *task_list;
+    linked_list_t *task_list;
     int stop_flag;
 
     uint32_t magic_num;
@@ -77,7 +77,7 @@ struct ExpConnector {
 };
 
 typedef struct ExpTasklet {
-    list_entry_t entry;
+    linked_list_entry_t entry;
     ExpressConnector *connector;
 
     int (*runner)(struct ExpTasklet *);
@@ -708,7 +708,7 @@ static int enqueue_speedmeter_tasklet(ExpressConnector *connector)
     task->runner = speedmeter_runner;
 
     pthread_mutex_lock(&connector->lock);
-    list_push_head(connector->task_list, &task->entry);
+    linked_list_push_head(connector->task_list, &task->entry);
     pthread_mutex_unlock(&connector->lock);
 
     deref(task);
@@ -747,7 +747,7 @@ static int enqueue_post_tasklet(ExpressConnector *connector, const char *to,
     task->data_size = size;
 
     pthread_mutex_lock(&connector->lock);
-    list_push_head(connector->task_list, &task->base.entry);
+    linked_list_push_head(connector->task_list, &task->base.entry);
     pthread_mutex_unlock(&connector->lock);
 
     deref(task);
@@ -782,12 +782,12 @@ static void *connector_laundry(void *arg)
 
     pthread_mutex_lock(&connector->lock);
     while(!connector->stop_flag) {
-        if (list_is_empty(connector->task_list)) {
+        if (linked_list_is_empty(connector->task_list)) {
             pthread_cond_wait(&connector->cond, &connector->lock);
             continue;
         }
 
-        task = list_pop_tail(connector->task_list);
+        task = linked_list_pop_tail(connector->task_list);
         assert(task);
 
         pthread_mutex_unlock(&connector->lock);
@@ -841,7 +841,7 @@ ExpressConnector *express_connector_create(Carrier *carrier,
     pthread_mutex_init(&connector->lock, NULL);
     pthread_cond_init (&connector->cond, NULL);
 
-    connector->task_list = list_create(0, NULL);
+    connector->task_list = linked_list_create(0, NULL);
     if (!connector->task_list) {
         deref(connector);
         carrier_set_error(CARRIER_EXPRESS_ERROR(ERROR_OUT_OF_MEMORY));
@@ -960,7 +960,7 @@ int express_enqueue_pull_messages(ExpressConnector *connector)
     task->base.runner = pullmsgs_runner;
 
     pthread_mutex_lock(&connector->lock);
-    list_push_head(connector->task_list, &task->base.entry);
+    linked_list_push_head(connector->task_list, &task->base.entry);
     pthread_mutex_unlock(&connector->lock);
 
     deref(task);

@@ -39,22 +39,22 @@ int name_compare(const void *key1, size_t len1, const void *key2, size_t len2)
 }
 
 static inline
-hashtable_t *extensions_create(int capacity)
+linked_hashtable_t *extensions_create(int capacity)
 {
-    return hashtable_create(capacity, 1, NULL, name_compare);
+    return linked_hashtable_create(capacity, 1, NULL, name_compare);
 }
 
 static inline
-int extensions_exist(hashtable_t *exts, const char *name)
+int extensions_exist(linked_hashtable_t *exts, const char *name)
 {
     assert(exts);
     assert(name);
 
-    return hashtable_exist(exts, name, strlen(name));
+    return linked_hashtable_exist(exts, name, strlen(name));
 }
 
 static inline
-void extensions_put(hashtable_t *exts, ExtensionHolder *ext)
+void extensions_put(linked_hashtable_t *exts, ExtensionHolder *ext)
 {
     assert(exts);
     assert(ext);
@@ -64,57 +64,57 @@ void extensions_put(hashtable_t *exts, ExtensionHolder *ext)
     ext->he.key = ext->name;
     ext->he.keylen = strlen(ext->name);
 
-    hashtable_put(exts, &ext->he);
+    linked_hashtable_put(exts, &ext->he);
 }
 
 static inline
-ExtensionHolder *extensions_get(hashtable_t *exts, const char *name)
+ExtensionHolder *extensions_get(linked_hashtable_t *exts, const char *name)
 {
     assert(exts);
     assert(name);
 
-    return (ExtensionHolder *)hashtable_get(exts, name, strlen(name));
+    return (ExtensionHolder *)linked_hashtable_get(exts, name, strlen(name));
 }
 
 static inline
-ExtensionHolder *extensions_remove(hashtable_t *exts, const char *name)
+ExtensionHolder *extensions_remove(linked_hashtable_t *exts, const char *name)
 {
     assert(exts);
     assert(name);
 
-    return hashtable_remove(exts, name, strlen(name));
+    return linked_hashtable_remove(exts, name, strlen(name));
 }
 
 static inline
-void extensions_clear(hashtable_t *exts)
+void extensions_clear(linked_hashtable_t *exts)
 {
     assert(exts);
-    hashtable_clear(exts);
+    linked_hashtable_clear(exts);
 }
 
 static inline
-hashtable_iterator_t *extensions_iterate(hashtable_t *exts,
-                                         hashtable_iterator_t *iterator)
+linked_hashtable_iterator_t *extensions_iterate(linked_hashtable_t *exts,
+                                         linked_hashtable_iterator_t *iterator)
 {
     assert(exts);
     assert(iterator);
 
-    return hashtable_iterate(exts, iterator);
+    return linked_hashtable_iterate(exts, iterator);
 }
 
 static inline
-int extensions_iterator_next(hashtable_iterator_t *iterator, char **name,
+int extensions_iterator_next(linked_hashtable_iterator_t *iterator, char **name,
                              ExtensionHolder **ext)
 {
     assert(iterator);
-    return hashtable_iterator_next(iterator, (void **)name, NULL, (void **)ext);
+    return linked_hashtable_iterator_next(iterator, (void **)name, NULL, (void **)ext);
 }
 
 static inline
-int extensions_iterator_has_next(hashtable_iterator_t *iterator)
+int extensions_iterator_has_next(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    return hashtable_iterator_has_next(iterator);
+    return linked_hashtable_iterator_has_next(iterator);
 }
 
 #endif /* __CARRIER_EXTENSIONS_H__ */

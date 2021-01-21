@@ -50,77 +50,77 @@ int channels_key_compare(const void *key1, size_t len1,
 }
 
 static inline
-hashtable_t *channels_create(int capacity)
+linked_hashtable_t *channels_create(int capacity)
 {
-    return hashtable_create(capacity, 1,
+    return linked_hashtable_create(capacity, 1,
                             channels_hash_code, channels_key_compare);
 }
 
 static inline
-void channels_put(hashtable_t *htab, Channel *ch)
+void channels_put(linked_hashtable_t *htab, Channel *ch)
 {
     ch->he.data = ch;
     ch->he.key = (void *)ch->id;
     ch->he.keylen = sizeof(ch->id);
 
-    hashtable_put(htab, &ch->he);
+    linked_hashtable_put(htab, &ch->he);
 }
 
 static inline
-Channel *channels_get(hashtable_t *htab, int channel_id)
+Channel *channels_get(linked_hashtable_t *htab, int channel_id)
 {
-    return (Channel *)hashtable_get(htab, (void *)channel_id, sizeof(channel_id));
+    return (Channel *)linked_hashtable_get(htab, (void *)channel_id, sizeof(channel_id));
 }
 
 static inline
-int channels_exist(hashtable_t *htab, int channel_id)
+int channels_exist(linked_hashtable_t *htab, int channel_id)
 {
-    return hashtable_exist(htab, (void *)channel_id, sizeof(channel_id));
+    return linked_hashtable_exist(htab, (void *)channel_id, sizeof(channel_id));
 }
 
 static inline
-int channels_is_empty(hashtable_t *htab)
+int channels_is_empty(linked_hashtable_t *htab)
 {
-    return hashtable_is_empty(htab);
+    return linked_hashtable_is_empty(htab);
 }
 
 static inline
-void channels_remove(hashtable_t *htab, int channel_id)
+void channels_remove(linked_hashtable_t *htab, int channel_id)
 {
-    deref(hashtable_remove(htab, (void *)channel_id, sizeof(channel_id)));
+    deref(linked_hashtable_remove(htab, (void *)channel_id, sizeof(channel_id)));
 }
 
 static inline
-void channels_clear(hashtable_t *htab)
+void channels_clear(linked_hashtable_t *htab)
 {
-    hashtable_clear(htab);
+    linked_hashtable_clear(htab);
 }
 
 static inline
-hashtable_iterator_t *channels_iterate(hashtable_t *htab,
-                                       hashtable_iterator_t *iterator)
+linked_hashtable_iterator_t *channels_iterate(linked_hashtable_t *htab,
+                                       linked_hashtable_iterator_t *iterator)
 {
-    return hashtable_iterate(htab, iterator);
+    return linked_hashtable_iterate(htab, iterator);
 }
 
 // return 1 on success, 0 end of iterator, -1 on modified conflict or error.
 static inline
-int channels_iterator_next(hashtable_iterator_t *iterator, Channel **ch)
+int channels_iterator_next(linked_hashtable_iterator_t *iterator, Channel **ch)
 {
-    return hashtable_iterator_next(iterator, NULL, NULL, (void **)ch);
+    return linked_hashtable_iterator_next(iterator, NULL, NULL, (void **)ch);
 }
 
 static inline
-int channels_iterator_has_next(hashtable_iterator_t *iterator)
+int channels_iterator_has_next(linked_hashtable_iterator_t *iterator)
 {
-    return hashtable_iterator_has_next(iterator);
+    return linked_hashtable_iterator_has_next(iterator);
 }
 
 // return 1 on success, 0 nothing removed, -1 on modified conflict or error.
 static inline
-int channels_iterator_remove(hashtable_iterator_t *iterator)
+int channels_iterator_remove(linked_hashtable_iterator_t *iterator)
 {
-    return hashtable_iterator_remove(iterator);
+    return linked_hashtable_iterator_remove(iterator);
 }
 
 #if defined(__GNUC__)

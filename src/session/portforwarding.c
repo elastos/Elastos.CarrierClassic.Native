@@ -52,7 +52,7 @@ bool tcp_portforwarding_channel_open(Channel *ch, const char *cookie,
 {
     MultiplexHandler *handler = (MultiplexHandler *)context;
     CarrierStream *s = handler->base.stream;
-    hashtable_t *services;
+    linked_hashtable_t *services;
     Service *svc;
     SOCKET sock;
 
@@ -280,7 +280,7 @@ static void *worker_routine(void *arg)
     fd_set rfds;
     int nfds;
     struct timeval timeout;
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
     int rc;
 
     MultiplexHandler *handler = (MultiplexHandler *)arg;

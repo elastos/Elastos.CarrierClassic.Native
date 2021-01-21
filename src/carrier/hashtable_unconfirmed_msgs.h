@@ -27,7 +27,7 @@
 #include "carrier.h"
 
 typedef struct UnconfirmedMsg {
-    hash_entry_t he;
+    linked_hash_entry_t he;
 
     char to[CARRIER_MAX_ID_LEN + 1];
     uint32_t msgid;
@@ -41,22 +41,22 @@ typedef struct UnconfirmedMsg {
 } UnconfirmedMsg;
 
 static inline
-hashtable_t *unconfirmed_create()
+linked_hashtable_t *unconfirmed_create()
 {
-    return hashtable_create(0, 0, NULL, NULL);
+    return linked_hashtable_create(0, 0, NULL, NULL);
 }
 
 static inline
-UnconfirmedMsg *unconfirmed_get(hashtable_t *msgs, uint32_t msgid)
+UnconfirmedMsg *unconfirmed_get(linked_hashtable_t *msgs, uint32_t msgid)
 {
     assert(msgs);
     assert(msgid);
 
-    return hashtable_get(msgs, &msgid, sizeof(msgid));
+    return linked_hashtable_get(msgs, &msgid, sizeof(msgid));
 }
 
 static inline
-void unconfirmed_put(hashtable_t *msgs, UnconfirmedMsg *item)
+void unconfirmed_put(linked_hashtable_t *msgs, UnconfirmedMsg *item)
 {
     assert(msgs);
     assert(item);
@@ -65,47 +65,47 @@ void unconfirmed_put(hashtable_t *msgs, UnconfirmedMsg *item)
     item->he.key = &item->msgid;
     item->he.keylen = sizeof(item->msgid);
 
-    hashtable_put(msgs, &item->he);
+    linked_hashtable_put(msgs, &item->he);
 }
 
 static inline
-UnconfirmedMsg *unconfirmed_remove(hashtable_t *msgs, int32_t msgid)
+UnconfirmedMsg *unconfirmed_remove(linked_hashtable_t *msgs, int32_t msgid)
 {
     assert(msgs);
-    return hashtable_remove(msgs, &msgid, sizeof(msgid));
+    return linked_hashtable_remove(msgs, &msgid, sizeof(msgid));
 }
 
 static inline
-hashtable_iterator_t *unconfirmed_iterate(hashtable_t *msgs,
-                                          hashtable_iterator_t *iterator)
+linked_hashtable_iterator_t *unconfirmed_iterate(linked_hashtable_t *msgs,
+                                          linked_hashtable_iterator_t *iterator)
 {
     assert(msgs);
     assert(iterator);
 
-    return hashtable_iterate(msgs, iterator);
+    return linked_hashtable_iterate(msgs, iterator);
 }
 
 static inline
-int unconfirmed_iterator_next(hashtable_iterator_t *iterator, UnconfirmedMsg **item)
+int unconfirmed_iterator_next(linked_hashtable_iterator_t *iterator, UnconfirmedMsg **item)
 {
     assert(item);
     assert(iterator);
 
-    return hashtable_iterator_next(iterator, NULL, NULL, (void **)item);
+    return linked_hashtable_iterator_next(iterator, NULL, NULL, (void **)item);
 }
 
 static inline
-int unconfirmed_iterator_has_next(hashtable_iterator_t *iterator)
+int unconfirmed_iterator_has_next(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    return hashtable_iterator_has_next(iterator);
+    return linked_hashtable_iterator_has_next(iterator);
 }
 
 static inline
-int unconfirmed_iterator_remove(hashtable_iterator_t *iterator)
+int unconfirmed_iterator_remove(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    return hashtable_iterator_remove(iterator);
+    return linked_hashtable_iterator_remove(iterator);
 }
 
 #endif // __CARRIER_UNCONFIRMED_MSGS_H__
