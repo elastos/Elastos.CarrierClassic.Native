@@ -35,7 +35,7 @@ extern "C" {
 #define TRANSACTION_EXPIRE_INTERVAL     (5 * 60) // 5m
 
 typedef struct TransactedCallback {
-    hash_entry_t he;
+    linked_hash_entry_t he;
     int64_t tid;
     uint32_t friend_number;
     void *callback_func;
@@ -78,20 +78,20 @@ int cid_compare(const void *key1, size_t len1, const void *key2, size_t len2)
 }
 
 static inline
-hashtable_t *transacted_callbacks_create(int capacity)
+linked_hashtable_t *transacted_callbacks_create(int capacity)
 {
-    return hashtable_create(capacity, 1, cid_hash_code, cid_compare);
+    return linked_hashtable_create(capacity, 1, cid_hash_code, cid_compare);
 }
 
 static inline
-int transacted_callbacks_exist(hashtable_t *callbacks, int64_t tid)
+int transacted_callbacks_exist(linked_hashtable_t *callbacks, int64_t tid)
 {
     assert(callbacks);
-    return hashtable_exist(callbacks, &tid, sizeof(tid));
+    return linked_hashtable_exist(callbacks, &tid, sizeof(tid));
 }
 
 static inline
-void transacted_callbacks_put(hashtable_t *callbacks,
+void transacted_callbacks_put(linked_hashtable_t *callbacks,
                               TransactedCallback *callback)
 {
     assert(callbacks);
@@ -102,58 +102,58 @@ void transacted_callbacks_put(hashtable_t *callbacks,
     callback->he.keylen = sizeof(callback->tid);
 
     gettimeofday_elapsed(&callback->expire_time, TRANSACTION_EXPIRE_INTERVAL);
-    hashtable_put(callbacks, &callback->he);
+    linked_hashtable_put(callbacks, &callback->he);
 }
 
 static inline
-TransactedCallback *transacted_callbacks_get(hashtable_t *callbacks, int64_t tid)
+TransactedCallback *transacted_callbacks_get(linked_hashtable_t *callbacks, int64_t tid)
 {
     assert(callbacks);
-    return (TransactedCallback *)hashtable_get(callbacks, &tid, sizeof(tid));
+    return (TransactedCallback *)linked_hashtable_get(callbacks, &tid, sizeof(tid));
 }
 
 static inline
-void transacted_callbacks_remove(hashtable_t *callbacks, int64_t tid)
+void transacted_callbacks_remove(linked_hashtable_t *callbacks, int64_t tid)
 {
     assert(callbacks);
-    deref(hashtable_remove(callbacks, &tid, sizeof(tid)));
+    deref(linked_hashtable_remove(callbacks, &tid, sizeof(tid)));
 }
 
 static inline
-void transacted_callbacks_clear(hashtable_t *callbacks)
+void transacted_callbacks_clear(linked_hashtable_t *callbacks)
 {
     assert(callbacks);
-    hashtable_clear(callbacks);
+    linked_hashtable_clear(callbacks);
 }
 
 static inline
-hashtable_iterator_t *transacted_callbacks_iterate(hashtable_t *friends,
-                                           hashtable_iterator_t *iterator)
+linked_hashtable_iterator_t *transacted_callbacks_iterate(linked_hashtable_t *friends,
+                                           linked_hashtable_iterator_t *iterator)
 {
     assert(friends && iterator);
-    return hashtable_iterate(friends, iterator);
+    return linked_hashtable_iterate(friends, iterator);
 }
 
 static inline
-int transacted_callbacks_iterator_next(hashtable_iterator_t *iterator,
+int transacted_callbacks_iterator_next(linked_hashtable_iterator_t *iterator,
                                       TransactedCallback **callback)
 {
     assert(iterator && callback);
-    return hashtable_iterator_next(iterator, NULL, NULL, (void **)callback);
+    return linked_hashtable_iterator_next(iterator, NULL, NULL, (void **)callback);
 }
 
 static inline
-int transacted_callbacks_iterator_has_next(hashtable_iterator_t *iterator)
+int transacted_callbacks_iterator_has_next(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    return hashtable_iterator_has_next(iterator);
+    return linked_hashtable_iterator_has_next(iterator);
 }
 
 static inline
-void transacted_callbacks_iterator_remove(hashtable_iterator_t *iterator)
+void transacted_callbacks_iterator_remove(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    hashtable_iterator_remove(iterator);
+    linked_hashtable_iterator_remove(iterator);
 }
 
 #ifdef __cplusplus

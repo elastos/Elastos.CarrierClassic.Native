@@ -30,7 +30,7 @@
 #include "carrier.h"
 
 typedef struct FriendInfo {
-    hash_entry_t he;
+    linked_hash_entry_t he;
 
     uint32_t friend_number;
     CarrierFriendInfo info;
@@ -47,22 +47,22 @@ int friend_number_compare(const void *key1, size_t len1,
 }
 
 static inline
-hashtable_t *friends_create(int capacity)
+linked_hashtable_t *friends_create(int capacity)
 {
-    return hashtable_create(capacity, 1, NULL, friend_number_compare);
+    return linked_hashtable_create(capacity, 1, NULL, friend_number_compare);
 }
 
 static inline
-int friends_exist(hashtable_t *friends, uint32_t friend_number)
+int friends_exist(linked_hashtable_t *friends, uint32_t friend_number)
 {
     assert(friends);
     assert(friend_number != UINT32_MAX);
 
-    return hashtable_exist(friends, &friend_number, sizeof(uint32_t));
+    return linked_hashtable_exist(friends, &friend_number, sizeof(uint32_t));
 }
 
 static inline
-void friends_put(hashtable_t *friends, FriendInfo *fi)
+void friends_put(linked_hashtable_t *friends, FriendInfo *fi)
 {
     assert(friends);
     assert(fi);
@@ -71,54 +71,54 @@ void friends_put(hashtable_t *friends, FriendInfo *fi)
     fi->he.key = &fi->friend_number;
     fi->he.keylen = sizeof(uint32_t);
 
-    hashtable_put(friends, &fi->he);
+    linked_hashtable_put(friends, &fi->he);
 }
 
 static inline
-FriendInfo *friends_get(hashtable_t *friends, uint32_t friend_number)
+FriendInfo *friends_get(linked_hashtable_t *friends, uint32_t friend_number)
 {
     assert(friends);
     assert(friend_number != UINT32_MAX);
 
-    return (FriendInfo *)hashtable_get(friends, &friend_number, sizeof(uint32_t));
+    return (FriendInfo *)linked_hashtable_get(friends, &friend_number, sizeof(uint32_t));
 }
 
 static inline
-FriendInfo *friends_remove(hashtable_t *friends, uint32_t friend_number)
+FriendInfo *friends_remove(linked_hashtable_t *friends, uint32_t friend_number)
 {
     assert(friends);
     assert(friend_number != UINT32_MAX);
 
-    return hashtable_remove(friends, &friend_number, sizeof(uint32_t));
+    return linked_hashtable_remove(friends, &friend_number, sizeof(uint32_t));
 }
 
 static inline
-void friends_clear(hashtable_t *friends)
+void friends_clear(linked_hashtable_t *friends)
 {
     assert(friends);
-    hashtable_clear(friends);
+    linked_hashtable_clear(friends);
 }
 
 static inline
-hashtable_iterator_t *friends_iterate(hashtable_t *friends,
-                                      hashtable_iterator_t *iterator)
+linked_hashtable_iterator_t *friends_iterate(linked_hashtable_t *friends,
+                                      linked_hashtable_iterator_t *iterator)
 {
     assert(friends && iterator);
-    return hashtable_iterate(friends, iterator);
+    return linked_hashtable_iterate(friends, iterator);
 }
 
 static inline
-int friends_iterator_next(hashtable_iterator_t *iterator, FriendInfo **info)
+int friends_iterator_next(linked_hashtable_iterator_t *iterator, FriendInfo **info)
 {
     assert(iterator && info);
-    return hashtable_iterator_next(iterator, NULL, NULL, (void **)info);
+    return linked_hashtable_iterator_next(iterator, NULL, NULL, (void **)info);
 }
 
 static inline
-int friends_iterator_has_next(hashtable_iterator_t *iterator)
+int friends_iterator_has_next(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    return hashtable_iterator_has_next(iterator);
+    return linked_hashtable_iterator_has_next(iterator);
 }
 
 #endif /* __CARRIER_FRIENDINFOS_H__ */

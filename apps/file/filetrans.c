@@ -88,7 +88,7 @@ typedef struct filentry filentry_t;
 typedef struct filectx  filectx_t;
 
 struct filectx {
-    list_t *filentries;
+    linked_list_t *filentries;
 
     Carrier *carrier;
     char default_path[PATH_MAX];
@@ -100,7 +100,7 @@ struct filectx {
 };
 
 struct filentry {
-    list_entry_t le;
+    linked_list_entry_t le;
 
     CarrierFileTransfer *ft;
     char fileid[CARRIER_MAX_FILE_ID_LEN + 1];
@@ -155,7 +155,7 @@ static void console_prompt(void)
 static int file_context_init(filectx_t *fctx)
 {
     memset(fctx, 0, sizeof(*fctx));
-    fctx->filentries = list_create(1, NULL);
+    fctx->filentries = linked_list_create(1, NULL);
     if (!fctx->filentries)
         return -1;
     return 0;
@@ -170,7 +170,7 @@ static void file_context_reset(filectx_t *fctx)
         carrier_filetransfer_close(ft);
     }
 
-    list_clear(fctx->filentries);
+    linked_list_clear(fctx->filentries);
 }
 
 static void file_context_deinit(filectx_t *fctx)
@@ -266,7 +266,7 @@ static void transfer_file_cb(CarrierFileTransfer *ft, const char *fileid,
     entry->fctx = fctx;
 
     entry->le.data = entry;
-    list_add(fctx->filentries, &entry->le);
+    linked_list_add(fctx->filentries, &entry->le);
     carrier_filetransfer_set_userdata(fctx->ft, fileid, entry);
 
     console("send pull %s request (offset:%llu).", fileid, (uint64_t)st.st_size);
@@ -287,7 +287,7 @@ cancel_transfer:
     carrier_filetransfer_set_userdata(fctx->ft, fileid, NULL);
     if (entry) {
         deref(entry);
-        deref(list_remove_entry(fctx->filentries, &entry->le));
+        deref(linked_list_remove_entry(fctx->filentries, &entry->le));
     }
 }
 
@@ -351,7 +351,7 @@ static void *send_file_routine(void *args)
 
 cancel_transfer:
     carrier_filetransfer_set_userdata(entry->ft, entry->fileid, NULL);
-    deref(list_remove_entry(entry->fctx->filentries, &entry->le));
+    deref(linked_list_remove_entry(entry->fctx->filentries, &entry->le));
 
     return NULL;
 }
@@ -418,7 +418,7 @@ static bool transfer_data_cb(CarrierFileTransfer *ft, const char *fileid,
     if (!length) {
         console("received cancel to transfer %s", fileid);
         carrier_filetransfer_set_userdata(ft, fileid, NULL);
-        deref(list_remove_entry(entry->fctx->filentries, &entry->le));
+        deref(linked_list_remove_entry(entry->fctx->filentries, &entry->le));
         return false;
     }
 
@@ -441,7 +441,7 @@ static bool transfer_data_cb(CarrierFileTransfer *ft, const char *fileid,
         console("\nfile %s received with total size: %llu", fileid, entry->sentsz);
 
         carrier_filetransfer_set_userdata(ft, fileid, NULL);
-        deref(list_remove_entry(entry->fctx->filentries, &entry->le));
+        deref(linked_list_remove_entry(entry->fctx->filentries, &entry->le));
         return false;
     } else {
         int percent = (int)(entry->sentsz * 100 / (double)entry->filesz);
@@ -456,7 +456,7 @@ cancel_transfer:
     if (entry) {
         carrier_filetransfer_cancel(ft, fileid, errno, strerror(errno));
         carrier_filetransfer_set_userdata(ft, fileid, NULL);
-        deref(list_remove_entry(entry->fctx->filentries, &entry->le));
+        deref(linked_list_remove_entry(entry->fctx->filentries, &entry->le));
     }
 
     return true;
@@ -758,12 +758,12 @@ static void send_file(filectx_t *fctx, int argc, char *argv[])
     entry->fctx = fctx;
 
     entry->le.data = entry;
-    list_add(fctx->filentries, &entry->le);
+    linked_list_add(fctx->filentries, &entry->le);
 
     rc = carrier_filetransfer_add(fctx->ft, &fi);
     if (rc < 0) {
         carrier_filetransfer_set_userdata(fctx->ft, fi.fileid, NULL);
-        deref(list_remove_entry(fctx->filentries, &entry->le));
+        deref(linked_list_remove_entry(fctx->filentries, &entry->le));
         console("Error: adding %s failed (0x%x), please try later.",
                 fi.filename, carrier_get_error());
     } else {
@@ -798,7 +798,7 @@ static void cancel_file(filectx_t *fctx, int argc, char *argv[])
     if (fctx->receiver) {
         carrier_filetransfer_set_userdata(fctx->ft, argv[1], NULL);
         if (entry)
-            deref(list_remove_entry(fctx->filentries, &entry->le));
+            deref(linked_list_remove_entry(fctx->filentries, &entry->le));
     } else
         entry->cancel(entry);
 }

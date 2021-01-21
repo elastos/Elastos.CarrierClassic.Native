@@ -42,7 +42,7 @@ typedef struct Service {
     int protocol;
     const char *host;
     const char *port;
-    hash_entry_t he;
+    linked_hash_entry_t he;
     char data[1];
 } Service;
 
@@ -57,7 +57,7 @@ struct PortForwardingWorker {
     pthread_t thread;
     int running;
 
-    hashtable_t *portforwardings;
+    linked_hashtable_t *portforwardings;
     IDS_HEAP(pf_ids, MAX_PORTFORWARDING_ID);
 
     int  (*start)(PortForwardingWorker *worker);
@@ -74,7 +74,7 @@ typedef struct PortForwarding {
     int protocol;
     SOCKET sock;
 
-    hash_entry_t he;
+    linked_hash_entry_t he;
 
     char service[1];
 } PortForwarding;

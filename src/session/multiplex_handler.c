@@ -618,7 +618,7 @@ void multiplex_handler_notify_data(MultiplexHandler *handler, FlexBuffer *buf)
 static void multiplex_handler_close_channels(MultiplexHandler *handler,
                                              CloseReason reason)
 {
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
 
 reclose:
     channels_iterate(handler->channels, &it);
@@ -861,7 +861,7 @@ static bool multiplex_handler_checkpoint(void *user_data)
     MultiplexHandler *handler = (MultiplexHandler *)user_data;
     Channel *ch;
 
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
     struct timeval now;
     int interval;
     int rc;

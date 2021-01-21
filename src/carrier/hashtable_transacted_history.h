@@ -31,7 +31,7 @@
 #include "carrier_impl.h"
 
 typedef struct HistoryItem {
-    hash_entry_t he;
+    linked_hash_entry_t he;
     char key[CARRIER_MAX_ID_LEN + CARRIER_MAX_EXTENSION_NAME_LEN + 4];
     int64_t tid;
     void *user_data;
@@ -53,14 +53,14 @@ int hid_compare(const void *key1, size_t len1, const void *key2, size_t len2)
 }
 
 static inline
-hashtable_t *transaction_history_create(int capacity)
+linked_hashtable_t *transaction_history_create(int capacity)
 {
-    return hashtable_create(capacity, 1, NULL, hid_compare);
+    return linked_hashtable_create(capacity, 1, NULL, hid_compare);
 }
 
 /* Invite request history from other users */
 static inline
-void transaction_history_put_invite(hashtable_t *thistory,
+void transaction_history_put_invite(linked_hashtable_t *thistory,
                                    const char *userid, int64_t tid)
 {
     HistoryItem *item;
@@ -75,12 +75,12 @@ void transaction_history_put_invite(hashtable_t *thistory,
     item->he.key = item->key;
     item->he.keylen = strlen(item->key);
 
-    hashtable_put(thistory, &item->he);
+    linked_hashtable_put(thistory, &item->he);
     deref(item);
 }
 
 static inline
-int64_t transaction_history_get_invite(hashtable_t *thistory, const char *userid)
+int64_t transaction_history_get_invite(linked_hashtable_t *thistory, const char *userid)
 {
     int64_t val = 0;
     HistoryItem *item;
@@ -89,7 +89,7 @@ int64_t transaction_history_get_invite(hashtable_t *thistory, const char *userid
     assert(thistory && userid);
 
     sprintf(key, "ir_%s", userid);
-    item = hashtable_get(thistory, key, strlen(key));
+    item = linked_hashtable_get(thistory, key, strlen(key));
     if (item) {
         val = item->tid;
         deref(item);
@@ -99,14 +99,14 @@ int64_t transaction_history_get_invite(hashtable_t *thistory, const char *userid
 }
 
 static inline
-void transaction_history_remove_invite(hashtable_t *thistory, const char *userid)
+void transaction_history_remove_invite(linked_hashtable_t *thistory, const char *userid)
 {
     char key[CARRIER_MAX_ID_LEN  + CARRIER_MAX_EXTENSION_NAME_LEN + 4];
 
     assert(thistory && userid);
 
     sprintf(key, "ir_%s", userid);
-    deref(hashtable_remove(thistory, key, strlen(key)));
+    deref(linked_hashtable_remove(thistory, key, strlen(key)));
 }
 
 #endif /* __CARRIER_TRANSACTED_HISTROY_H__ */

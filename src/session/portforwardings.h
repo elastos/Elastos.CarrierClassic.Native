@@ -50,78 +50,78 @@ int portforwardings_key_compare(const void *key1, size_t len1,
 }
 
 static inline
-hashtable_t *portforwardings_create(int capacity)
+linked_hashtable_t *portforwardings_create(int capacity)
 {
-    return hashtable_create(capacity, 1, portforwardings_hash_code,
+    return linked_hashtable_create(capacity, 1, portforwardings_hash_code,
                             portforwardings_key_compare);
 }
 
 static inline
-void portforwardings_put(hashtable_t *htab, PortForwarding *pf)
+void portforwardings_put(linked_hashtable_t *htab, PortForwarding *pf)
 {
     pf->he.data = pf;
     pf->he.key = (void *)pf->id;
     pf->he.keylen = sizeof(pf->id);
 
-    hashtable_put(htab, &pf->he);
+    linked_hashtable_put(htab, &pf->he);
 }
 
 static inline
-PortForwarding *portforwardings_get(hashtable_t *htab, int pfid)
+PortForwarding *portforwardings_get(linked_hashtable_t *htab, int pfid)
 {
-    return (PortForwarding *)hashtable_get(htab, (void *)pfid, sizeof(pfid));
+    return (PortForwarding *)linked_hashtable_get(htab, (void *)pfid, sizeof(pfid));
 }
 
 static inline
-int portforwardings_exist(hashtable_t *htab, int pfid)
+int portforwardings_exist(linked_hashtable_t *htab, int pfid)
 {
-    return hashtable_exist(htab, (void *)pfid, sizeof(pfid));
+    return linked_hashtable_exist(htab, (void *)pfid, sizeof(pfid));
 }
 
 static inline
-int portforwardings_is_empty(hashtable_t *htab)
+int portforwardings_is_empty(linked_hashtable_t *htab)
 {
-    return hashtable_is_empty(htab);
+    return linked_hashtable_is_empty(htab);
 }
 
 static inline
-PortForwarding *portforwardings_remove(hashtable_t *htab, int pfid)
+PortForwarding *portforwardings_remove(linked_hashtable_t *htab, int pfid)
 {
-    return hashtable_remove(htab, (void *)pfid, sizeof(pfid));
+    return linked_hashtable_remove(htab, (void *)pfid, sizeof(pfid));
 }
 
 static inline
-void portforwardings_clear(hashtable_t *htab)
+void portforwardings_clear(linked_hashtable_t *htab)
 {
-    hashtable_clear(htab);
+    linked_hashtable_clear(htab);
 }
 
 static inline
-hashtable_iterator_t *portforwardings_iterate(hashtable_t *htab,
-                                              hashtable_iterator_t *iterator)
+linked_hashtable_iterator_t *portforwardings_iterate(linked_hashtable_t *htab,
+                                              linked_hashtable_iterator_t *iterator)
 {
-    return hashtable_iterate(htab, iterator);
+    return linked_hashtable_iterate(htab, iterator);
 }
 
 // return 1 on success, 0 end of iterator, -1 on modified conflict or error.
 static inline
-int portforwardings_iterator_next(hashtable_iterator_t *iterator,
+int portforwardings_iterator_next(linked_hashtable_iterator_t *iterator,
                                   PortForwarding **pf)
 {
-    return hashtable_iterator_next(iterator, NULL, NULL, (void **)pf);
+    return linked_hashtable_iterator_next(iterator, NULL, NULL, (void **)pf);
 }
 
 static inline
-int portforwardings_iterator_has_next(hashtable_iterator_t *iterator)
+int portforwardings_iterator_has_next(linked_hashtable_iterator_t *iterator)
 {
-    return hashtable_iterator_has_next(iterator);
+    return linked_hashtable_iterator_has_next(iterator);
 }
 
 // return 1 on success, 0 nothing removed, -1 on modified conflict or error.
 static inline
-int portforwardings_iterator_remove(hashtable_iterator_t *iterator)
+int portforwardings_iterator_remove(linked_hashtable_iterator_t *iterator)
 {
-    return hashtable_iterator_remove(iterator);
+    return linked_hashtable_iterator_remove(iterator);
 }
 
 #if defined(__GNUC__)

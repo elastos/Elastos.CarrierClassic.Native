@@ -903,7 +903,7 @@ static int mkdirs(const char *path, mode_t mode)
 
 static size_t get_extra_savedata_size(Carrier *w)
 {
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
     size_t total_len = 0;
 
     assert(w);
@@ -927,7 +927,7 @@ static size_t get_extra_savedata_size(Carrier *w)
 
 static void get_extra_savedata(Carrier *w, void *data, size_t len)
 {
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
     uint8_t *pos = (uint8_t *)data;
 
     assert(w);
@@ -1288,7 +1288,7 @@ Carrier *carrier_new(const CarrierOptions *opts, CarrierCallbacks *callbacks,
         return NULL;
     }
 
-    w->friend_events = list_create(1, NULL);
+    w->friend_events = linked_list_create(1, NULL);
     if (!w->friend_events) {
         free_persistence_data(&data);
         deref(w);
@@ -1427,7 +1427,7 @@ static void notify_idle(Carrier *w)
 
 static void notify_friends(Carrier *w)
 {
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
 
     friends_iterate(w->friends, &it);
     while(friends_iterator_has_next(&it)) {
@@ -1514,7 +1514,7 @@ static int send_express_message(Carrier *w, const char *userid,
 static void notify_friend_connection(Carrier *w, const char *friendid,
                                      CarrierConnectionStatus status)
 {
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
 
     assert(w);
     assert(friendid);
@@ -1731,7 +1731,7 @@ static void handle_add_friend_cb(EventBase *event, Carrier *w)
 static void handle_remove_friend_cb(EventBase *event, Carrier *w)
 {
     FriendEvent *ev = (FriendEvent *)event;
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
 
     if (ev->fi.status == CarrierConnectionStatus_Connected &&
         w->callbacks.friend_connection)
@@ -1790,23 +1790,23 @@ static void notify_friend_changed(Carrier *w, CarrierFriendInfo *fi,
         memcpy(&event->fi, fi, sizeof(*fi));
         event->base.le.data = event;
         event->base.handle  = cb;
-        list_push_tail(w->friend_events, &event->base.le);
+        linked_list_push_tail(w->friend_events, &event->base.le);
         deref(event);
     }
 }
 
 static void do_friend_events(Carrier *w)
 {
-    list_t *events = w->friend_events;
-    list_iterator_t it;
+    linked_list_t *events = w->friend_events;
+    linked_list_iterator_t it;
 
 redo_events:
-    list_iterate(events, &it);
-    while (list_iterator_has_next(&it)) {
+    linked_list_iterate(events, &it);
+    while (linked_list_iterator_has_next(&it)) {
         EventBase *event;
         int rc;
 
-        rc = list_iterator_next(&it, (void **)&event);
+        rc = linked_list_iterator_next(&it, (void **)&event);
         if (rc == 0)
             break;
 
@@ -1814,15 +1814,15 @@ redo_events:
             goto redo_events;
 
         event->handle(event, w);
-        list_iterator_remove(&it);
+        linked_list_iterator_remove(&it);
 
         deref(event);
     }
 }
 
-static void do_tassemblies_expire(hashtable_t *tassemblies)
+static void do_tassemblies_expire(linked_hashtable_t *tassemblies)
 {
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
     struct timeval now;
 
     gettimeofday(&now, NULL);
@@ -1873,7 +1873,7 @@ void transacted_callback_expire(Carrier *w, TransactedCallback *callback)
 
 static void do_transacted_callabcks_expire(Carrier *w)
 {
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
     struct timeval now;
 
     gettimeofday(&now, NULL);
@@ -1892,7 +1892,7 @@ redo_expire:
             goto redo_expire;
 
         if (timercmp(&now, &tcb->expire_time, >)) {
-            hashtable_iterator_remove(&it);
+            linked_hashtable_iterator_remove(&it);
             transacted_callback_expire(w, tcb);
         }
 
@@ -1900,9 +1900,9 @@ redo_expire:
     }
 }
 
-static void do_bulkmsgs_expire(hashtable_t *bulkmsgs)
+static void do_bulkmsgs_expire(linked_hashtable_t *bulkmsgs)
 {
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
     struct timeval now;
 
     gettimeofday(&now, NULL);
@@ -2929,7 +2929,7 @@ bool carrier_is_ready(Carrier *w)
 int carrier_get_friends(Carrier *w,
                     CarrierFriendsIterateCallback *callback, void *context)
 {
-    hashtable_iterator_t it;
+    linked_hashtable_iterator_t it;
 
     if (!w || !callback) {
         carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
@@ -3540,7 +3540,7 @@ static void notify_offmsg_received(Carrier *w, const char *from,
 
         event->base.le.data = event;
         event->base.handle = handle_offline_friend_message_cb;
-        list_push_tail(w->friend_events, &event->base.le);
+        linked_list_push_tail(w->friend_events, &event->base.le);
         deref(event);
     }
 }
@@ -3580,7 +3580,7 @@ static void notify_offreq_received(Carrier *w, const char *from,
 
         event->base.le.data = event;
         event->base.handle = handle_offline_friend_request_cb;
-        list_push_tail(w->friend_events, &event->base.le);
+        linked_list_push_tail(w->friend_events, &event->base.le);
         deref(event);
     }
 }
@@ -3629,7 +3629,7 @@ static void notify_offreceipt_received(Carrier *w, const char *to,
 
         event->base.le.data = event;
         event->base.handle = handle_offline_message_receipt_cb;
-        list_push_tail(w->friend_events, &event->base.le);
+        linked_list_push_tail(w->friend_events, &event->base.le);
         deref(event);
     }
 }
