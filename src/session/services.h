@@ -35,49 +35,49 @@ int services_key_compare(const void *key1, size_t len1,
 }
 
 static inline
-hashtable_t *services_create(int capacity)
+linked_hashtable_t *services_create(int capacity)
 {
-    return hashtable_create(capacity, 1, NULL, services_key_compare);
+    return linked_hashtable_create(capacity, 1, NULL, services_key_compare);
 }
 
 static inline
-void services_put(hashtable_t *htab, Service *svc)
+void services_put(linked_hashtable_t *htab, Service *svc)
 {
     svc->he.data = svc;
     svc->he.key = (void *)svc->name;
     svc->he.keylen = strlen(svc->name);
 
-    hashtable_put(htab, &svc->he);
+    linked_hashtable_put(htab, &svc->he);
 }
 
 static inline
-Service *services_get(hashtable_t *htab, const char *name)
+Service *services_get(linked_hashtable_t *htab, const char *name)
 {
-    return (Service *)hashtable_get(htab, (void *)name, strlen(name));
+    return (Service *)linked_hashtable_get(htab, (void *)name, strlen(name));
 }
 
 static inline
-int services_exist(hashtable_t *htab, const char *name)
+int services_exist(linked_hashtable_t *htab, const char *name)
 {
-    return hashtable_exist(htab, (void *)name, strlen(name));
+    return linked_hashtable_exist(htab, (void *)name, strlen(name));
 }
 
 static inline
-int services_is_empty(hashtable_t *htab)
+int services_is_empty(linked_hashtable_t *htab)
 {
-    return hashtable_is_empty(htab);
+    return linked_hashtable_is_empty(htab);
 }
 
 static inline
-void services_remove(hashtable_t *htab, const char *name)
+void services_remove(linked_hashtable_t *htab, const char *name)
 {
-    deref(hashtable_remove(htab, (void *)name, strlen(name)));
+    deref(linked_hashtable_remove(htab, (void *)name, strlen(name)));
 }
 
 static inline
-void services_clear(hashtable_t *htab)
+void services_clear(linked_hashtable_t *htab)
 {
-    hashtable_clear(htab);
+    linked_hashtable_clear(htab);
 }
 
 #endif /* __SERVICES_H__ */

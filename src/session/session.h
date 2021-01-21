@@ -67,7 +67,7 @@ typedef struct IceTransportOptions {
 } IceTransportOptions;
 
 struct BundledRequestCallback {
-    list_entry_t            le;
+    linked_list_entry_t            le;
     CarrierSessionRequestCallback *callback;
     void                    *context;
     char                    prefix[1];
@@ -80,7 +80,7 @@ struct SessionExtension {
     void                    *default_context;
 
     pthread_rwlock_t        callbacks_lock;
-    list_t                  *callbacks;
+    linked_list_t                  *callbacks;
 
     CarrierTransport        *transport;
 
@@ -91,7 +91,7 @@ struct SessionExtension {
 
 struct CarrierTransport {
     SessionExtension        *ext;
-    list_t                  *workers;
+    linked_list_t                  *workers;
 
     int (*create_worker)   (CarrierTransport *transport, IceTransportOptions *opts,
                             TransportWorker **worker);
@@ -101,7 +101,7 @@ struct CarrierTransport {
 struct TransportWorker {
     int                     id;
 
-    list_entry_t            le;
+    linked_list_entry_t            le;
 
     void (*stop)           (TransportWorker *worker);
     int  (*create_timer)   (TransportWorker *worker, int id, unsigned long interval,
@@ -123,7 +123,7 @@ typedef struct CarrierSession {
     void                    *context;
 
     void                    *userdata;
-    list_t                  *streams;
+    linked_list_t                  *streams;
 
     uint8_t                 public_key[PUBLIC_KEY_BYTES];
     uint8_t                 secret_key[SECRET_KEY_BYTES];
@@ -140,7 +140,7 @@ typedef struct CarrierSession {
 
     struct {
         int enabled;
-        hashtable_t *services;
+        linked_hashtable_t *services;
     } portforwarding;
 
     int  (*init)            (CarrierSession *session);
@@ -156,7 +156,7 @@ struct CarrierStream {
     StreamHandler           pipeline;
     Multiplexer             *mux;
 
-    list_entry_t            le;
+    linked_list_entry_t            le;
     int                     id;
     CarrierSession          *session;
     CarrierStreamType       type;

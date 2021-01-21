@@ -66,11 +66,11 @@ static PFConfig config;
 static Carrier *carrier;
 
 typedef struct SessionEntry {
-    hash_entry_t he;
+    linked_hash_entry_t he;
     CarrierSession *session;
 } SessionEntry;
 
-hashtable_t *sessions;
+linked_hashtable_t *sessions;
 
 // Client only
 static CarrierSession *cli_session;
@@ -103,7 +103,7 @@ static void add_session(CarrierSession *ws)
     entry->he.keylen = sizeof(CarrierSession *);
     entry->session = ws;
 
-    hashtable_put(sessions, &entry->he);
+    linked_hashtable_put(sessions, &entry->he);
 
     deref(entry);
 }
@@ -111,7 +111,7 @@ static void add_session(CarrierSession *ws)
 static int exist_session(CarrierSession *ws)
 {
     if (sessions)
-        return hashtable_exist(sessions, ws, sizeof(CarrierSession *));
+        return linked_hashtable_exist(sessions, ws, sizeof(CarrierSession *));
     else
         return 0;
 }
@@ -121,7 +121,7 @@ static void delete_session(CarrierSession *ws)
     if (!sessions)
         return;
 
-    SessionEntry *entry = hashtable_remove(sessions, ws, sizeof(CarrierSession *));
+    SessionEntry *entry = linked_hashtable_remove(sessions, ws, sizeof(CarrierSession *));
     if (entry) {
         if (config.mode == MODE_CLIENT) {
             cli_session = NULL;
@@ -205,7 +205,7 @@ static void friend_request(Carrier *w, const char *userid,
     int status = -1;
 
     if (config.mode == MODE_SERVER &&
-            hashtable_exist(config.users, userid, strlen(userid))) {
+            linked_hashtable_exist(config.users, userid, strlen(userid))) {
         status = 0;
     }
 
@@ -305,12 +305,12 @@ static void stream_state_changed(CarrierSession *ws, int stream,
                 vlogI("Session request to portforwarding server success.");
             }
         } else if (state == CarrierStreamState_connected) {
-            hashtable_iterator_t it;
+            linked_hashtable_iterator_t it;
 
-            hashtable_iterate(config.services, &it);
-            while (hashtable_iterator_has_next(&it)) {
+            linked_hashtable_iterate(config.services, &it);
+            while (linked_hashtable_iterator_has_next(&it)) {
                 PFService *svc;
-                hashtable_iterator_next(&it, NULL, NULL, (void **)&svc);
+                linked_hashtable_iterator_next(&it, NULL, NULL, (void **)&svc);
 
                 int rc = carrier_stream_open_port_forwarding(ws, stream,
                             svc->name, PortForwardingProtocol_TCP, svc->host, svc->port);
@@ -389,7 +389,7 @@ static void session_request_callback(Carrier *w, const char *from, const char *b
     } else
         strcpy(userid, from);
 
-    user = (PFUser *)hashtable_get(config.users, userid, strlen(userid));
+    user = (PFUser *)linked_hashtable_get(config.users, userid, strlen(userid));
     if (user == NULL) {
         // Not in allowed user list. Refuse session request.
         vlogI("Refuse session request from %s.", from);
@@ -399,7 +399,7 @@ static void session_request_callback(Carrier *w, const char *from, const char *b
     }
 
     for (i = 0; user->services[i] != NULL; i++) {
-        PFService *svc = (PFService *)hashtable_get(config.services,
+        PFService *svc = (PFService *)linked_hashtable_get(config.services,
                             user->services[i], strlen(user->services[i]));
 
         rc = carrier_session_add_service(ws, svc->name,
@@ -464,7 +464,7 @@ static void setup_portforwardings(void)
 
 static void stop(void)
 {
-    hashtable_t *ss = sessions;
+    linked_hashtable_t *ss = sessions;
 
     sessions = NULL;
     if (ss)
@@ -642,7 +642,7 @@ int main(int argc, char *argv[])
 
     carrier_config_update(&config.ela_options, argc, argv);
 
-    sessions = hashtable_create(16, 1, session_hash_code, session_hash_compare);
+    sessions = linked_hashtable_create(16, 1, session_hash_code, session_hash_compare);
     if (!sessions) {
         free_config(&config);
         return -1;

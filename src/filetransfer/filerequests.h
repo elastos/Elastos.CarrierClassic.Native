@@ -34,7 +34,7 @@
 #define FILE_TRANSFER_REQUEST_EXPIRE_INTERVAL (5 * 60) // 5m
 
 typedef struct FileRequest {
-    hash_entry_t he;
+    linked_hash_entry_t he;
 
     struct timeval expire_time;
     char from[CARRIER_MAX_ID_LEN + 1 + 36];
@@ -50,22 +50,22 @@ int filereqs_from_compare(const void *key1, size_t len1,
 }
 
 static inline
-hashtable_t *filereqs_create(int capacity)
+linked_hashtable_t *filereqs_create(int capacity)
 {
-    return hashtable_create(capacity, 1, NULL, filereqs_from_compare);
+    return linked_hashtable_create(capacity, 1, NULL, filereqs_from_compare);
 }
 
 static inline
-int filereqs_exist(hashtable_t *filereqs, const char *from)
+int filereqs_exist(linked_hashtable_t *filereqs, const char *from)
 {
     assert(filereqs);
     assert(from);
 
-    return hashtable_exist(filereqs, from, strlen(from));
+    return linked_hashtable_exist(filereqs, from, strlen(from));
 }
 
 static inline
-void filereqs_put(hashtable_t *filereqs, FileRequest *fr)
+void filereqs_put(linked_hashtable_t *filereqs, FileRequest *fr)
 {
     struct timeval now, interval;
 
@@ -81,54 +81,54 @@ void filereqs_put(hashtable_t *filereqs, FileRequest *fr)
     interval.tv_usec = 0;
     timeradd(&now, &interval, &fr->expire_time);
 
-    hashtable_put(filereqs, &fr->he);
+    linked_hashtable_put(filereqs, &fr->he);
 }
 
 static inline
-FileRequest *filereqs_get(hashtable_t *filereqs, const char *from)
+FileRequest *filereqs_get(linked_hashtable_t *filereqs, const char *from)
 {
     assert(filereqs);
     assert(from);
 
-    return (FileRequest *)hashtable_get(filereqs, from, strlen(from));
+    return (FileRequest *)linked_hashtable_get(filereqs, from, strlen(from));
 }
 
 static inline
-FileRequest *filereqs_remove(hashtable_t *filereqs, const char *from)
+FileRequest *filereqs_remove(linked_hashtable_t *filereqs, const char *from)
 {
     assert(filereqs);
     assert(from);
 
-    return (FileRequest *)hashtable_remove(filereqs, from, strlen(from));
+    return (FileRequest *)linked_hashtable_remove(filereqs, from, strlen(from));
 }
 
 static inline
-void filereqs_clear(hashtable_t *filereqs)
+void filereqs_clear(linked_hashtable_t *filereqs)
 {
     assert(filereqs);
-    hashtable_clear(filereqs);
+    linked_hashtable_clear(filereqs);
 }
 
 static inline
-hashtable_iterator_t *filereqs_iterate(hashtable_t *filereqs,
-                                       hashtable_iterator_t *iterator)
+linked_hashtable_iterator_t *filereqs_iterate(linked_hashtable_t *filereqs,
+                                       linked_hashtable_iterator_t *iterator)
 {
     assert(filereqs && iterator);
-    return hashtable_iterate(filereqs, iterator);
+    return linked_hashtable_iterate(filereqs, iterator);
 }
 
 static inline
-int filereqs_iterator_next(hashtable_iterator_t *iterator, FileRequest **fr)
+int filereqs_iterator_next(linked_hashtable_iterator_t *iterator, FileRequest **fr)
 {
     assert(iterator && fr);
-    return hashtable_iterator_next(iterator, NULL, NULL, (void **)fr);
+    return linked_hashtable_iterator_next(iterator, NULL, NULL, (void **)fr);
 }
 
 static inline
-int filereqs_iterator_has_next(hashtable_iterator_t *iterator)
+int filereqs_iterator_has_next(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    return hashtable_iterator_has_next(iterator);
+    return linked_hashtable_iterator_has_next(iterator);
 }
 
 #endif /* __FILEREQUESTS_H__ */

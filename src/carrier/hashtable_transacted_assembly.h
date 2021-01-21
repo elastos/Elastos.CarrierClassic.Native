@@ -38,7 +38,7 @@ typedef struct TransactedAssembly {
     size_t  data_len;
     size_t  data_off;
     struct timeval expire_time;
-    hash_entry_t he;
+    linked_hash_entry_t he;
 } TransactedAssembly;
 
 static inline
@@ -49,66 +49,66 @@ int tassemblies_key_compare(const void *key1, size_t len1,
 }
 
 static inline
-hashtable_t *tassemblies_create(int capacity)
+linked_hashtable_t *tassemblies_create(int capacity)
 {
-    return hashtable_create(capacity, 1, NULL, tassemblies_key_compare);
+    return linked_hashtable_create(capacity, 1, NULL, tassemblies_key_compare);
 }
 
 static inline
-void tassemblies_put(hashtable_t *tassemblies, TransactedAssembly *item)
+void tassemblies_put(linked_hashtable_t *tassemblies, TransactedAssembly *item)
 {
     item->he.data = item;
     item->he.key = &item->tid;
     item->he.keylen = sizeof(item->tid);
 
-    hashtable_put(tassemblies, &item->he);
+    linked_hashtable_put(tassemblies, &item->he);
 }
 
 static inline
-TransactedAssembly *tassemblies_get(hashtable_t *tassemblies, int64_t *tid)
+TransactedAssembly *tassemblies_get(linked_hashtable_t *tassemblies, int64_t *tid)
 {
-    return (TransactedAssembly *)hashtable_get(tassemblies, tid, sizeof(int64_t));
+    return (TransactedAssembly *)linked_hashtable_get(tassemblies, tid, sizeof(int64_t));
 }
 
 static inline
-void tassemblies_remove(hashtable_t *tassemblies, int64_t *tid)
+void tassemblies_remove(linked_hashtable_t *tassemblies, int64_t *tid)
 {
-    deref(hashtable_remove(tassemblies, tid, sizeof(int64_t)));
+    deref(linked_hashtable_remove(tassemblies, tid, sizeof(int64_t)));
 }
 
 static inline
-void tassemblies_clear(hashtable_t *tassemblies)
+void tassemblies_clear(linked_hashtable_t *tassemblies)
 {
-    hashtable_clear(tassemblies);
+    linked_hashtable_clear(tassemblies);
 }
 
 static inline
-hashtable_iterator_t *tassemblies_iterate(hashtable_t *tassemblies,
-                                          hashtable_iterator_t *iterator)
+linked_hashtable_iterator_t *tassemblies_iterate(linked_hashtable_t *tassemblies,
+                                          linked_hashtable_iterator_t *iterator)
 {
     assert(tassemblies && iterator);
-    return hashtable_iterate(tassemblies, iterator);
+    return linked_hashtable_iterate(tassemblies, iterator);
 }
 
 static inline
-int tassemblies_iterator_next(hashtable_iterator_t *iterator, TransactedAssembly **item)
+int tassemblies_iterator_next(linked_hashtable_iterator_t *iterator, TransactedAssembly **item)
 {
     assert(iterator && item);
-    return hashtable_iterator_next(iterator, NULL, NULL, (void **)item);
+    return linked_hashtable_iterator_next(iterator, NULL, NULL, (void **)item);
 }
 
 static inline
-int tassemblies_iterator_has_next(hashtable_iterator_t *iterator)
+int tassemblies_iterator_has_next(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    return hashtable_iterator_has_next(iterator);
+    return linked_hashtable_iterator_has_next(iterator);
 }
 
 static inline
-int tassemblies_iterator_remove(hashtable_iterator_t *iterator)
+int tassemblies_iterator_remove(linked_hashtable_iterator_t *iterator)
 {
     assert(iterator);
-    return hashtable_iterator_remove(iterator);
+    return linked_hashtable_iterator_remove(iterator);
 }
 
 #endif /* __CARRIER_TRANSACTED_ASSEMBLIES_H__ */

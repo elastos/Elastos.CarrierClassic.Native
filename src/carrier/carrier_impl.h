@@ -76,7 +76,7 @@ typedef struct Preferences {
 typedef struct EventBase EventBase;
 struct EventBase {
     void (*handle)(EventBase *, Carrier *);
-    list_entry_t le;
+    linked_list_entry_t le;
 };
 
 typedef struct FriendEvent {
@@ -126,23 +126,23 @@ struct Carrier {
 
     DHTCallbacks dht_callbacks;
 
-    list_t *friend_events; // for friend_added/removed.
-    hashtable_t *friends;
+    linked_list_t *friend_events; // for friend_added/removed.
+    linked_hashtable_t *friends;
 
     ExpressConnector *connector;
     uint32_t offmsgid;
     struct timeval express_expiretime;
 
-    hashtable_t *tcallbacks;
-    hashtable_t *thistory;
+    linked_hashtable_t *tcallbacks;
+    linked_hashtable_t *thistory;
 
-    hashtable_t *tassembly_ireqs;
-    hashtable_t *tassembly_irsps;
+    linked_hashtable_t *tassembly_ireqs;
+    linked_hashtable_t *tassembly_irsps;
 
-    hashtable_t *bulkmsgs;
-    hashtable_t *unconfirmed;
+    linked_hashtable_t *bulkmsgs;
+    linked_hashtable_t *unconfirmed;
 
-    hashtable_t *exts;
+    linked_hashtable_t *exts;
     pthread_t main_thread;
 
     int running;
@@ -154,7 +154,7 @@ typedef struct ExtensionHolder {
     CarrierCallbacks callbacks;
     ExtensionAPIs apis;
     CarrierExtension *ext;
-    hash_entry_t he;
+    linked_hash_entry_t he;
 } ExtensionHolder;
 
 CARRIER_API

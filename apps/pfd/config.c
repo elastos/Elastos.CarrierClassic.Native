@@ -152,7 +152,7 @@ static int extra_config_parser(void *p, CarrierOptions *options)
         return -1;
     }
 
-    config->services = hashtable_create(entries * 2, 0, NULL, NULL);
+    config->services = linked_hashtable_create(entries * 2, 0, NULL, NULL);
     if (!config->services) {
         fprintf(stderr, "Out of memory.\n");
         extra_config_free(config);
@@ -198,7 +198,7 @@ static int extra_config_parser(void *p, CarrierOptions *options)
         svc->he.keylen = strlen(svc->name);
         svc->he.data = svc;
 
-        hashtable_put(config->services, &svc->he);
+        linked_hashtable_put(config->services, &svc->he);
         deref(svc);
     }
 
@@ -217,7 +217,7 @@ static int extra_config_parser(void *p, CarrierOptions *options)
             return -1;
         }
 
-        config->users = hashtable_create(entries * 2, 0, NULL, NULL);
+        config->users = linked_hashtable_create(entries * 2, 0, NULL, NULL);
         if (!config->users) {
             fprintf(stderr, "Load configuration failed, out of memory.\n");
             extra_config_free(config);
@@ -271,7 +271,7 @@ static int extra_config_parser(void *p, CarrierOptions *options)
             user->he.keylen = strlen(user->userid);
             user->he.data = user;
 
-            hashtable_put(config->users, &user->he);
+            linked_hashtable_put(config->users, &user->he);
             deref(user);
         }
     }
