@@ -321,6 +321,7 @@ CarrierOptions *carrier_config_copy(CarrierOptions *dest, CarrierOptions *src)
 {
     size_t *p;
 
+    dest->secret_key = NULL;
     dest->udp_enabled = src->udp_enabled;
     dest->log_level = src->log_level;
     dest->log_printer = src->log_printer;
@@ -329,6 +330,14 @@ CarrierOptions *carrier_config_copy(CarrierOptions *dest, CarrierOptions *src)
     p = (size_t *)src->bootstraps;
     ref(--p);
     dest->bootstraps = src->bootstraps;
+
+    dest->express_nodes_size = src->express_nodes_size;
+    if (dest->express_nodes_size) {
+        p = (size_t *)src->express_nodes;
+        ref(--p);
+        dest->express_nodes = src->express_nodes;
+    } else
+        dest->express_nodes = NULL;
 
     if (src->persistent_location)
         dest->persistent_location = strdup(src->persistent_location);

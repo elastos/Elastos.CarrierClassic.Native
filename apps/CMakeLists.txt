@@ -26,6 +26,12 @@ add_submodule(elaerr
     DIRECTORY errstr
     DEPENDS ${DEPEND_MODULES})
 
+if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+    add_subdirectory(maxfriends)
+    add_dependencies(maxfr ${DEPEND_MODULES})
+    add_dependencies(maxfrd ${DEPEND_MODULES})
+endif()
+
 if (NOT WIN32)
     add_submodule(elaspeedtest
         DIRECTORY speedtest

@@ -2630,18 +2630,9 @@ static void connect_to_bootstraps(Carrier *w)
     }
 }
 
-int carrier_run(Carrier *w, int interval)
+CARRIER_API
+void carrier_prepare(Carrier *w)
 {
-    if (!w || interval < 0) {
-        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
-        return -1;
-    }
-
-    if (interval == 0)
-        interval = 1000; // in milliseconds.
-
-    ref(w);
-
     w->dht_callbacks.notify_connection = notify_connection_cb;
     w->dht_callbacks.notify_friend_desc = notify_friend_description_cb;
     w->dht_callbacks.notify_friend_connection = notify_friend_connection_cb;
@@ -2662,48 +2653,87 @@ int carrier_run(Carrier *w, int interval)
     w->running = 1;
 
     connect_to_bootstraps(w);
+}
 
-    while(!w->quit) {
-        int idle_interval;
+CARRIER_API
+bool carrier_is_stopped(Carrier *w)
+{
+    return w->quit;
+}
+
+CARRIER_API
+struct timeval carrier_next_iteration(Carrier *w, int interval)
+{
+    struct timeval expire;
+    int idle_interval;
+    struct timeval tmp;
+
+    gettimeofday(&expire, NULL);
+
+    idle_interval = dht_iteration_idle(&w->dht);
+    if (interval && idle_interval > interval)
+        idle_interval = interval;
+
+    tmp.tv_sec = 0;
+    tmp.tv_usec = idle_interval * 1000;
+
+    timeradd(&expire, &tmp, &expire);
+
+    return expire;
+}
+
+CARRIER_API
+void carrier_iterate(Carrier *w)
+{
+    do_friend_events(w);
+    do_tassemblies_expire(w->tassembly_ireqs);
+    do_tassemblies_expire(w->tassembly_irsps);
+    do_transacted_callabcks_expire(w);
+    do_bulkmsgs_expire(w->bulkmsgs);
+    do_express_expire(w);
+
+    notify_idle(w);
+
+    dht_iterate(&w->dht, &w->dht_callbacks);
+}
+
+CARRIER_API
+void carrier_finish(Carrier *w)
+{
+    w->running = 0;
+
+    store_persistence_data(w);
+}
+
+int carrier_run(Carrier *w, int interval)
+{
+    if (!w || interval < 0) {
+        carrier_set_error(CARRIER_GENERAL_ERROR(ERROR_INVALID_ARGS));
+        return -1;
+    }
+
+    if (interval == 0)
+        interval = 1000; // in milliseconds.
+
+    ref(w);
+
+    carrier_prepare(w);
+
+    while(!carrier_is_stopped(w)) {
         struct timeval expire;
         struct timeval check;
         struct timeval tmp;
-        bool conn_made;
 
-        gettimeofday(&expire, NULL);
-
-        idle_interval = dht_iteration_idle(&w->dht);
-        if (idle_interval > interval)
-            idle_interval = interval;
-
-        tmp.tv_sec = 0;
-        tmp.tv_usec = idle_interval * 1000;
-
-        timeradd(&expire, &tmp, &expire);
-
-        do_friend_events(w);
-        do_tassemblies_expire(w->tassembly_ireqs);
-        do_tassemblies_expire(w->tassembly_irsps);
-        do_transacted_callabcks_expire(w);
-        do_bulkmsgs_expire(w->bulkmsgs);
-        do_express_expire(w);
-
-        if (idle_interval > 0)
-            notify_idle(w);
-
+        carrier_iterate(w);
+        expire = carrier_next_iteration(w, interval);
         gettimeofday(&check, NULL);
-
         if (timercmp(&expire, &check, >)) {
             timersub(&expire, &check, &tmp);
             usleep(tmp.tv_usec);
         }
-
-        dht_iterate(&w->dht, &w->dht_callbacks);
     }
 
-    w->running = 0;
-
-    store_persistence_data(w);
+    carrier_finish(w);
 
     deref(w);
 

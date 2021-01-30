@@ -758,6 +758,8 @@ int dht_new(const uint8_t *savedata, size_t datalen, bool udp_enabled, DHT *dht)
     assert(dht);
 
     tox_options_default(&options);
+    options.start_port = 33445;
+    options.end_port = 40000;
     options.local_discovery_enabled = true;
     options.ipv6_enabled = false;
     options.udp_enabled = udp_enabled;
