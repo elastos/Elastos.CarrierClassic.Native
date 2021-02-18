@@ -64,7 +64,7 @@ install:
         sudo apt-get install python3.5;
         sudo ln -s -f /usr/bin/python3.5 /usr/bin/python;
         sudo apt-get install doxygen  graphviz;
-        curl -L -o /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py;
+        curl -L -o /tmp/get-pip.py https://bootstrap.pypa.io/3.4/get-pip.py;
         sudo python /tmp/get-pip.py;
         sudo pip install breathe;
         sudo pip install -U sphinx;
