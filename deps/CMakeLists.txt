@@ -26,7 +26,6 @@ add_submodule(cJSON
 if(WIN32)
     add_submodule(PDCurses
         DEPENDS platform-specific)
-#    add_submodule(slim-pthread
     add_submodule(pthreads-w32
         DEPENDS platform-specific)
 endif()
