@@ -108,6 +108,8 @@ function(set_win_build_options build_options suffix)
         "/p:"
         "Configuration=${_CONFIGURATION},"
         "Platform=${_PLATFORM},"
+        "PlatformToolset=${CMAKE_VS_PLATFORM_TOOLSET},"
+        "WindowsTargetPlatformVersion=${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION},"
         "InstallDir=${CARRIER_INT_DIST_DIR}")
 
     # update parent scope variable.
