@@ -153,6 +153,8 @@ if(ENABLE_SHARED)
         LIBRARY DESTINATION "lib")
 endif()
 
-add_subdirectory(pseudotcp)
+if(ENALBE_APP)
+    add_subdirectory(pseudotcp)
+endif()
 
 install(FILES ${HEADERS} DESTINATION "include")
