@@ -1,3 +1,11 @@
+﻿10/05/2021 Chen Yu chenyu@trinity-tech.io
+
+**version 6.0.3-hotfix**, main changes to previous version:
+
+```markdown
+- Compilation with customized sdk tool version for windows platform.
+```
+
 12/29/2020 Li Fenxiang lifenxiang@trinity-tech.io
 
 **version 6.0.2-hotfix**, main changes to previous version:
