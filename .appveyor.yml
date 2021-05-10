@@ -9,7 +9,7 @@ platform:
 build_script:
   - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat"
   - cmd: cd build && mkdir win && cd win
-  - cmd: cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=outputs ..\..
+  - cmd: cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=outputs -DCMAKE_VS_PLATFORM_TOOLSET=v141 -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=10.0.17763.0 ..\..
   - cmd: nmake
   - cmd: nmake install
   - cmd: nmake dist
