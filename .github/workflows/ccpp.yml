@@ -70,14 +70,12 @@ jobs:
       - name: make
         shell: cmd
         run: |
-          if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" (
-            call   "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{matrix.arch}}
-          )
           if exist "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat" (
             call   "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{matrix.arch}}
           )
+
           mkdir build\windows
           cd build\windows
-          cmake -G "NMake Makefiles" ..\..
+          cmake -G "NMake Makefiles" -DCMAKE_VS_PLATFORM_TOOLSET=v141 -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=10.0.17763.0 ..\..
           nmake
           nmake dist
