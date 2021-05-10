@@ -1,4 +1,4 @@
-# Elastos Carrier Native SDK
+﻿# Elastos Carrier Native SDK
 
 |Travis CI|Circle| AppVeyor|
 |:-:|:-:|:-:|
@@ -720,6 +720,19 @@ In Visual Studio, open Visual Studio Command Prompt from the menu "Tools >> Visu
 Note: To build for a 32-bit target , select `x86 Native Tools Command Console` to run building commands, otherwise, select `x64 Native Tools Command Console` for a 64-bit target.
 ***
 
+Get Visual Studio SDK and ToolSet version on the target platform.
+```shell
+cd tools\win
+cmake .
+```
+Show information as follow:
+```shell
+================================
+CMake command line for Windows:
+cmake -G "NMake Makefiles" -DCMAKE_VS_PLATFORM_TOOLSET=YOUR-TOOLSET-VERSION -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=YOUR-VSSDK-VERSION ...
+================================
+```
+
 Navigate to the previously downloaded folder that contains the source code of the Carrier project.
 
 ```shell
@@ -742,7 +755,7 @@ cd win
 Generate the Makefile in the current directory:
 
 ```shell
-cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=outputs ..\..
+cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=outputs -DCMAKE_VS_PLATFORM_TOOLSET=YOUR-TOOLSET-VERSION -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION=YOUR-VSSDK-VERSION ..\..
 ```
 
 Build the program:
