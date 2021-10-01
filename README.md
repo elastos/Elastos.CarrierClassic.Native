@@ -411,14 +411,14 @@ Or run Elatests:
 
 ### 1. Brief introduction
 
+Both macOS (x86_64) and macOS (ARM64) are supported.
+
 On macOS, besides the compilation for the host itself, cross-compilation is possible for the following targets:
 
 - Android with architectures of **armv7a**, **arm64** and simulators of **x86/x86_64** are supported.
 - iOS platforms to run on **iPhone-arm64** and **iPhoneSimulator-x86_64**.
 
 ### 2. Install Pre-Requirements
-
-packages must be installed on the host before compilation.
 
 The following packages related to **configure** and **cmake** must be installed on the host before compilation either by installation through the package manager **homebrew** or by building from source:
 
@@ -463,8 +463,8 @@ cd build
 Create a new folder with the target platform name, then change directory.
 
 ```shell
-mkdir macos
-cd macos
+mkdir macos-$(uname -m)
+cd macos-$(uname -m)
 ```
 
 Generate the Makefile in the current directory:
@@ -542,7 +542,7 @@ Elastos Carrier cmake system also supports to build cross-compilation for androi
 
 With CMake, Elastos Carrier can be cross-compiled to run on Android as a target platform, while compilation is carried out on MacOS host.
 
-**Prerequisite**: Android NDK 'android-ndk-r16b' or higher must be downloaded onto the host Linux based host. Android NDKs (such as 'android-ndk-r18b-darwin-x86_64' for MacOS Host) can be downloaded from [Android developer web site](https://developer.android.com/ndk/downloads/). Please make sure to extract the downloaded NDK.
+**Prerequisite**: Android NDK 'android-ndk-r16b' or higher is required for macOS (x86_64). Android NDK 'android-ndk-r17c' or higher is required for macOS (ARM64). Android NDKs (such as 'android-ndk-r18b-darwin-x86_64' for MacOS Host) can be downloaded from [Android developer web site](https://developer.android.com/ndk/downloads/). Please make sure to extract the downloaded NDK.
 
 Open a new terminal window.
 
