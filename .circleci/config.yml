@@ -20,13 +20,14 @@ jobs:
             export PATH=/tmp/cmake-3.11.4-Linux-x86_64/bin:${PATH}
             cd build && mkdir ${BUILD_ENV} && cd ${BUILD_ENV}
             cmake -DCMAKE_INSTALL_PREFIX=dist ../..
-            make && sudo make install
+            make && make install
             cd dist/bin && export LD_LIBRARY_PATH=../lib
             ./elatests --robot -c ../etc/carrier/tests.conf &
             ./elatests --cases -c ../etc/carrier/tests.conf -r 5
       - run:
           name: Failed
           command: |
+            pwd
             cd build/${BUILD_ENV}/dist/bin
             if [ -f core* ]; then
               echo "--crash--"
