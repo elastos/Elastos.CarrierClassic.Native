@@ -41,7 +41,6 @@ else()
     endif()
 
     if("${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "Darwin-arm64")
-        #set(ARGS_HOST_REDEF "--host=arm64-apple-darwin20.6.0")
         execute_process(COMMAND cc -dumpmachine
             OUTPUT_VARIABLE ARGS_HOST_REDEF)
         set(ARGS_HOST_REDEF "--host=${ARGS_HOST_REDEF}")
@@ -153,7 +152,7 @@ if(UNIX)
             set(PJLIB_SUFFIX "armv7l-unknown-linux-gnueabihf")
         else()
             # set library name for Linux target itself.
-            set(PJLIB_SUFFIX "x86_64-unknown-linux-gnu")
+            set(PJLIB_SUFFIX "${CMAKE_SYSTEM_PROCESSOR}-unknown-linux-gnu")
         endif()
     endif()
 endif()
