@@ -40,12 +40,6 @@ else()
           "--host=${CMAKE_SYSTEM_PROCESSOR}-apple-darwin_ios")
     endif()
 
-    if("${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "Darwin-arm64")
-        execute_process(COMMAND cc -dumpmachine
-            OUTPUT_VARIABLE ARGS_HOST_REDEF)
-        set(ARGS_HOST_REDEF "--host=${ARGS_HOST_REDEF}")
-    endif()
-
     set(CONFIGURE_CMD "./configure")
     set(CONFIGURE_ARGS
         "--prefix=${CARRIER_INT_DIST_DIR}"
@@ -127,6 +121,8 @@ if(UNIX)
                 OUTPUT_VARIABLE PJLIB_SUFFIX
                 ERROR_QUIET
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+            string(REGEX REPLACE "^arm64" "arm" PJLIB_SUFFIX ${PJLIB_SUFFIX})
         endif()
     else()
         if(ANDROID)
