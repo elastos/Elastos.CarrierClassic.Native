@@ -10,45 +10,6 @@ Elastos Carrier is a decentralized and encrypted peer-to-peer (P2P) communicatio
 
 The authentication process of peer nodes utilizes the Elastos Decentralized ID (DID) sidechain. （TODO）
 
-## Table of Contents
-
-- [Elastos Carrier Native SDK](#elastos-carrier-native-sdk)
-  - [Introduction](#introduction)
-  - [Table of Contents](#table-of-contents)
-  - [Usage](#usage)
-  - [Build on Ubuntu / Debian / Linux Host](#build-on-ubuntu--debian--linux-host)
-    - [1. Brief introduction](#1-brief-introduction)
-    - [2. Install Pre-Requirements](#2-install-pre-requirements)
-    - [3. Build to run on host (Ubuntu / Debian / Linux)](#3-build-to-run-on-host-ubuntu--debian--linux)
-    - [4. Run Elashell or Elatests](#4-run-elashell-or-elatests)
-    - [5. Cross-compilation for Android Platform](#5-cross-compilation-for-android-platform)
-    - [6. Cross-compilation for Raspberry Pi](#6-cross-compilation-for-raspberry-pi)
-  - [Build on Raspberry Pi](#build-on-raspberry-pi)
-    - [1. Brief introduction](#1-brief-introduction-1)
-    - [2. Install Pre-Requirements](#2-install-pre-requirements-1)
-    - [3. Build to run on host](#3-build-to-run-on-host)
-    - [4. Run Elashell or Elatests](#4-run-elashell-or-elatests-1)
-  - [Build on MacOS Host](#build-on-macos-host)
-    - [1. Brief introduction](#1-brief-introduction-2)
-    - [2. Install Pre-Requirements](#2-install-pre-requirements-2)
-    - [3. Build to run on host](#3-build-to-run-on-host-1)
-    - [4. Run Elashell or Elatests](#4-run-elashell-or-elatests-2)
-    - [5. Cross-compilation for Android Platform](#5-cross-compilation-for-android-platform-1)
-    - [6. Cross-compilation for iOS Platform](#6-cross-compilation-for-ios-platform)
-  - [Build on Windows Host](#build-on-windows-host)
-    - [1. Brief introduction](#1-brief-introduction-3)
-    - [2. Set up Environment](#2-set-up-environment)
-    - [3. Build to run on host](#3-build-to-run-on-host-2)
-    - [4. Run Elashell or Elatests](#4-run-elashell-or-elatests-3)
-  - [Build API Documentation](#build-api-documentation)
-    - [Build on Ubuntu / Debian / Linux Host](#build-on-ubuntu--debian--linux-host-1)
-      - [1. Install Pre-Requirements](#1-install-pre-requirements)
-      - [2. Build](#2-build)
-      - [3. View](#3-view)
-  - [Contribution](#contribution)
-  - [Acknowledgments](#acknowledgments)
-  - [License](#license)
-
 ## Usage
 
 **CMake** is used to build, test and package the Elastos Carrier project in an operating system as well as compiler-independent manner.
