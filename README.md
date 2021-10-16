@@ -16,9 +16,9 @@ The authentication process of peer nodes utilizes the Elastos Decentralized ID (
 
 Certain knowledge of CMake is required.
 
-At the time of this writing, The compilation of sources works on **macOS**, **Linux** (Ubuntu, Debian etc.) and **Windows**, and provides the option to cross-compile for target systems of **iOS**, **Android** and **RaspberryPi**.
+At the time of this writing, The compilation of sources works on **macOS**, **Linux** (Ubuntu, Debian, Raspbian etc.) and **Windows**, and provides the option to cross-compile for target systems of **iOS**, **Android** and **RaspberryPi**.
 
-## Build on Ubuntu / Debian / Linux Host
+## Build on Ubuntu / Debian / Raspbian / Linux Host
 
 ### 1. Brief introduction
 
@@ -44,7 +44,7 @@ Download this repository using Git:
 git clone https://github.com/elastos/Elastos.NET.Carrier.Native.SDK
 ```
 
-### 3. Build to run on host (Ubuntu / Debian / Linux)
+### 3. Build to run on host (Ubuntu / Debian / Raspbian Linux)
 
 To compile the project from source code for the target to run on Ubuntu / Debian / Linux, carry out the following steps:
 
@@ -266,106 +266,6 @@ Create distribution package:
 
 ```shell
 make dist
-```
-
-## Build on Raspberry Pi
-
-### 1. Brief introduction
-
-With CMake, Elastos Carrier can be cross-compiled to run only on Raspberry Pi as target platform, while compilation is carried out on a Raspberry Pi host.
-
-### 2. Install Pre-Requirements
-
-To generate Makefiles by using **configure** or **cmake** and manage dependencies of the Carrier project, certain packages must be installed on the host before compilation.
-
-Run the following commands to install the prerequisite utilities:
-
-```shell
-sudo apt-get update
-sudo apt-get install -f build-essential autoconf automake autopoint libtool flex bison libncurses5-dev cmake
-```
-
-Download this repository using Git:
-
-```shell
-git clone https://github.com/elastos/Elastos.NET.Carrier.Native.SDK
-```
-
-### 3. Build to run on host
-
-To compile the project from source code for the target to run on Raspberry Pi, carry out the following steps:
-
-Open a new terminal window.
-
-Navigate to the previously downloaded folder that contains the source code of the Carrier project.
-
-```shell
-cd YOUR-PATH/Elastos.NET.Carrier.Native.SDK
-```
-
-Enter the 'build' folder.
-
-```shell
-cd build
-```
-
-Create a new folder with the target platform name, then change directory.
-
-```shell
-mkdir pi
-cd pi
-```
-
-Generate the Makefile in the current directory:
-
-*Note: Please see custom options below.*
-
-```shell
-cmake -DBUILD_ON_RPI=ON ../..
-```
-
-***
-
-Optional (Generate the Makefile): To be able to build a distribution with a specific build type **Debug/Release**, as well as with customized install location of distributions, run the following commands:
-
-```shell
-cmake -DBUILD_ON_RPI=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=YOUR-INSTALL-PATH ../..
-```
-
-***
-
-Create distribution package:
-
-*Note: If "make dist" fails due to missing permissions, use "sudo make dist" instead.*
-
-```shell
-make dist
-```
-
-### 4. Run Elashell or Elatests
-
-Elashell is a fully functional, lightweight shell program that processes commands and returns the output to the terminal. Through Elashell, users may connect to other carrier nodes and exchange messages.
-
-Elatests is also a shell program, but with predefined commands, therefore no user interaction is necessary. The output for every command is displayed in the terminal for a simple evaluation of test results.
-
-To run elashell or elatests, first extract the distribution package created previously and enter the extracted folder. Then, change directory to the 'bin' folder.
-
-```shell
-cd YOUR-DISTRIBUTION-PACKAGE-PATH/bin
-```
-
-Run Elashell:
-
-```shell
-./elashell
-```
-
-Available commands in the shell can be listed by using the command **help**. Specific command usage descriptions can be displayed by using **help [Command]** where [Command] must be replaced with the specific command name. For the entire command list please see the [COMMANDS.md](https://github.com/elastos/Elastos.NET.Carrier.Native.SDK/blob/master/COMMANDS.md) file.
-
-Or run Elatests:
-
-```shell
-./elatests
 ```
 
 ## Build on MacOS Host
