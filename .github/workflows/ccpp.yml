@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04, [self-hosted, ubuntu, 20.04, arm64]]
+        os: [ubuntu-20.04, ubuntu-18.04]
         build_type: [Debug, Release]
     steps:
       - uses: actions/checkout@v2
