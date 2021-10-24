@@ -142,10 +142,6 @@ if(UNIX)
             # only support for armv7l. (TODO: update)
             # only support with Linux host.
             set(PJLIB_SUFFIX "arm-unknown-linux-gnueabihf")
-        elseif(BUILD_ON_RPI)
-            # set library suffix name for raspberry PI target
-            # only support for compilation on raspberry PI platform.
-            set(PJLIB_SUFFIX "armv7l-unknown-linux-gnueabihf")
         elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
             # set library name for Linux target itself.
             if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
